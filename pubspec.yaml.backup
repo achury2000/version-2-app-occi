@@ -1,0 +1,93 @@
+name: occitours
+description: "Aplicación móvil para turismo y viajes - Occitours"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  
+  # Estado y Gestión
+  provider: ^6.0.0
+  riverpod: ^2.4.0
+  
+  # HTTP y Networking
+  http: ^1.1.0
+  dio: ^5.3.0
+  
+  # Base de datos local
+  sqflite: ^2.3.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Serialización y Modelos
+  json_serializable: ^6.7.0
+  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.1
+  
+  # Geolocalización y Mapas
+  geolocator: ^9.0.2
+  google_maps_flutter: ^2.5.0
+  location: ^5.0.0
+  
+  # Multimedia
+  image_picker: ^1.0.4
+  cached_network_image: ^3.3.0
+  # video_player: ^2.8.0  # Removed - causes compilation issues
+  
+  # Autenticación y Seguridad
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.11.0
+  google_sign_in: ^6.1.5
+  
+  # Notificaciones
+  firebase_messaging: ^14.6.0
+  
+  # Navegación
+  go_router: ^12.0.0
+  
+  # UI y Diseño
+  flutter_svg: ^2.0.5
+  lottie: ^2.6.0
+  flutter_staggered_animations: ^1.1.1
+  
+  # Utilidades
+  intl: ^0.18.1
+  uuid: ^4.0.0
+  connectivity_plus: ^5.0.0
+  package_info_plus: ^5.0.0
+  
+  # Logging
+  logger: ^2.0.0
+  
+  # Formularios
+  flutter_form_builder: ^9.1.0
+  form_builder_validators: ^9.1.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.0
+  freezed: ^2.4.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
+  #       - asset: assets/fonts/Poppins-SemiBold.ttf
+  #         weight: 600

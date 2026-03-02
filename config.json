@@ -1,0 +1,31 @@
+{
+  "project": "occitours_mobile",
+  "buildNumber": 1,
+  "buildName": "1.0.0",
+  "description": "Aplicación de turismo y viajes Occitours",
+  "appName": "Occitours",
+  "organization": "com.occitours",
+  "platforms": {
+    "android": {
+      "enabled": true,
+      "minSdkVersion": 21,
+      "targetSdkVersion": 34
+    },
+    "ios": {
+      "enabled": true,
+      "minimumDeploymentTarget": "12.0"
+    },
+    "web": {
+      "enabled": true
+    },
+    "windows": {
+      "enabled": true
+    },
+    "macos": {
+      "enabled": true
+    },
+    "linux": {
+      "enabled": true
+    }
+  }
+}

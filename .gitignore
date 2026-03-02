@@ -1,0 +1,87 @@
+# Archivos y directorios Flutter
+.DS_Store
+.dart_tool/
+.flutter-plugins
+.packages
+.pub-cache/
+.pub/
+/build/
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/ephemeral/
+/ios/Flutter/app.flx
+/ios/Flutter/app.zip
+/ios/Flutter/flutter_assets/
+/ios/Flutter/flutter_export_environment.sh
+/ios/Runner/GeneratedPluginRegistrant.*
+/ios/Flutter/Flutter.framework
+/macos/Flutter/GeneratedPluginRegistrant.swift
+/windows/flutter/generated_plugins.cmake
+/windows/flutter/generated_plugin_symlink_group.cmake
+/coverage
+pubspec.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.dart_tool
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+*.iml
+*.lock
+.gradle
+
+# Android
+android/**/gradle-wrapper.jar
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Archivos de compilación
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.dll
+*.dylib
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporal
+*.tmp
+*.temp
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Configuración personal del IDE
+.vscode/settings.json
+.vscode/extensions.json
