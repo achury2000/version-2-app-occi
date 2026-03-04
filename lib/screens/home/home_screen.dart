@@ -156,11 +156,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount:
-                              catalogoProvider.fincas.length.clamp(0, 5),
+                          itemCount: catalogoProvider.fincas.length.clamp(0, 5),
                           itemBuilder: (context, index) {
-                            final finca =
-                                catalogoProvider.fincas[index];
+                            final finca = catalogoProvider.fincas[index];
                             return _buildFincaCard(finca);
                           },
                         ),
@@ -204,11 +202,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount:
-                              catalogoProvider.rutas.length.clamp(0, 5),
+                          itemCount: catalogoProvider.rutas.length.clamp(0, 5),
                           itemBuilder: (context, index) {
-                            final ruta =
-                                catalogoProvider.rutas[index];
+                            final ruta = catalogoProvider.rutas[index];
                             return _buildRutaCard(ruta);
                           },
                         ),
@@ -369,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Email
                 Text(
-                  authProvider.usuario?.email ?? '',
+                  authProvider.usuario?.correo ?? '',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -385,9 +381,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 _buildInfoCard(
-                  'País',
-                  authProvider.usuario?.pais ?? '-',
-                  Icons.public,
+                  'Rol',
+                  authProvider.usuario?.rol ?? '-',
+                  Icons.badge,
                 ),
                 const SizedBox(height: 32),
 
@@ -570,7 +566,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Icon(Icons.star, size: 12, color: Colors.amber),
                     const SizedBox(width: 4),
-                    Text('${finca.rating}', style: const TextStyle(fontSize: 12)),
+                    Text('${finca.rating}',
+                        style: const TextStyle(fontSize: 12)),
                   ],
                 ),
                 const SizedBox(height: 4),

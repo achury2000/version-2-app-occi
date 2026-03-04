@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../models/usuario.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
 
   Usuario? _usuario;
   String? _token;
@@ -18,112 +18,132 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isLoggedIn => _isLoggedIn;
 
-  /// Login con email y contraseña
-  Future<bool> login(String email, String password) async {
+  /// Inicializa el provider verificando si hay sesión guardada
+  Future<void> init() async {
+    final loggedIn = await _authService.isLoggedIn();
+    if (loggedIn) {
+      try {
+        _token = await _authService.getToken();
+        _usuario = await _authService.getProfile();
+        _isLoggedIn = true;
+      } catch (e) {
+        // Token expirado o inválido, limpiar sesión
+        await _authService.logout();
+        _isLoggedIn = false;
+      }
+      notifyListeners();
+    }
+  }
+
+  /// Login con correo y contraseña
+  Future<bool> login(String correo, String contrasena) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.post('auth/login', {
-        'email': email,
-        'password': password,
-      });
+      final result = await _authService.login(
+        correo: correo,
+        contrasena: contrasena,
+      );
 
-      if (response != null && response['token'] != null) {
-        _token = response['token'];
-        _usuario = Usuario.fromJson(response['usuario']);
-        _isLoggedIn = true;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = 'Respuesta inválida del servidor';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      _token = result['token'] as String;
+      _usuario = result['usuario'] as Usuario;
+      _isLoggedIn = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _parseError(e);
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  /// Registro con datos nuevos
-  Future<bool> register(
-    String nombre,
-    String email,
-    String password,
-    String telefono,
-    String pais,
-  ) async {
+  /// Registro de nuevo cliente
+  Future<bool> register({
+    required String correo,
+    required String contrasena,
+    required String nombre,
+    required String apellido,
+    String? tipoDocumento,
+    String? numeroDocumento,
+    String? telefono,
+    String? direccion,
+    String? fechaNacimiento,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.post('auth/register', {
-        'nombre': nombre,
-        'email': email,
-        'password': password,
-        'telefono': telefono,
-        'pais': pais,
-      });
+      final result = await _authService.register(
+        correo: correo,
+        contrasena: contrasena,
+        nombre: nombre,
+        apellido: apellido,
+        tipoDocumento: tipoDocumento,
+        numeroDocumento: numeroDocumento,
+        telefono: telefono,
+        direccion: direccion,
+        fechaNacimiento: fechaNacimiento,
+      );
 
-      if (response != null && response['token'] != null) {
-        _token = response['token'];
-        _usuario = Usuario.fromJson(response['usuario']);
-        _isLoggedIn = true;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = 'Error al registrar usuario';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      _token = result['token'] as String;
+      _usuario = result['usuario'] as Usuario;
+      _isLoggedIn = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _parseError(e);
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  /// Recuperar contraseña
-  Future<bool> forgotPassword(String email) async {
+  /// Cambiar contraseña del usuario autenticado
+  Future<bool> cambiarContrasena({
+    required String contrasenaActual,
+    required String contrasenaNueva,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.post('auth/forgot-password', {
-        'email': email,
-      });
+      final success = await _authService.cambiarContrasena(
+        contrasenaActual: contrasenaActual,
+        contrasenaNueva: contrasenaNueva,
+      );
 
-      if (response != null && response['message'] != null) {
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = 'Error al enviar correo de recuperación';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      _isLoading = false;
+      notifyListeners();
+      return success;
     } catch (e) {
-      _error = e.toString();
+      _error = _parseError(e);
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Obtener perfil actualizado del servidor
+  Future<void> refreshProfile() async {
+    try {
+      _usuario = await _authService.getProfile();
+      notifyListeners();
+    } catch (e) {
+      _error = _parseError(e);
+      notifyListeners();
     }
   }
 
   /// Logout
-  void logout() {
+  Future<void> logout() async {
+    await _authService.logout();
     _usuario = null;
     _token = null;
     _isLoggedIn = false;
@@ -135,5 +155,29 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Parsear mensajes de error para mostrar al usuario
+  String _parseError(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('Credenciales inválidas') || msg.contains('incorrectos')) {
+      return 'Correo o contraseña incorrectos';
+    }
+    if (msg.contains('Correo ya registrado')) {
+      return 'Ya existe una cuenta con este correo';
+    }
+    if (msg.contains('Cuenta inactiva')) {
+      return 'Tu cuenta ha sido desactivada';
+    }
+    if (msg.contains('Campos incompletos')) {
+      return 'Por favor completa todos los campos requeridos';
+    }
+    if (msg.contains('connectionError') || msg.contains('conectar')) {
+      return 'Error de conexión. Verifica tu internet.';
+    }
+    if (msg.contains('Timeout')) {
+      return 'El servidor no respondió. Intenta de nuevo.';
+    }
+    return 'Ha ocurrido un error. Intenta de nuevo.';
   }
 }

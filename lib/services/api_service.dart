@@ -1,15 +1,19 @@
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
+import 'token_service.dart';
 
 class ApiService {
   // Singleton
   static final ApiService _instance = ApiService._internal();
-  
+
   // Instancia de Dio para requests
   late Dio _dio;
-  
+
   // Base URL del backend
   late String _baseUrl;
+
+  // Servicio de token
+  final TokenService _tokenService = TokenService();
 
   factory ApiService() {
     return _instance;
@@ -20,7 +24,7 @@ class ApiService {
     _initializeDio();
   }
 
-  /// Inicializa Dio con configuración predeterminada
+  /// Inicializa Dio con configuración predeterminada e interceptor JWT
   void _initializeDio() {
     _dio = Dio(
       BaseOptions(
@@ -29,6 +33,26 @@ class ApiService {
         receiveTimeout: const Duration(seconds: 15),
         contentType: 'application/json',
         responseType: ResponseType.json,
+      ),
+    );
+
+    // Interceptor JWT: agrega el token automáticamente a cada request
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await _tokenService.getToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          return handler.next(options);
+        },
+        onError: (error, handler) {
+          // Si el servidor devuelve 401, el token expiró
+          if (error.response?.statusCode == 401) {
+            _tokenService.clearSession();
+          }
+          return handler.next(error);
+        },
       ),
     );
 
@@ -48,11 +72,12 @@ class ApiService {
   void setBaseUrl(String newBaseUrl) {
     _baseUrl = newBaseUrl;
     _dio.options.baseUrl = newBaseUrl;
-    print('🔗 URL base actualizada a: $newBaseUrl');
+    print('URL base actualizada a: $newBaseUrl');
   }
 
   /// GET request
-  Future<dynamic> get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> get(String endpoint,
+      {Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.get(
         endpoint,
@@ -127,7 +152,8 @@ class ApiService {
     } else if (error.type == DioExceptionType.connectionError) {
       message = 'Error de conexión: Verifica tu conexión a internet';
     } else if (error.response != null) {
-      message = 'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
+      message =
+          'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
     }
 
     print('❌ $message');

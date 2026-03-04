@@ -25,7 +25,7 @@ class Validators {
 // Funciones de formato
 class Formatters {
   static String formatCurrency(double amount) {
-    final format = NumberFormat.currency(symbol: '\$');
+    final format = NumberFormat.currency(symbol: r'$');
     return format.format(amount);
   }
 

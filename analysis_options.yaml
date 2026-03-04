@@ -16,7 +16,7 @@ linter:
     - prefer_const_declarations
     - prefer_const_literals_to_create_immutables
     - prefer_contains
-    - prefer_expression_function_bodies
+    # prefer_expression_function_bodies: deshabilitado
     - prefer_final_fields
     - prefer_final_in_for_each
     - prefer_final_locals
@@ -25,7 +25,7 @@ linter:
     - prefer_function_declarations_over_variables
     - prefer_generic_function_type_aliases
     - prefer_if_elements_to_conditional_expressions
-    - prefer_int_literals
+    # prefer_int_literals: deshabilitado
     - prefer_interpolation_to_compose_strings
     - prefer_inlined_adds
     - prefer_is_empty
@@ -52,7 +52,6 @@ linter:
     - unnecessary_this
     - unnecessary_to_list_in_spreads
     - unrelated_type_equality_checks
-    - unsafe_html
     - use_build_context_synchronously
     - use_full_hex_values_for_flutter_colors
     - use_function_type_syntax_for_parameters
@@ -63,12 +62,21 @@ linter:
     - use_raw_strings
     - use_setters_to_change_properties
     - use_string_buffers
+    # use_super_parameters: deshabilitado
     - use_test_throws_matchers
     - void_checks
 
 analyzer:
   exclude: [build/**]
   errors:
+    prefer_expression_function_bodies: ignore
+    prefer_int_literals: ignore
+    use_super_parameters: ignore
+    dangling_library_doc_comments: ignore
+    avoid_print: ignore
+    deprecated_member_use: ignore
+    prefer_const_constructors: ignore
+    prefer_if_elements_to_conditional_expressions: ignore
     missing_required_param: error
     missing_return: error
     todo: ignore

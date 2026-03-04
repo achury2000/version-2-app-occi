@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/connection_service.dart';
@@ -50,7 +51,7 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
     try {
       final response = await _apiService.get(endpoint);
       if (mounted) {
-        showDialog(
+        unawaited(showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('✅ Respuesta Exitosa'),
@@ -67,11 +68,11 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
               ),
             ],
           ),
-        );
+        ));
       }
     } catch (e) {
       if (mounted) {
-        showDialog(
+        unawaited(showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('❌ Error'),
@@ -83,7 +84,7 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
               ),
             ],
           ),
-        );
+        ));
       }
     }
   }
@@ -116,7 +117,8 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
                   children: [
                     const Text(
                       'Entorno y Configuración',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
                     Text('Entorno: ${AppEnvironment.currentEnvironment}'),
@@ -137,7 +139,8 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
                   children: [
                     const Text(
                       'Reporte de Conexión',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(height: 12),
                     _isLoading
@@ -167,7 +170,8 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
                   children: [
                     const Text(
                       'Test Rápido de Endpoints',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -211,7 +215,8 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
                   children: [
                     const Text(
                       'Cambiar URL del Servidor',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(

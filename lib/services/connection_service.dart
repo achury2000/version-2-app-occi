@@ -55,7 +55,7 @@ class ConnectionService {
     ];
 
     print('🧪 Testeando endpoints...');
-    for (var endpoint in endpoints) {
+    for (final endpoint in endpoints) {
       try {
         final response = await _dio
             .get(
@@ -67,7 +67,8 @@ class ConnectionService {
             )
             .timeout(const Duration(seconds: 5));
 
-        results[endpoint] = response.statusCode == 200 || response.statusCode == 404;
+        results[endpoint] =
+            response.statusCode == 200 || response.statusCode == 404;
         print('  ${(results[endpoint] ?? false) ? '✅' : '❌'} $endpoint');
       } catch (e) {
         results[endpoint] = false;
@@ -113,7 +114,8 @@ class ConnectionService {
     buffer.writeln('');
 
     // Info del entorno
-    buffer.writeln('📱 ENTORNO: ${AppEnvironment.currentEnvironment.toUpperCase()}');
+    buffer.writeln(
+        '📱 ENTORNO: ${AppEnvironment.currentEnvironment.toUpperCase()}');
     buffer.writeln('🌐 URL Base: $baseUrl');
     buffer.writeln('');
 
@@ -138,8 +140,8 @@ class ConnectionService {
     buffer.writeln('🧪 TEST DE ENDPOINTS:');
     final endpointResults = await testAllEndpoints(baseUrl);
 
-    int passed = endpointResults.values.where((v) => v).length;
-    int total = endpointResults.length;
+    final passed = endpointResults.values.where((v) => v).length;
+    final total = endpointResults.length;
 
     endpointResults.forEach((endpoint, result) {
       buffer.writeln('  ${result ? '✅' : '❌'} $endpoint');
@@ -152,7 +154,8 @@ class ConnectionService {
     buffer.writeln('');
     buffer.writeln('🔐 TEST DE AUTENTICACIÓN:');
     final authAvailable = await testAuth(baseUrl);
-    buffer.writeln('  ${authAvailable ? '✅' : '❌'} Endpoint de login disponible');
+    buffer
+        .writeln('  ${authAvailable ? '✅' : '❌'} Endpoint de login disponible');
 
     buffer.writeln('');
     buffer.writeln('═══════════════════════════════════════════════');

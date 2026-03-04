@@ -86,11 +86,11 @@ class _FincasScreenState extends State<FincasScreen> {
                       _showFilters = !_showFilters;
                     });
                   },
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.filter_list),
-                      const SizedBox(width: 8),
-                      const Text('Filtros'),
+                      Icon(Icons.filter_list),
+                      SizedBox(width: 8),
+                      Text('Filtros'),
                     ],
                   ),
                 ),
@@ -156,8 +156,8 @@ class _FincasScreenState extends State<FincasScreen> {
 
                 // Buscar
                 if (_searchController.text.isNotEmpty) {
-                  fincas = catalogoProvider
-                      .searchFincas(_searchController.text);
+                  fincas =
+                      catalogoProvider.searchFincas(_searchController.text);
                 }
 
                 // Filtrar por precio
@@ -175,8 +175,7 @@ class _FincasScreenState extends State<FincasScreen> {
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 0.75,
                     crossAxisSpacing: 12,
@@ -239,8 +238,7 @@ class _FincasScreenState extends State<FincasScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.star,
-                              size: 12, color: Colors.white),
+                          const Icon(Icons.star, size: 12, color: Colors.white),
                           const SizedBox(width: 4),
                           Text(
                             '${finca.rating}',

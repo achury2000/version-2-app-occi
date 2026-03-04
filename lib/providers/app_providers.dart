@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
-import '../services/api_service.dart';
 
 class TourProvider extends ChangeNotifier {
   // final ApiService _apiService = ApiService(); // No usado en versión simplificada

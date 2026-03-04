@@ -92,11 +92,11 @@ class _RutasScreenState extends State<RutasScreen> {
                       _showFilters = !_showFilters;
                     });
                   },
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.filter_list),
-                      const SizedBox(width: 8),
-                      const Text('Dificultad'),
+                      Icon(Icons.filter_list),
+                      SizedBox(width: 8),
+                      Text('Dificultad'),
                     ],
                   ),
                 ),
@@ -158,8 +158,7 @@ class _RutasScreenState extends State<RutasScreen> {
 
                 // Buscar
                 if (_searchController.text.isNotEmpty) {
-                  rutas =
-                      catalogoProvider.searchRutas(_searchController.text);
+                  rutas = catalogoProvider.searchRutas(_searchController.text);
                 }
 
                 // Filtrar por dificultad
@@ -284,18 +283,16 @@ class _RutasScreenState extends State<RutasScreen> {
                               fontSize: 11,
                             ),
                           ),
-                          backgroundColor:
-                              getDifficultyColor(ruta.dificultad),
+                          backgroundColor: getDifficultyColor(ruta.dificultad),
                           padding: EdgeInsets.zero,
                         ),
                         Row(
                           children: [
-                            Icon(Icons.star,
+                            const Icon(Icons.star,
                                 size: 14, color: Colors.amber),
                             const SizedBox(width: 4),
                             Text('${ruta.rating}',
-                                style:
-                                    const TextStyle(fontSize: 12)),
+                                style: const TextStyle(fontSize: 12)),
                           ],
                         ),
                         Text(
@@ -424,8 +421,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         const SizedBox(height: 8),
                         Text('${ruta.distancia} km',
                             style:
-                                const TextStyle(fontWeight: FontWeight
-                                    .bold)),
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Column(
@@ -434,8 +430,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         const SizedBox(height: 8),
                         Text('${ruta.duracion}h',
                             style:
-                                const TextStyle(fontWeight: FontWeight
-                                    .bold)),
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Column(
@@ -445,8 +440,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         const SizedBox(height: 8),
                         Text(ruta.dificultad,
                             style:
-                                const TextStyle(fontWeight: FontWeight
-                                    .bold)),
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Column(
@@ -455,8 +449,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         const SizedBox(height: 8),
                         Text('${ruta.capacidad} pers',
                             style:
-                                const TextStyle(fontWeight: FontWeight
-                                    .bold)),
+                                const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -513,8 +506,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content:
-                                Text('⏳ Función de reserva en desarrollo'),
+                            content: Text('⏳ Función de reserva en desarrollo'),
                           ),
                         );
                       },
