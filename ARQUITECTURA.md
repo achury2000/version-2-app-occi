@@ -42,13 +42,17 @@
 │  │   └── ... otras pantallas                                                │
 │  │                                                                           │
 │  ├── models/                                                                  │
-│  │   ├── Cliente.dart                                                       │
-│  │   ├── Reserva.dart                                                       │
-│  │   └── ... modelos (próximos)                                             │
+│  │   ├── cliente.dart                                                       │
+│  │   ├── usuario.dart                                                       │
+│  │   ├── finca.dart                                                         │
+│  │   ├── ruta.dart                                                          │
+│  │   ├── reserva.dart                                                       │
+│  │   ├── programacion.dart                                                  │
+│  │   └── models.dart              ✅ Exporta todos los modelos             │
 │  │                                                                           │
 │  ├── providers/                                                               │
-│  │   ├── app_providers.dart                                                 │
-│  │   └── ... providers (próximos)                                           │
+│  │   ├── auth_provider.dart       ✅ Autenticación y usuario                │
+│  │   └── catalogo_provider.dart      (próximo: fincas y rutas)             │
 │  │                                                                           │
 │  ├── utils/                                                                   │
 │  │   ├── constants.dart          ✅ URLs configuradas                        │
