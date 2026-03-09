@@ -7,6 +7,8 @@ import '../models/usuario.dart';
 /// Endpoints usados:
 /// - POST /api/auth/login
 /// - POST /api/auth/register
+/// - POST /api/auth/verify-email
+/// - POST /api/auth/resend-verification-code
 /// - GET  /api/auth/profile
 /// - PUT  /api/auth/cambiar-contrasena
 class AuthService {
@@ -59,57 +61,51 @@ class AuthService {
 
   /// Registrar un nuevo cliente.
   ///
-  /// Campos requeridos: correo, contrasena, nombre, apellido.
-  /// Campos opcionales: tipo_documento, numero_documento, telefono, direccion, fecha_nacimiento.
+  /// Solo requiere correo y contraseña.
+  /// Los datos personales (nombre, apellido, etc.) se capturan después
+  /// en la pantalla "Completar Perfil" y se guardan en la tabla clientes.
+  ///
   /// El backend asigna automáticamente el rol "Cliente" (id_roles: 3).
+  ///
+  /// IMPORTANTE: El backend NO retorna token en el registro.
+  /// El usuario debe verificar su email primero antes de poder iniciar sesión.
   Future<Map<String, dynamic>> register({
     required String correo,
     required String contrasena,
-    required String nombre,
-    required String apellido,
-    String? tipoDocumento,
-    String? numeroDocumento,
-    String? telefono,
-    String? direccion,
-    String? fechaNacimiento,
   }) async {
     try {
+      print('🌐 [AuthService] Preparando registro...');
       final body = <String, dynamic>{
         'correo': correo,
         'contrasena': contrasena,
-        'nombre': nombre,
-        'apellido': apellido,
       };
 
-      // Agregar campos opcionales solo si tienen valor
-      if (tipoDocumento != null) body['tipo_documento'] = tipoDocumento;
-      if (numeroDocumento != null) body['numero_documento'] = numeroDocumento;
-      if (telefono != null) body['telefono'] = telefono;
-      if (direccion != null) body['direccion'] = direccion;
-      if (fechaNacimiento != null) body['fecha_nacimiento'] = fechaNacimiento;
+      print('🌐 [AuthService] Enviando POST a /auth/register');
+      print('🌐 [AuthService] Body: ${body.keys.join(", ")}');
 
       final response = await _api.post('/auth/register', body);
 
+      print('🌐 [AuthService] Respuesta recibida: $response');
+
       if (response != null && response['success'] == true) {
-        final token = response['token'] as String;
-        final usuario = Usuario.fromJson(response['usuario']);
+        // En desarrollo, el backend puede enviar el código en la respuesta
+        final verificationCode = response['verification_code'];
+        if (verificationCode != null) {
+          print('🔑 [DEV] Código de verificación: $verificationCode');
+        }
 
-        // Guardar token y datos del usuario
-        await _tokenService.saveToken(token);
-        await _tokenService.saveUserData(
-          userId: usuario.id,
-          email: usuario.correo,
-          rol: usuario.rol ?? 'Cliente',
-        );
-
+        print('✅ [AuthService] Registro exitoso - Código enviado al email');
         return {
-          'token': token,
-          'usuario': usuario,
+          'success': true,
+          'message': response['message'] ?? 'Usuario registrado exitosamente',
+          'verification_code': verificationCode, // Para testing
         };
       }
 
+      print('❌ [AuthService] Respuesta no exitosa: ${response?['message']}');
       throw Exception(response?['message'] ?? 'Error al registrar usuario');
     } catch (e) {
+      print('❌ [AuthService] Excepción en register: $e');
       rethrow;
     }
   }
@@ -163,5 +159,75 @@ class AuthService {
   /// Obtiene el token actual almacenado.
   Future<String?> getToken() async {
     return _tokenService.getToken();
+  }
+
+  /// Verificar email con el código de verificación recibido.
+  ///
+  /// Envía el código de 6 dígitos al backend para verificar la cuenta.
+  /// IMPORTANTE: Solo después de verificar el código se crea el usuario en la BD.
+  Future<Map<String, dynamic>> verifyEmail({
+    required String email,
+    required String codigo,
+  }) async {
+    try {
+      print('🌐 [AuthService] Verificando email: $email');
+      print('🌐 [AuthService] Código: ${codigo.substring(0, 2)}****');
+
+      final response = await _api.post('/auth/verificar-email', {
+        'correo': email,
+        'codigo': codigo,
+      });
+
+      print('🌐 [AuthService] Respuesta verificación: $response');
+
+      if (response != null && response['success'] == true) {
+        print('✅ [AuthService] Email verificado exitosamente');
+        return {
+          'success': true,
+          'message': response['message'] ?? 'Email verificado correctamente',
+        };
+      }
+
+      throw Exception(
+          response?['message'] ?? 'Código de verificación inválido');
+    } catch (e) {
+      print('❌ [AuthService] Error en verificación: $e');
+      rethrow;
+    }
+  }
+
+  /// Reenviar el código de verificación al correo.
+  ///
+  /// Solicita al backend que genere y envíe un nuevo código de verificación.
+  Future<Map<String, dynamic>> resendVerificationCode(String email) async {
+    try {
+      print('🌐 [AuthService] Reenviando código a: $email');
+
+      final response = await _api.post('/auth/reenviar-verificacion', {
+        'correo': email,
+      });
+
+      print('🌐 [AuthService] Respuesta reenvío: $response');
+
+      if (response != null && response['success'] == true) {
+        // En desarrollo, el backend puede enviar el código en la respuesta
+        final verificationCode = response['verification_code'];
+        if (verificationCode != null) {
+          print('🔑 [DEV] Código de verificación: $verificationCode');
+        }
+
+        print('✅ [AuthService] Código reenviado exitosamente');
+        return {
+          'success': true,
+          'message': response['message'] ?? 'Código reenviado correctamente',
+          'verification_code': verificationCode, // Para testing
+        };
+      }
+
+      throw Exception(response?['message'] ?? 'Error al reenviar el código');
+    } catch (e) {
+      print('❌ [AuthService] Error al reenviar: $e');
+      rethrow;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../utils/constants.dart';
+import '../config/environment.dart';
 import 'token_service.dart';
 
 class ApiService {
@@ -9,7 +9,7 @@ class ApiService {
   // Instancia de Dio para requests
   late Dio _dio;
 
-  // Base URL del backend
+  // Base URL del backend (detecta automáticamente web vs emulador)
   late String _baseUrl;
 
   // Servicio de token
@@ -20,7 +20,8 @@ class ApiService {
   }
 
   ApiService._internal() {
-    _baseUrl = apiBaseUrl;
+    _baseUrl = AppEnvironment.getBackendUrl();
+    print('🌐 [ApiService] Inicializado con baseURL: $_baseUrl');
     _initializeDio();
   }
 
@@ -152,8 +153,17 @@ class ApiService {
     } else if (error.type == DioExceptionType.connectionError) {
       message = 'Error de conexión: Verifica tu conexión a internet';
     } else if (error.response != null) {
-      message =
-          'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
+      // Intentar extraer el mensaje del JSON de respuesta
+      final responseData = error.response?.data;
+      if (responseData != null && responseData is Map) {
+        // Priorizar el campo 'message', luego 'error'
+        message = responseData['message'] ??
+            responseData['error'] ??
+            'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
+      } else {
+        message =
+            'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
+      }
     }
 
     print('❌ $message');

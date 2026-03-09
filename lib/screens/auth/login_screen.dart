@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -13,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -21,11 +24,69 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (success) {
+      // Login exitoso - navegar a home
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Formulario válido')),
+        const SnackBar(
+          content: Text('✅ Bienvenido'),
+          backgroundColor: Colors.green,
+        ),
       );
+      // TODO: Navegar a home cuando esté implementado
+      // context.go('/home');
+    } else {
+      // Verificar si el error es de email no verificado
+      final error = authProvider.error ?? '';
+
+      if (error.contains('verificar tu correo') ||
+          error.contains('not verified')) {
+        // Mostrar diálogo ofreciendo ir a verificación
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email no verificado'),
+            content: const Text(
+                'Tu correo aún no ha sido verificado. ¿Deseas verificarlo ahora?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go(
+                      '/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
+                },
+                child: const Text('Verificar'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Mostrar error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -87,9 +148,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Email
                       TextFormField(
                         controller: _emailController,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Correo electrónico',
-                          prefixIcon: const Icon(Icons.email),
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                          prefixIcon:
+                              Icon(Icons.email, color: Colors.grey.shade700),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -113,14 +183,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Contraseña
                       TextFormField(
                         controller: _passwordController,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock),
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                          prefixIcon:
+                              Icon(Icons.lock, color: Colors.grey.shade700),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
+                              color: Colors.grey.shade700,
                             ),
                             onPressed: () {
                               setState(() {
@@ -171,21 +251,33 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                Colors.white.withOpacity(0.6),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Iniciar Sesión',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.blue),
+                                  ),
+                                )
+                              : const Text(
+                                  'Iniciar Sesión',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

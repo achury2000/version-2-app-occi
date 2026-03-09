@@ -1,38 +1,15 @@
-// Modelos para la aplicación
-class Tour {
-  final String id;
-  final String name;
-  final String description;
-  final String image;
-  final double rating;
-  final double price;
-  final String location;
-  final String duration;
+/// Exports de todos los modelos de la aplicación Occitours
+library models;
 
-  Tour({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.image,
-    required this.rating,
-    required this.price,
-    required this.location,
-    required this.duration,
-  });
-}
+// Modelos principales
+export 'usuario.dart';
+export 'cliente.dart';
+export 'finca.dart';
+export 'ruta.dart';
+export 'reserva.dart';
+export 'programacion.dart';
 
-class User {
-  final String id;
-  final String name;
-  final String email;
-  final String? profileImage;
-  final String? phone;
-
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-    this.profileImage,
-    this.phone,
-  });
-}
+// TODO: Agregar más modelos según se necesiten
+// export 'servicio.dart';
+// export 'pago.dart';
+// export 'proveedor.dart';

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -9,46 +11,84 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nombreController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _telefonoController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String _selectedCountry = 'España';
-
-  final List<String> _countries = [
-    'España',
-    'México',
-    'Colombia',
-    'Argentina',
-    'Chile',
-    'Perú',
-    'Otro',
-  ];
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _nombreController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _telefonoController.dispose();
     super.dispose();
   }
 
-  void _handleRegister() {
-    if (_formKey.currentState!.validate()) {
-      if (_passwordController.text != _confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Las contraseñas no coinciden')),
-        );
-        return;
-      }
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Registro exitoso')),
+        const SnackBar(
+          content: Text('❌ Las contraseñas no coinciden'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    print('🔵 [REGISTRO] Iniciando registro...');
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    print('🔵 [REGISTRO] Datos: correo=${_emailController.text.trim()}');
+
+    try {
+      final success = await authProvider.register(
+        correo: _emailController.text.trim(),
+        contrasena: _passwordController.text,
+      );
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+
+      print('🔵 [REGISTRO] Success: $success');
+
+      if (success) {
+        // Registro exitoso - navegar a pantalla de verificación
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Registro exitoso. Verifica tu correo'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navegar a verificación pasando el email
+        print('🔵 [REGISTRO] Navegando a verificación...');
+        context.go(
+            '/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
+      } else {
+        // Mostrar error
+        print('🔴 [REGISTRO] Error: ${authProvider.error}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? '❌ Error al registrarse'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('🔴 [REGISTRO] Excepción capturada: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error inesperado: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -60,14 +100,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text('Crear Cuenta'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.blue.shade400,
+        backgroundColor: Colors.blue.shade700,
+        foregroundColor: Colors.white,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade300, Colors.blue.shade800],
+            colors: [Colors.blue.shade600, Colors.blue.shade900],
           ),
         ),
         child: SingleChildScrollView(
@@ -76,37 +117,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             key: _formKey,
             child: Column(
               children: [
-                // Nombre
-                TextFormField(
-                  controller: _nombreController,
-                  decoration: InputDecoration(
-                    hintText: 'Nombre completo',
-                    prefixIcon: const Icon(Icons.person),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El nombre es requerido';
-                    }
-                    if (value!.length < 3) {
-                      return 'Mínimo 3 caracteres';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
                 // Email
                 TextFormField(
                   controller: _emailController,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Correo electrónico',
-                    prefixIcon: const Icon(Icons.email),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 16,
+                    ),
+                    prefixIcon: Icon(Icons.email, color: Colors.grey.shade700),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -127,67 +151,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Teléfono
-                TextFormField(
-                  controller: _telefonoController,
-                  decoration: InputDecoration(
-                    hintText: 'Teléfono',
-                    prefixIcon: const Icon(Icons.phone),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El teléfono es requerido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // País
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButton<String>(
-                    value: _selectedCountry,
-                    isExpanded: true,
-                    underline: const SizedBox.shrink(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedCountry = newValue ?? 'España';
-                      });
-                    },
-                    items: _countries
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
                 // Contraseña
                 TextFormField(
                   controller: _passwordController,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 16,
+                    ),
+                    prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
+                        color: Colors.grey.shade700,
                       ),
                       onPressed: () {
                         setState(() {
@@ -218,14 +201,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Confirmar Contraseña
                 TextFormField(
                   controller: _confirmPasswordController,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Confirmar contraseña',
-                    prefixIcon: const Icon(Icons.lock),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 16,
+                    ),
+                    prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
                             ? Icons.visibility_off
                             : Icons.visibility,
+                        color: Colors.grey.shade700,
                       ),
                       onPressed: () {
                         setState(() {
@@ -255,21 +247,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _handleRegister,
+                    onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.white.withOpacity(0.6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Crear Cuenta',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.blue),
+                            ),
+                          )
+                        : const Text(
+                            'Crear Cuenta',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
