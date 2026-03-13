@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -11,6 +14,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _emailSent = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -18,12 +22,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _handleForgotPassword() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _emailSent = true;
-      });
-    }
+  Future<void> _handleForgotPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.forgotPassword(_emailController.text.trim());
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    final email = Uri.encodeComponent(_emailController.text.trim());
+    context.push('/reset-password?email=$email');
   }
 
   @override
@@ -45,9 +56,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          child: _emailSent
-              ? _buildSuccessView()
-              : _buildFormView(),
+          child: _emailSent ? _buildSuccessView() : _buildFormView(),
         ),
       ),
     );
@@ -94,9 +103,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: [
               TextFormField(
                 controller: _emailController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Correo electrónico',
-                  prefixIcon: const Icon(Icons.email),
+                  hintStyle: const TextStyle(color: Colors.black54),
+                  prefixIcon: const Icon(Icons.email, color: Colors.black54),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -120,21 +134,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _handleForgotPassword,
+                  onPressed: _isLoading ? null : _handleForgotPassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Enviar Instrucciones',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Enviar Instrucciones',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -163,7 +183,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 32),
         const Text(
-          '¡Correo Enviado!',
+          'Solicitud enviada',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -171,10 +191,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Hemos enviado instrucciones para recuperar tu contraseña a:\n\n${_emailController.text}',
+        const Text(
+          'Si el correo existe en nuestro sistema, enviaremos instrucciones y un código de verificación para restablecer tu contraseña.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             color: Colors.white70,
           ),
@@ -185,7 +205,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           height: 56,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.pushNamed(context, '/login');
+              final email = Uri.encodeComponent(_emailController.text.trim());
+              context.go('/reset-password?email=$email');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Ya tengo el código/enlace',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              context.go('/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,

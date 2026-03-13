@@ -5,6 +5,10 @@ import '../models/usuario.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
+  AuthProvider() {
+    init();
+  }
+
   Usuario? _usuario;
   String? _token;
   bool _isLoading = false;
@@ -192,6 +196,66 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Solicitar recuperación de contraseña por correo
+  Future<bool> forgotPassword(String correo) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _authService.forgotPassword(correo: correo);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _parseError(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Restablecer contraseña con token/código de recuperación
+  Future<bool> resetPassword({
+    required String correo,
+    required String token,
+    required String nuevaContrasena,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _authService.resetPassword(
+        correo: correo,
+        token: token,
+        nuevaContrasena: nuevaContrasena,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _parseError(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Obtiene la ruta home según rol (actualmente unificada)
+  String getHomeRouteByRole() {
+    final rol = (_usuario?.rol ?? '').toLowerCase();
+
+    if (rol.contains('admin') ||
+        rol.contains('asesor') ||
+        rol.contains('guia') ||
+        rol.contains('cliente')) {
+      return '/home';
+    }
+
+    return '/home';
+  }
+
   /// Limpiar error
   void clearError() {
     _error = null;
@@ -201,6 +265,36 @@ class AuthProvider extends ChangeNotifier {
   /// Parsear mensajes de error para mostrar al usuario
   String _parseError(dynamic e) {
     final msg = e.toString();
+    final lowerMsg = msg.toLowerCase();
+
+    if (msg.contains('RESET_CODE:TOKEN_INVALIDO')) {
+      return 'El enlace o código no es válido.';
+    }
+    if (msg.contains('RESET_CODE:TOKEN_EXPIRADO')) {
+      return 'El enlace o código expiró. Solicita uno nuevo.';
+    }
+    if (msg.contains('RESET_CODE:TOKEN_USADO')) {
+      return 'Este enlace o código ya fue usado. Solicita uno nuevo.';
+    }
+
+    // Errores de reset de contraseña (prioridad alta)
+    if (lowerMsg.contains('token') || lowerMsg.contains('código')) {
+      if (lowerMsg.contains('expir')) {
+        return 'El enlace o código expiró. Solicita uno nuevo.';
+      }
+      if (lowerMsg.contains('usad') ||
+          lowerMsg.contains('consum') ||
+          lowerMsg.contains('already used')) {
+        return 'Este enlace o código ya fue usado. Solicita uno nuevo.';
+      }
+      if (lowerMsg.contains('inválid') ||
+          lowerMsg.contains('invalido') ||
+          lowerMsg.contains('invalido') ||
+          lowerMsg.contains('invalid')) {
+        return 'El enlace o código no es válido.';
+      }
+      return 'El código o enlace de recuperación no es válido o expiró.';
+    }
 
     // Errores de login
     if (msg.contains('Credenciales inválidas') || msg.contains('incorrectos')) {
@@ -246,6 +340,10 @@ class AuthProvider extends ChangeNotifier {
     }
     if (msg.contains('Timeout')) {
       return 'El servidor no respondió. Intenta de nuevo.';
+    }
+
+    if (msg.contains('No se encontró una cuenta')) {
+      return 'No se encontró una cuenta con ese correo.';
     }
 
     return 'Ha ocurrido un error. Intenta de nuevo.';

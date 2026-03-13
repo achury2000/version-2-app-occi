@@ -47,8 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // TODO: Navegar a home cuando esté implementado
-      // context.go('/home');
+      final destination = authProvider.getHomeRouteByRole();
+      context.go(destination);
     } else {
       // Verificar si el error es de email no verificado
       final error = authProvider.error ?? '';

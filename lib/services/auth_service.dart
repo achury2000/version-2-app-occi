@@ -230,4 +230,108 @@ class AuthService {
       rethrow;
     }
   }
+
+  /// Solicitar recuperación de contraseña.
+  ///
+  /// Intenta distintos endpoints para compatibilidad con variaciones de backend.
+  Future<Map<String, dynamic>> forgotPassword({
+    required String correo,
+  }) async {
+    final payload = {'correo': correo};
+
+    final endpoints = <String>[
+      '/auth/forgot-password',
+      '/auth/recuperar-contrasena',
+      '/auth/olvide-contrasena',
+    ];
+
+    Exception? lastError;
+
+    for (final endpoint in endpoints) {
+      try {
+        final response = await _api.post(endpoint, payload);
+
+        if (response != null && response['success'] == true) {
+          return {
+            'success': true,
+            'message': response['message'] ??
+                'Se enviaron instrucciones de recuperación al correo.',
+          };
+        }
+
+        throw Exception(
+            response?['message'] ?? 'No se pudo procesar la solicitud');
+      } catch (e) {
+        lastError = e is Exception ? e : Exception(e.toString());
+      }
+    }
+
+    throw lastError ??
+        Exception('No se pudo solicitar la recuperación de contraseña');
+  }
+
+  /// Restablecer contraseña usando token/código de recuperación.
+  ///
+  /// Soporta distintos nombres de campo y endpoints para compatibilidad.
+  Future<Map<String, dynamic>> resetPassword({
+    required String correo,
+    required String token,
+    required String nuevaContrasena,
+  }) async {
+    final payloads = <Map<String, dynamic>>[
+      {
+        'correo': correo,
+        'token': token,
+        'nuevaContrasena': nuevaContrasena,
+      },
+      {
+        'correo': correo,
+        'codigo': token,
+        'nuevaContrasena': nuevaContrasena,
+      },
+      {
+        'email': correo,
+        'token': token,
+        'password': nuevaContrasena,
+      },
+    ];
+
+    final endpoints = <String>[
+      '/auth/reset-password',
+      '/auth/restablecer-contrasena',
+      '/auth/confirm-reset-password',
+    ];
+
+    Exception? lastError;
+
+    for (final endpoint in endpoints) {
+      for (final payload in payloads) {
+        try {
+          final response = await _api.post(endpoint, payload);
+
+          if (response != null && response['success'] == true) {
+            return {
+              'success': true,
+              'message': response['message'] ??
+                  'Contraseña actualizada correctamente.',
+            };
+          }
+
+          final code = response?['code']?.toString();
+          final message = response?['message']?.toString() ??
+              'No se pudo restablecer la contraseña';
+
+          if (code != null && code.isNotEmpty) {
+            throw Exception('RESET_CODE:$code|$message');
+          }
+
+          throw Exception(message);
+        } catch (e) {
+          lastError = e is Exception ? e : Exception(e.toString());
+        }
+      }
+    }
+
+    throw lastError ?? Exception('No se pudo restablecer la contraseña');
+  }
 }
