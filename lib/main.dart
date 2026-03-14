@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'config/router.dart';
 import 'providers/auth_provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/auth/verify_email_screen.dart';
+import 'providers/cliente_provider.dart';
+import 'providers/catalogo_provider.dart';
+import 'providers/reserva_provider.dart';
 
 void main() {
   runApp(const OccitourApp());
@@ -18,53 +17,32 @@ class OccitourApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()..init(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ClienteProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CatalogoProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReservaProvider(),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Occitours',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
+            seedColor: Colors.green,
+            brightness: Brightness.light,
           ),
           useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFAF9F6),
         ),
-        themeMode: ThemeMode.system,
-        routerConfig: _goRouter,
+        themeMode: ThemeMode.light,
+        routerConfig: appRouter,
       ),
     );
   }
 }
-
-final _goRouter = GoRouter(
-  initialLocation: '/login',
-  routes: [
-    GoRoute(
-      path: '/login',
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      name: 'register',
-      builder: (context, state) => const RegisterScreen(),
-    ),
-    GoRoute(
-      path: '/verify-email',
-      name: 'verifyEmail',
-      builder: (context, state) {
-        final email = state.uri.queryParameters['email'] ?? '';
-        return VerifyEmailScreen(email: email);
-      },
-    ),
-    GoRoute(
-      path: '/forgot-password',
-      name: 'forgotPassword',
-      builder: (context, state) => const ForgotPasswordScreen(),
-    ),
-  ],
-);

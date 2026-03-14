@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalogo_provider.dart';
+import 'ruta_detail_screen.dart';
 
 class RutasScreen extends StatefulWidget {
   const RutasScreen({Key? key}) : super(key: key);
@@ -27,17 +28,51 @@ class _RutasScreenState extends State<RutasScreen> {
     super.dispose();
   }
 
+  String _normalizeDifficulty(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .trim();
+  }
+
+  bool _matchesDifficulty(dynamic ruta, String selectedDifficulty) {
+    if (selectedDifficulty == 'Todos') return true;
+
+    final selected = _normalizeDifficulty(selectedDifficulty);
+    String difficulty = '';
+
+    if (ruta is Map) {
+      difficulty = (ruta['dificultad'] ?? '').toString();
+    } else {
+      difficulty = (ruta.dificultad ?? '').toString();
+    }
+
+    return _normalizeDifficulty(difficulty) == selected;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.green.shade50, Colors.white],
+          ),
+        ),
+        child: Column(
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green.shade400, Colors.green.shade600],
+                colors: [const Color.fromARGB(255, 89, 175, 93), Colors.green.shade600],
               ),
             ),
             child: Column(
@@ -163,8 +198,11 @@ class _RutasScreenState extends State<RutasScreen> {
 
                 // Filtrar por dificultad
                 if (_selectedDifficulty != 'Todos') {
-                  rutas = catalogoProvider
-                      .filterRutasByDifficulty(_selectedDifficulty);
+                  rutas = rutas
+                      .where(
+                        (ruta) => _matchesDifficulty(ruta, _selectedDifficulty),
+                      )
+                      .toList();
                 }
 
                 if (rutas.isEmpty) {
@@ -186,10 +224,32 @@ class _RutasScreenState extends State<RutasScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildRutaCard(dynamic ruta) {
+    // Extraer datos según el tipo
+    String nombre = '';
+    String ubicacion = '';
+    String dificultad = '';
+    double precio = 0;
+    int duracion = 0;
+    
+    if (ruta is Map) {
+      nombre = ruta['nombre'] ?? '';
+      ubicacion = ruta['ubicacion'] ?? '';
+      dificultad = ruta['dificultad'] ?? 'Moderado';
+      precio = (ruta['precio'] ?? 0).toDouble();
+      duracion = (ruta['duracion'] ?? 0).toInt();
+    } else {
+      nombre = ruta.nombre ?? '';
+      ubicacion = ruta.ubicacion ?? '';
+      dificultad = ruta.dificultad ?? 'Moderado';
+      precio = ruta.precio ?? 0;
+      duracion = (ruta.duracion ?? 0).toInt();
+    }
+
     Color getDifficultyColor(String difficulty) {
       switch (difficulty.toLowerCase()) {
         case 'fácil':
@@ -203,21 +263,22 @@ class _RutasScreenState extends State<RutasScreen> {
       }
     }
 
-    return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (context) => _buildRutaDetails(ruta),
-        );
-      },
-      child: Card(
+    return Card(
         margin: const EdgeInsets.only(bottom: 16),
-        elevation: 2,
+        elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Padding(
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RutaDetailScreen(ruta: ruta),
+              ),
+            );
+          },
+          child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
@@ -240,7 +301,7 @@ class _RutasScreenState extends State<RutasScreen> {
                   children: [
                     // Nombre
                     Text(
-                      ruta.nombre,
+                      nombre,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -258,7 +319,7 @@ class _RutasScreenState extends State<RutasScreen> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            ruta.ubicacion,
+                            ubicacion,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -277,26 +338,26 @@ class _RutasScreenState extends State<RutasScreen> {
                       children: [
                         Chip(
                           label: Text(
-                            ruta.dificultad,
+                            dificultad,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
                             ),
                           ),
-                          backgroundColor: getDifficultyColor(ruta.dificultad),
+                          backgroundColor: getDifficultyColor(dificultad),
                           padding: EdgeInsets.zero,
                         ),
                         Row(
                           children: [
-                            const Icon(Icons.star,
-                                size: 14, color: Colors.amber),
+                            const Icon(Icons.schedule,
+                                size: 14, color: Colors.green),
                             const SizedBox(width: 4),
-                            Text('${ruta.rating}',
+                            Text('${duracion}h',
                                 style: const TextStyle(fontSize: 12)),
                           ],
                         ),
                         Text(
-                          '\$${ruta.precio.toStringAsFixed(2)}',
+                          '\$${precio.toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.green,
@@ -307,214 +368,6 @@ class _RutasScreenState extends State<RutasScreen> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRutaDetails(dynamic ruta) {
-    Color getDifficultyColor(String difficulty) {
-      switch (difficulty.toLowerCase()) {
-        case 'fácil':
-          return Colors.green;
-        case 'moderado':
-          return Colors.orange;
-        case 'difícil':
-          return Colors.red;
-        default:
-          return Colors.grey;
-      }
-    }
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.8,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => SingleChildScrollView(
-        controller: scrollController,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          ruta.nombre,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.star,
-                                size: 16, color: Colors.amber),
-                            const SizedBox(width: 4),
-                            Text('${ruta.rating} (${ruta.resenas} reseñas)'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Ubicación
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.location_on, color: Colors.blue),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(ruta.ubicacion),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Descripción
-              const Text(
-                'Descripción',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(ruta.descripcion),
-              const SizedBox(height: 16),
-
-              // Detalles
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        const Icon(Icons.straighten),
-                        const SizedBox(height: 8),
-                        Text('${ruta.distancia} km',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Icon(Icons.access_time),
-                        const SizedBox(height: 8),
-                        Text('${ruta.duracion}h',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Icon(Icons.info,
-                            color: getDifficultyColor(ruta.dificultad)),
-                        const SizedBox(height: 8),
-                        Text(ruta.dificultad,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Icon(Icons.people),
-                        const SizedBox(height: 8),
-                        Text('${ruta.capacidad} pers',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Incluye
-              const Text(
-                'Incluye',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: ruta.incluye
-                    .map<Widget>((item) => Chip(label: Text(item)))
-                    .toList(),
-              ),
-              const SizedBox(height: 24),
-
-              // Precio y botón
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Precio',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '\$${ruta.precio.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('⏳ Función de reserva en desarrollo'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.check),
-                      label: const Text('Reservar'),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),

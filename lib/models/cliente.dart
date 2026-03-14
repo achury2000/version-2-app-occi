@@ -50,48 +50,58 @@ class Cliente {
     return Cliente(
       id: json['id'] ?? json['id_clientes'],
       idUsuario: json['id_usuario'] ?? json['id_usuarios'] ?? 0,
-      tipoDocumento: json['tipo_documento'],
-      numeroDocumento: json['numero_documento'],
-      telefono: json['telefono'],
-      direccion: json['direccion'],
-      ciudad: json['ciudad'],
-      pais: json['pais'],
-      codigoPostal: json['codigo_postal'],
-      fechaNacimiento: json['fecha_nacimiento'],
-      genero: json['genero'],
-      nacionalidad: json['nacionalidad'],
-      preferencias: json['preferencias'],
-      notas: json['notas'],
-      newsletter: json['newsletter'],
-      estado: json['estado'],
+      tipoDocumento: json['tipo_documento']?.toString(),
+      numeroDocumento: json['numero_documento']?.toString(),
+      telefono: json['telefono']?.toString(),
+      direccion: json['direccion']?.toString(),
+      ciudad: json['ciudad']?.toString(),
+      pais: json['pais']?.toString(),
+      codigoPostal: json['codigo_postal']?.toString(),
+      fechaNacimiento: json['fecha_nacimiento']?.toString(),
+      genero: json['genero']?.toString(),
+      nacionalidad: json['nacionalidad']?.toString(),
+      preferencias: json['preferencias']?.toString(),
+      notas: json['notas']?.toString(),
+      newsletter: _parseBool(json['newsletter']),
+      estado: _parseBool(json['estado'], defaultValue: true),
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
 
+  /// Helper para parsear booleanos desde JSON (pueden ser bool, int, string)
+  static bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true' || value == '1';
+    return defaultValue;
+  }
+
   /// Convierte a JSON para enviar al backend
+  /// Siempre incluye los campos requeridos
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
       'id_usuario': idUsuario,
-      if (tipoDocumento != null) 'tipo_documento': tipoDocumento,
-      if (numeroDocumento != null) 'numero_documento': numeroDocumento,
-      if (telefono != null) 'telefono': telefono,
-      if (direccion != null) 'direccion': direccion,
-      if (ciudad != null) 'ciudad': ciudad,
-      if (pais != null) 'pais': pais,
-      if (codigoPostal != null) 'codigo_postal': codigoPostal,
-      if (fechaNacimiento != null) 'fecha_nacimiento': fechaNacimiento,
-      if (genero != null) 'genero': genero,
-      if (nacionalidad != null) 'nacionalidad': nacionalidad,
-      if (preferencias != null) 'preferencias': preferencias,
-      if (notas != null) 'notas': notas,
-      if (newsletter != null) 'newsletter': newsletter,
-      if (estado != null) 'estado': estado,
+      'tipo_documento': tipoDocumento ?? '',
+      'numero_documento': numeroDocumento ?? '',
+      'telefono': telefono ?? '',
+      'direccion': direccion ?? '',
+      'ciudad': ciudad ?? '',
+      'pais': pais ?? '',
+      'codigo_postal': codigoPostal ?? '',
+      'fecha_nacimiento': fechaNacimiento ?? '',
+      'genero': genero ?? '',
+      'nacionalidad': nacionalidad ?? '',
+      'preferencias': preferencias ?? '',
+      'notas': notas ?? '',
+      'newsletter': newsletter ?? false,
+      'estado': estado ?? true,
     };
   }
 

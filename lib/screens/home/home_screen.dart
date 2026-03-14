@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/catalogo_provider.dart';
+import '../../providers/cliente_provider.dart';
+import 'profile_edit_screen.dart';
+import '../catalogo/finca_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,10 +20,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Cargar catálogos cuando la pantalla se abre
+    // Cargar catálogos y perfil cuando la pantalla se abre
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final clienteProvider = context.read<ClienteProvider>();
+      
       context.read<CatalogoProvider>().fetchFincas();
       context.read<CatalogoProvider>().fetchRutas();
+      
+      if (authProvider.usuario?.id != null) {
+        clienteProvider.loadCliente(authProvider.usuario!.id);
+      }
     });
   }
 
@@ -74,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  colors: [Colors.green.shade400, Colors.green.shade600],
                 ),
               ),
               child: Column(
@@ -105,113 +116,122 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // Contenido
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Búsqueda
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Buscar experiencias...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.green.shade50, Colors.white],
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Búsqueda
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Buscar experiencias...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                  // Sección Fincas
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Fincas Destacadas',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    // Sección Fincas
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Fincas Destacadas',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() => _selectedIndex = 1);
-                        },
-                        child: const Text('Ver más →'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Consumer<CatalogoProvider>(
-                    builder: (context, catalogoProvider, _) {
-                      if (catalogoProvider.isLoadingFincas) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (catalogoProvider.fincas.isEmpty) {
-                        return const Text('No hay fincas disponibles');
-                      }
-
-                      return SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: catalogoProvider.fincas.length.clamp(0, 5),
-                          itemBuilder: (context, index) {
-                            final finca = catalogoProvider.fincas[index];
-                            return _buildFincaCard(finca);
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _selectedIndex = 1);
                           },
+                          child: const Text('Ver más →'),
                         ),
-                      );
-                    },
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer<CatalogoProvider>(
+                      builder: (context, catalogoProvider, _) {
+                        if (catalogoProvider.isLoadingFincas) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                  const SizedBox(height: 32),
+                        if (catalogoProvider.fincas.isEmpty) {
+                          return const Text('No hay fincas disponibles');
+                        }
 
-                  // Sección Rutas
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Rutas Populares',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        return SizedBox(
+                          height: 200,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: catalogoProvider.fincas.length.clamp(0, 5),
+                            itemBuilder: (context, index) {
+                              final finca = catalogoProvider.fincas[index];
+                              return _buildFincaCard(finca);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Sección Rutas
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Rutas Populares',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() => _selectedIndex = 2);
-                        },
-                        child: const Text('Ver más →'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Consumer<CatalogoProvider>(
-                    builder: (context, catalogoProvider, _) {
-                      if (catalogoProvider.isLoadingRutas) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (catalogoProvider.rutas.isEmpty) {
-                        return const Text('No hay rutas disponibles');
-                      }
-
-                      return SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: catalogoProvider.rutas.length.clamp(0, 5),
-                          itemBuilder: (context, index) {
-                            final ruta = catalogoProvider.rutas[index];
-                            return _buildRutaCard(ruta);
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _selectedIndex = 2);
                           },
+                          child: const Text('Ver más →'),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer<CatalogoProvider>(
+                      builder: (context, catalogoProvider, _) {
+                        if (catalogoProvider.isLoadingRutas) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        if (catalogoProvider.rutas.isEmpty) {
+                          return const Text('No hay rutas disponibles');
+                        }
+
+                        return SizedBox(
+                          height: 200,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: catalogoProvider.rutas.length.clamp(0, 5),
+                            itemBuilder: (context, index) {
+                              final ruta = catalogoProvider.rutas[index];
+                              return _buildRutaCard(ruta);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -229,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                colors: [Colors.green.shade400, Colors.green.shade600],
               ),
             ),
             child: const Text(
@@ -330,8 +350,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Tab 4: Perfil
   Widget _buildProfileTab() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
+    return Consumer2<AuthProvider, ClienteProvider>(
+      builder: (context, authProvider, clienteProvider, _) {
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -342,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade200,
+                    color: Colors.green.shade200,
                     borderRadius: BorderRadius.circular(50),
                   ),
                   child: const Icon(
@@ -371,7 +391,69 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.grey,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Estado del perfil
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: clienteProvider.perfilCompleto
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: clienteProvider.perfilCompleto
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        clienteProvider.perfilCompleto
+                            ? Icons.check_circle
+                            : Icons.warning_amber,
+                        color: clienteProvider.perfilCompleto
+                            ? Colors.green
+                            : Colors.red,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              clienteProvider.perfilCompleto
+                                  ? '✅ Perfil Completo'
+                                  : '❌ Perfil Incompleto',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: clienteProvider.perfilCompleto
+                                    ? Colors.green.shade700
+                                    : Colors.red.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              clienteProvider.perfilCompleto
+                                  ? 'Puedes hacer reservas'
+                                  : 'Completa tu perfil para hacer reservas',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: clienteProvider.perfilCompleto
+                                    ? Colors.green.shade600
+                                    : Colors.red.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
 
                 // Info Cards
                 _buildInfoCard(
@@ -387,23 +469,74 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // Botón Editar/Completar Perfil
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileEditScreen(),
+                        ),
+                      );
+
+                      // Si vuelve con cambios, recargar perfil
+                      if (result == true && mounted) {
+                        if (authProvider.usuario?.id != null) {
+                          await clienteProvider
+                              .loadCliente(authProvider.usuario!.id);
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: Text(
+                      clienteProvider.perfilCompleto
+                          ? 'Editar Perfil'
+                          : 'Completar Perfil',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0066CC),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Botón Mis Reservas
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.go('/mis-reservas');
+                    },
+                    icon: const Icon(Icons.calendar_month),
+                    label: const Text('Mis Reservas'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 // Botón Logout
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: 54,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      authProvider.logout();
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
+                    onPressed: () async {
+                      await authProvider.logout();
+                      if (!context.mounted) return;
+                      context.go('/login?logout=1');
                     },
                     icon: const Icon(Icons.logout),
                     label: const Text('Cerrar Sesión'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -417,9 +550,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Widgets auxiliares
   Widget _buildFincaCard(dynamic finca) {
+    String nombre = '';
+    double precio = 0;
+    double rating = 4.8;
+
+    if (finca is Map) {
+      nombre = (finca['nombre'] ?? '').toString();
+      precio = (finca['precio_por_noche'] ?? 0).toDouble();
+      rating = (finca['rating'] ?? 4.8).toDouble();
+    } else {
+      nombre = finca.nombre ?? '';
+      precio = finca.precioNoche ?? 0;
+      rating = (finca.rating ?? 4.8).toDouble();
+    }
+
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
+      width: 150,
+      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.grey.shade200,
@@ -428,41 +575,42 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 100,
+            height: 90,
             decoration: BoxDecoration(
-              color: Colors.blue.shade200,
+              color: Colors.green.shade200,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),
             ),
-            child: const Icon(Icons.image, size: 40),
+            child: const Icon(Icons.image, size: 35),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  finca.nombre,
+                  nombre,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(Icons.star, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text('${finca.rating}'),
+                    const Icon(Icons.star, size: 12, color: Colors.amber),
+                    const SizedBox(width: 3),
+                    Text('$rating', style: const TextStyle(fontSize: 11)),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '\$${finca.precioNoche.toStringAsFixed(2)}/noche',
+                  '\$${precio.toStringAsFixed(0)}/noche',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -474,6 +622,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRutaCard(dynamic ruta) {
+    String nombre = '';
+    double precio = 0;
+    double rating = 4.8;
+
+    if (ruta is Map) {
+      nombre = (ruta['nombre'] ?? '').toString();
+      precio = (ruta['precio'] ?? 0).toDouble();
+      rating = (ruta['rating'] ?? 4.8).toDouble();
+    } else {
+      nombre = ruta.nombre ?? '';
+      precio = ruta.precio ?? 0;
+      rating = (ruta.rating ?? 4.8).toDouble();
+    }
+
     return Container(
       width: 160,
       margin: const EdgeInsets.only(right: 12),
@@ -501,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ruta.nombre,
+                  nombre,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -511,12 +673,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Icon(Icons.star, size: 14, color: Colors.amber),
                     const SizedBox(width: 4),
-                    Text('${ruta.rating}'),
+                    Text('$rating'),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '\$${ruta.precio.toStringAsFixed(2)}',
+                  '\$${precio.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
@@ -531,55 +693,225 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFincaGridItem(dynamic finca) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
-      ),
+    // Extraer datos según el tipo
+    String nombre = '';
+    double precio = 0;
+    String ubicacion = '';
+    int capacidad = 0;
+    String imagenPrincipal = '';
+    
+    if (finca is Map) {
+      nombre = finca['nombre'] ?? '';
+      precio = (finca['precio_por_noche'] ?? 0).toDouble();
+      ubicacion = finca['ubicacion'] ?? '';
+      capacidad = finca['capacidad_personas'] ?? 0;
+      imagenPrincipal = (finca['imagen_principal'] ?? finca['imagen'] ?? '').toString();
+    } else {
+      nombre = finca.nombre ?? '';
+      precio = finca.precioNoche ?? 0;
+      ubicacion = finca.ubicacion ?? '';
+      capacidad = finca.capacidad ?? 0;
+      imagenPrincipal = (finca.imagen ?? '').toString();
+    }
+
+    if (nombre.isNotEmpty) {
+      final folder = _folderFromFincaName(nombre);
+      imagenPrincipal = 'assets/fincas/$folder/principal.png';
+    }
+
+    // Generar color aleatorio para cada tarjeta
+    final colors = [
+      Colors.green.shade300,
+      Colors.green.shade300,
+      Colors.purple.shade300,
+      Colors.orange.shade300,
+      Colors.pink.shade300,
+    ];
+    final colorIndex = nombre.hashCode % colors.length;
+    final backgroundColor = colors[colorIndex];
+
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Imagen
           Container(
             height: 120,
+            width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.blue.shade200,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
+              color: backgroundColor,
             ),
-            child: const Icon(Icons.image, size: 40),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  finca.nombre,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.star, size: 12, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text('${finca.rating}',
-                        style: const TextStyle(fontSize: 12)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '\$${finca.precioNoche}/noche',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 12,
+            child: imagenPrincipal.isNotEmpty
+                ? Image.asset(
+                    imagenPrincipal,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.image_not_supported,
+                                size: 40, color: Colors.white30),
+                            SizedBox(height: 4),
+                            Text(
+                              'Imagen no disponible',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white30,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_not_supported,
+                            size: 40, color: Colors.white30),
+                        SizedBox(height: 4),
+                        Text(
+                          'Imagen no disponible',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white30,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+          ),
+
+          // Contenido
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nombre,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on,
+                          size: 13, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          ubicacion,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.people, size: 13, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$capacidad personas',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '\$${precio.toStringAsFixed(0)}/noche',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Botones
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FincaDetailScreen(finca: finca),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.info_outline, size: 16),
+                          label: const Text('Ver',
+                              style: TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FincaDetailScreen(finca: finca),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: const Text('Reservar',
+                              style: TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -587,7 +919,46 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _folderFromFincaName(String name) {
+    final normalized = name
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (normalized.startsWith('las margaritas')) return 'las_margaritas';
+    if (normalized.startsWith('las heliconias')) return 'las_heliconias';
+    if (normalized.startsWith('las palmas')) return 'las_palmas';
+    if (normalized.startsWith('la ilusion')) return 'la_ilusion';
+    if (normalized.startsWith('la maria')) return 'la_maria';
+
+    return normalized.replaceAll(' ', '_');
+  }
+
   Widget _buildRutaListItem(dynamic ruta) {
+    String nombre = '';
+    double distancia = 0;
+    int duracion = 0;
+    double precio = 0;
+
+    if (ruta is Map) {
+      nombre = (ruta['nombre'] ?? '').toString();
+      distancia = (ruta['distancia'] ?? 0).toDouble();
+      duracion = (ruta['duracion'] ?? 0).toInt();
+      precio = (ruta['precio'] ?? 0).toDouble();
+    } else {
+      nombre = ruta.nombre ?? '';
+      distancia = (ruta.distancia ?? 0).toDouble();
+      duracion = (ruta.duracion ?? 0).toInt();
+      precio = (ruta.precio ?? 0).toDouble();
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -599,10 +970,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: const Icon(Icons.hiking),
         ),
-        title: Text(ruta.nombre),
-        subtitle: Text('${ruta.distancia}km - ${ruta.duracion}h'),
+        title: Text(nombre),
+        subtitle: Text('${distancia.toStringAsFixed(1)}km - ${duracion}h'),
         trailing: Text(
-          '\$${ruta.precio}',
+          '\$${precio.toStringAsFixed(0)}',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.green,
@@ -618,7 +989,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, color: Colors.blue),
+            Icon(icon, color: Colors.green),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

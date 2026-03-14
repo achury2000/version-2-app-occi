@@ -109,11 +109,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('🔐 [AuthProvider] Verificando email: $email');
       await _authService.verifyEmail(
         email: email,
         codigo: codigo,
       );
 
+      print('✅ [AuthProvider] Email verificado exitosamente');
       _isLoading = false;
       notifyListeners();
       return true;
@@ -196,6 +198,29 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Refrescar los datos del usuario desde el servidor
+  /// Útil para obtener datos actualizados, especialmente el rol
+  Future<bool> refreshUserProfile() async {
+    try {
+      print('🔄 [AuthProvider] Refrescando perfil del usuario...');
+      final perfil = await _authService.getProfile();
+      
+      _usuario = perfil;
+      print('✅ [AuthProvider] Perfil refrescado:');
+      print('   - Email: ${perfil.correo}');
+      print('   - Rol: ${perfil.rol}');
+      print('   - ID: ${perfil.id}');
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ [AuthProvider] Error refrescando perfil: $e');
+      _error = _parseError(e);
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Parsear mensajes de error para mostrar al usuario

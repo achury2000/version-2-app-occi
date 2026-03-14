@@ -44,12 +44,16 @@ class ApiService {
           final token = await _tokenService.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+            print('🔐 [ApiService] Token incluido en header: ${token.substring(0, 20)}...');
+          } else {
+            print('⚠️ [ApiService] ¡SIN TOKEN EN HEADER!');
           }
           return handler.next(options);
         },
         onError: (error, handler) {
           // Si el servidor devuelve 401, el token expiró
           if (error.response?.statusCode == 401) {
+            print('❌ [ApiService] Error 401: Token expirado o inválido');
             _tokenService.clearSession();
           }
           return handler.next(error);
@@ -145,8 +149,19 @@ class ApiService {
   /// Manejo centralizado de errores
   dynamic _handleError(DioException error, String method, String endpoint) {
     String message = 'Error en $method: $endpoint';
+    
+    print('⚠️ [ApiService] DioException tipo: ${error.type}');
+    print('⚠️ [ApiService] Status Code: ${error.response?.statusCode}');
+    print('⚠️ [ApiService] Response Data: ${error.response?.data}');
 
-    if (error.type == DioExceptionType.connectionTimeout) {
+    // Manejar errores de autenticación
+    if (error.response?.statusCode == 403) {
+      print('🔐 [ApiService] Error 403 - Acceso Denegado (Permisos insuficientes)');
+      message = '❌ Acceso denegado: No tienes permisos para esta acción. Verifica que hayas iniciado sesión correctamente.';
+    } else if (error.response?.statusCode == 401) {
+      print('🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)');
+      message = '❌ Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+    } else if (error.type == DioExceptionType.connectionTimeout) {
       message = 'Timeout: No se puede conectar al servidor';
     } else if (error.type == DioExceptionType.receiveTimeout) {
       message = 'Timeout: El servidor tardó demasiado en responder';
@@ -155,11 +170,27 @@ class ApiService {
     } else if (error.response != null) {
       // Intentar extraer el mensaje del JSON de respuesta
       final responseData = error.response?.data;
+      print('⚠️ [ApiService] Response data type: ${responseData.runtimeType}');
+      
       if (responseData != null && responseData is Map) {
-        // Priorizar el campo 'message', luego 'error'
+        // Priorizar el campo 'message', luego 'error', luego el primer valor
         message = responseData['message'] ??
             responseData['error'] ??
+            responseData['errors'] ??
+            responseData['validations'] ??
             'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
+        
+        // Si validations es un mapa, intenta extraer el primer error
+        if (responseData['validations'] is Map) {
+          final validations = responseData['validations'] as Map;
+          final firstError = validations.values.firstWhere(
+            (v) => v != null,
+            orElse: () => null,
+          );
+          if (firstError != null) {
+            message = 'Validación: $firstError';
+          }
+        }
       } else {
         message =
             'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
