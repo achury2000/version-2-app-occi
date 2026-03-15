@@ -122,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text('Crear Cuenta'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade600, Colors.blue.shade900],
+            colors: [Colors.green.shade600, Colors.green.shade900],
           ),
         ),
         child: SingleChildScrollView(
@@ -287,7 +287,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.blue),
+                                  AlwaysStoppedAnimation<Color>(Colors.green),
                             ),
                           )
                         : const Text(
@@ -295,7 +295,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              color: Colors.green,
                             ),
                           ),
                   ),

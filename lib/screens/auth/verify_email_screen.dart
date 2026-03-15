@@ -100,7 +100,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('📧 Código reenviado a tu correo'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.green,
         ),
       );
       _startCountdown();
@@ -135,14 +135,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         title: const Text('Verificar Email'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.blue.shade400,
+        backgroundColor: Colors.green.shade400,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade300, Colors.blue.shade800],
+            colors: [Colors.green.shade300, Colors.green.shade800],
           ),
         ),
         child: SafeArea(
@@ -172,7 +172,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     child: Icon(
                       Icons.email_outlined,
                       size: 80,
-                      color: Colors.blue.shade400,
+                      color: Colors.green.shade400,
                     ),
                   ),
 
@@ -276,7 +276,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.blue),
+                                    AlwaysStoppedAnimation<Color>(Colors.green),
                               ),
                             )
                           : const Text(
@@ -284,7 +284,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue,
+                                color: Colors.green,
                               ),
                             ),
                     ),

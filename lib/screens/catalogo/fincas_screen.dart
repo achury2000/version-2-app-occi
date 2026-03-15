@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalogo_provider.dart';
+import '../../data/fincas_data.dart';
+import 'finca_detail_screen.dart';
 
 class FincasScreen extends StatefulWidget {
   const FincasScreen({Key? key}) : super(key: key);
@@ -24,14 +26,22 @@ class _FincasScreenState extends State<FincasScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.green.shade50, Colors.white],
+          ),
+        ),
+        child: Column(
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
+                colors: [Colors.green.shade400, Colors.green.shade600],
               ),
             ),
             child: Column(
@@ -162,9 +172,16 @@ class _FincasScreenState extends State<FincasScreen> {
 
                 // Filtrar por precio
                 fincas = fincas
-                    .where((f) =>
-                        f.precioNoche >= _selectedMinPrice &&
-                        f.precioNoche <= _selectedMaxPrice)
+                    .where((f) {
+                      double precio = 0;
+                      if (f is Map) {
+                        precio = (f['precio_por_noche'] ?? 0).toDouble();
+                      } else {
+                        precio = f.precioNoche;
+                      }
+                      return precio >= _selectedMinPrice &&
+                          precio <= _selectedMaxPrice;
+                    })
                     .toList();
 
                 if (fincas.isEmpty) {
@@ -174,12 +191,12 @@ class _FincasScreenState extends State<FincasScreen> {
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(8),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
                   ),
                   itemCount: fincas.length,
                   itemBuilder: (context, index) {
@@ -192,15 +209,52 @@ class _FincasScreenState extends State<FincasScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildFincaCard(dynamic finca) {
+    // Extraer datos según el tipo
+    int id = 0;
+    String nombre = '';
+    String ubicacion = '';
+    double precio = 0;
+    
+    if (finca is Map) {
+      id = finca['id'] ?? 0;
+      nombre = finca['nombre'] ?? '';
+      ubicacion = finca['ubicacion'] ?? '';
+      precio = (finca['precio_por_noche'] ?? 0).toDouble();
+    } else {
+      id = finca.id ?? 0;
+      nombre = finca.nombre ?? '';
+      ubicacion = finca.ubicacion ?? '';
+      precio = finca.precioNoche ?? 0;
+    }
+
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          builder: (context) => _buildFincaDetails(finca),
+        // Obtener datos completos de la finca desde FincasData
+        dynamic fincaCompleta;
+        
+        if (finca is Map) {
+          fincaCompleta = finca;
+        } else {
+          fincaCompleta = FincasData.getFincaById(id) ??
+              {
+                'nombre': nombre,
+                'ubicacion': ubicacion,
+                'capacidad_personas': finca.capacidad,
+                'precio_por_noche': precio.toInt(),
+                'descripcion': finca.descripcion,
+              };
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FincaDetailScreen(finca: fincaCompleta),
+          ),
         );
       },
       child: Card(
@@ -213,9 +267,9 @@ class _FincasScreenState extends State<FincasScreen> {
           children: [
             // Imagen
             Container(
-              height: 120,
+              height: 100,
               decoration: BoxDecoration(
-                color: Colors.blue.shade200,
+                color: Colors.green.shade200,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
@@ -223,7 +277,8 @@ class _FincasScreenState extends State<FincasScreen> {
               ),
               child: Stack(
                 children: [
-                  const Icon(Icons.image, size: 40),
+                  // Cargar imagen si existe
+                  _getImageWidget(finca),
                   Positioned(
                     top: 8,
                     right: 8,
@@ -236,13 +291,13 @@ class _FincasScreenState extends State<FincasScreen> {
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          const Icon(Icons.star, size: 12, color: Colors.white),
-                          const SizedBox(width: 4),
+                          Icon(Icons.star, size: 12, color: Colors.white),
+                          SizedBox(width: 4),
                           Text(
-                            '${finca.rating}',
-                            style: const TextStyle(
+                            '4.8',
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -259,32 +314,32 @@ class _FincasScreenState extends State<FincasScreen> {
             // Info
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      finca.nombre,
-                      maxLines: 2,
+                      nombre,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
                         const Icon(Icons.location_on,
-                            size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
+                            size: 10, color: Colors.grey),
+                        const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            finca.ubicacion,
+                            ubicacion,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: Colors.grey,
                             ),
                           ),
@@ -293,11 +348,11 @@ class _FincasScreenState extends State<FincasScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      '\$${finca.precioNoche.toStringAsFixed(2)}/noche',
+                      '\$${precio.toStringAsFixed(0)}/noche',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -310,144 +365,37 @@ class _FincasScreenState extends State<FincasScreen> {
     );
   }
 
-  Widget _buildFincaDetails(dynamic finca) {
+  /// Cargar imagen de la finca
+  Widget _getImageWidget(dynamic finca) {
+    String? imagenPath;
+    
+    if (finca is Map) {
+      imagenPath = finca['imagen_principal'] as String?;
+    } else {
+      imagenPath = finca.imagenPrincipal;
+    }
+
+    if (imagenPath != null && imagenPath.isNotEmpty) {
+      return Image.asset(
+        imagenPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.green.shade100,
+            child: const Center(
+              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+            ),
+          );
+        },
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        finca.nombre,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
-                          const SizedBox(width: 4),
-                          Text('${finca.rating} (${finca.resenas} reseñas)'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Ubicación
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(finca.ubicacion),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Descripción
-            const Text(
-              'Descripción',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(finca.descripcion),
-            const SizedBox(height: 16),
-
-            // Servicios
-            const Text(
-              'Servicios Incluidos',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: finca.servicios
-                  .map<Widget>((servicio) => Chip(label: Text(servicio)))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Capacidad
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
-                  children: [
-                    const Icon(Icons.people, color: Colors.blue),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${finca.capacidad} personas',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    const Icon(Icons.attach_money, color: Colors.green),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$${finca.precioNoche}/noche',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Botón Reservar
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⏳ Función de reserva en desarrollo'),
-                    ),
-                  );
-                },
-                child: const Text('Reservar Ahora'),
-              ),
-            ),
-          ],
-        ),
+      color: Colors.green.shade100,
+      child: const Center(
+        child: Icon(Icons.image, size: 40, color: Colors.grey),
       ),
     );
   }
 }
+

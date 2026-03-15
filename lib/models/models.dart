@@ -1,5 +1,4 @@
 /// Exports de todos los modelos de la aplicación Occitours
-library models;
 
 // Modelos principales
 export 'usuario.dart';

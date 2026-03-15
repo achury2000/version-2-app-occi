@@ -1,4 +1,5 @@
 import 'api_service.dart';
+import 'token_service.dart';
 import '../models/cliente.dart';
 
 /// Servicio de clientes que conecta con el backend Occitours.
@@ -68,15 +69,71 @@ class ClienteService {
   Future<Cliente> createCliente(Cliente cliente) async {
     try {
       print('🌐 [ClienteService] Creando perfil de cliente...');
-      final response = await _api.post('/clientes', cliente.toJson());
+      print('    ID Usuario: ${cliente.idUsuario}');
+      
+      final jsonData = cliente.toJson();
+      print('📤 [ClienteService] JSON enviado: $jsonData');
+      
+      // Verificar que hay un token válido para autenticación
+      final token = await TokenService().getToken();
+      if (token == null || token.isEmpty) {
+        print('❌ [ClienteService] NO HAY TOKEN - Usuario no está autenticado!');
+        throw Exception('❌ No estás autenticado. Debes iniciar sesión para completar tu perfil.');
+      }
+      print('🔐 [ClienteService] Token verificado: ${token.substring(0, 20)}...');
+      print('📬 [ClienteService] Enviando POST a /clientes...');
+      
+      final response = await _api.post('/clientes', jsonData);
 
+      print('📥 [ClienteService] Status: ${response['success']}');
+      print('📥 [ClienteService] Respuesta completa: $response');
+      
       if (response != null && response['success'] == true) {
-        print('✅ [ClienteService] Perfil de cliente creado');
+        print('✅ [ClienteService] Perfil de cliente creado exitosamente');
+        
+        // Verificar que la respuesta tiene el cliente
+        if (response['cliente'] == null) {
+          print('⚠️ [ClienteService] Respuesta sin campo cliente');
+          throw Exception('Respuesta inválida: sin datos de cliente');
+        }
+        
         return Cliente.fromJson(response['cliente']);
       }
 
-      throw Exception(
-          response?['message'] ?? 'Error al crear perfil de cliente');
+      // La respuesta no fue exitosa
+      if (response == null) {
+        throw Exception('No hay respuesta del servidor');
+      }
+      
+      final errorMsg = response['message'] ?? 
+                      response['error'] ?? 
+                      response['errors'] ??
+                      'Error desconocido al crear cliente';
+      
+      print('⚠️ [ClienteService] Error en respuesta: $errorMsg');
+      
+      // Si es error de rol/permisos, agregar instrucciones útiles
+      if (errorMsg.toString().contains('Acceso denegado') ||
+          errorMsg.toString().contains('No tienes permisos') ||
+          errorMsg.toString().contains('rol') ||
+          errorMsg.toString().contains('Cliente')) {
+        final mensajeCompleto = '''
+$errorMsg
+
+🔧 SOLUCIÓN:
+El servidor está rechazando porque tu usuario no tiene el rol "Cliente" asignado.
+
+Intenta estos pasos:
+1️⃣ Cierra la app (Logout)
+2️⃣ Vuelve a iniciar sesión (Login)
+3️⃣ Intenta guardar tu perfil nuevamente
+
+Si el error persiste, es un problema del backend que necesita ser arreglado por el equipo de desarrollo.
+''';
+        throw Exception(mensajeCompleto);
+      }
+      
+      throw Exception(errorMsg.toString());
     } catch (e) {
       print('❌ [ClienteService] Error al crear cliente: $e');
       rethrow;
@@ -89,14 +146,70 @@ class ClienteService {
   Future<Cliente> updateCliente(int id, Cliente cliente) async {
     try {
       print('🌐 [ClienteService] Actualizando cliente ID: $id');
-      final response = await _api.put('/clientes/$id', cliente.toJson());
+      print('    ID Usuario: ${cliente.idUsuario}');
+      
+      final jsonData = cliente.toJson();
+      print('📤 [ClienteService] JSON enviado: $jsonData');
+      
+      // Verificar que hay un token válido para autenticación
+      final token = await TokenService().getToken();
+      if (token == null || token.isEmpty) {
+        print('❌ [ClienteService] NO HAY TOKEN - Usuario no está autenticado!');
+        throw Exception('❌ No estás autenticado. Debes iniciar sesión para actualizar tu perfil.');
+      }
+      print('🔐 [ClienteService] Token verificado: ${token.substring(0, 10)}...');
+      
+      final response = await _api.put('/clientes/$id', jsonData);
 
+      print('📥 [ClienteService] Status: ${response['success']}');
+      print('📥 [ClienteService] Respuesta: $response');
+      
       if (response != null && response['success'] == true) {
-        print('✅ [ClienteService] Cliente actualizado');
+        print('✅ [ClienteService] Cliente actualizado exitosamente');
+        
+        // Verificar que la respuesta tiene el cliente
+        if (response['cliente'] == null) {
+          print('⚠️ [ClienteService] Respuesta sin campo cliente');
+          throw Exception('Respuesta inválida: sin datos de cliente');
+        }
+        
         return Cliente.fromJson(response['cliente']);
       }
 
-      throw Exception(response?['message'] ?? 'Error al actualizar cliente');
+      // La respuesta no fue exitosa
+      if (response == null) {
+        throw Exception('No hay respuesta del servidor');
+      }
+      
+      final errorMsg = response['message'] ?? 
+                      response['error'] ?? 
+                      response['errors'] ??
+                      'Error desconocido al actualizar cliente';
+      
+      print('⚠️ [ClienteService] Error en respuesta: $errorMsg');
+      
+      // Si es error de rol/permisos, agregar instrucciones útiles
+      if (errorMsg.toString().contains('Acceso denegado') ||
+          errorMsg.toString().contains('No tienes permisos') ||
+          errorMsg.toString().contains('rol') ||
+          errorMsg.toString().contains('Cliente')) {
+        final mensajeCompleto = '''
+$errorMsg
+
+🔧 SOLUCIÓN:
+El servidor está rechazando porque tu usuario no tiene el rol "Cliente" asignado.
+
+Intenta estos pasos:
+1️⃣ Cierra la app (Logout)
+2️⃣ Vuelve a iniciar sesión (Login)
+3️⃣ Intenta guardar tu perfil nuevamente
+
+Si el error persiste, es un problema del backend que necesita ser arreglado por el equipo de desarrollo.
+''';
+        throw Exception(mensajeCompleto);
+      }
+      
+      throw Exception(errorMsg.toString());
     } catch (e) {
       print('❌ [ClienteService] Error al actualizar: $e');
       rethrow;

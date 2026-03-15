@@ -4,7 +4,12 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  final bool showLogoutMessage;
+
+  const LoginScreen({
+    Key? key,
+    this.showLogoutMessage = false,
+  }) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -16,6 +21,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showLogoutMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Sesión cerrada correctamente'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (error.contains('verificar tu correo') ||
           error.contains('not verified')) {
         // Mostrar diálogo ofreciendo ir a verificación
-        showDialog(
+        await showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Email no verificado'),
@@ -98,13 +119,17 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade400, Colors.blue.shade900],
+            colors: [Colors.green.shade400, Colors.green.shade700],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 60,
+              ),
+              child: Column(
               children: [
                 // Logo y título
                 const SizedBox(height: 40),
@@ -116,9 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
-                    Icons.location_on,
+                    Icons.landscape,
                     size: 48,
-                    color: Colors.blue,
+                    color: Colors.green,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -267,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.blue),
+                                        Colors.green),
                                   ),
                                 )
                               : const Text(
@@ -275,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                                    color: Colors.green,
                                   ),
                                 ),
                         ),
@@ -309,6 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ],
+            ),
             ),
           ),
         ),
