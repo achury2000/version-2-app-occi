@@ -19,6 +19,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
+  String? _validateStrongPassword(String? value) {
+    if (value?.isEmpty ?? true) {
+      return 'La contraseña es requerida';
+    }
+
+    final password = value!;
+    if (password.length < 8) {
+      return 'Debe tener al menos 8 caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Debe incluir al menos una letra mayúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Debe incluir al menos un número';
+    }
+    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+      return 'Debe incluir al menos un carácter especial';
+    }
+
+    return null;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -186,15 +208,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   obscureText: _obscurePassword,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'La contraseña es requerida';
-                    }
-                    if (value!.length < 6) {
-                      return 'Mínimo 6 caracteres';
-                    }
-                    return null;
-                  },
+                  validator: _validateStrongPassword,
+                ),
+                const SizedBox(height: 8),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Debe tener 8+ caracteres, 1 mayúscula, 1 número y 1 carácter especial.',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
 

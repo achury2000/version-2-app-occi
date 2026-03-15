@@ -267,6 +267,35 @@ class AuthProvider extends ChangeNotifier {
     final msg = e.toString();
     final lowerMsg = msg.toLowerCase();
 
+    bool containsAny(String source, List<String> values) {
+      for (final value in values) {
+        if (source.contains(value)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    if (containsAny(lowerMsg, [
+      'contrase',
+      'password',
+      'mayúsc',
+      'minusc',
+      'minúsc',
+      'número',
+      'numero',
+      'especial',
+      'uppercase',
+      'lowercase',
+      'digit',
+      'symbol',
+      'character',
+      'weak',
+      'fortaleza',
+    ])) {
+      return msg.replaceFirst('Exception: ', '');
+    }
+
     if (msg.contains('RESET_CODE:TOKEN_INVALIDO')) {
       return 'El enlace o código no es válido.';
     }

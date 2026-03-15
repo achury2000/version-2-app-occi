@@ -30,6 +30,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _obscureConfirmPassword = true;
   bool _autofillMessageShown = false;
 
+  bool get _hasBackendError {
+    final error = context.watch<AuthProvider>().error;
+    return error != null && error.trim().isNotEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -214,8 +219,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  onChanged: (_) => context.read<AuthProvider>().clearError(),
                   decoration: InputDecoration(
                     hintText: 'Nueva contraseña',
+                    hintStyle: const TextStyle(color: Colors.black54),
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -238,8 +249,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     if (value == null || value.isEmpty) {
                       return 'La nueva contraseña es requerida';
                     }
-                    if (value.length < 8) {
-                      return 'Debe tener al menos 8 caracteres';
+                    if (value.length < 6) {
+                      return 'Debe tener al menos 6 caracteres';
                     }
                     return null;
                   },
@@ -248,8 +259,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  onChanged: (_) => context.read<AuthProvider>().clearError(),
                   decoration: InputDecoration(
                     hintText: 'Confirmar contraseña',
+                    hintStyle: const TextStyle(color: Colors.black54),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -280,6 +297,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     return null;
                   },
                 ),
+                if (_hasBackendError) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Text(
+                      context.read<AuthProvider>().error ?? '',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
