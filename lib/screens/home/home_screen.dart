@@ -24,10 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
       final clienteProvider = context.read<ClienteProvider>();
-      
+
       context.read<CatalogoProvider>().fetchFincas();
       context.read<CatalogoProvider>().fetchRutas();
-      
+
       if (authProvider.usuario?.id != null) {
         clienteProvider.loadCliente(authProvider.usuario!.id);
       }
@@ -164,7 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Consumer<CatalogoProvider>(
                       builder: (context, catalogoProvider, _) {
                         if (catalogoProvider.isLoadingFincas) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
 
                         if (catalogoProvider.fincas.isEmpty) {
@@ -175,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 200,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: catalogoProvider.fincas.length.clamp(0, 5),
+                            itemCount:
+                                catalogoProvider.fincas.length.clamp(0, 5),
                             itemBuilder: (context, index) {
                               final finca = catalogoProvider.fincas[index];
                               return _buildFincaCard(finca);
@@ -210,7 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Consumer<CatalogoProvider>(
                       builder: (context, catalogoProvider, _) {
                         if (catalogoProvider.isLoadingRutas) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
 
                         if (catalogoProvider.rutas.isEmpty) {
@@ -221,7 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 200,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: catalogoProvider.rutas.length.clamp(0, 5),
+                            itemCount:
+                                catalogoProvider.rutas.length.clamp(0, 5),
                             itemBuilder: (context, index) {
                               final ruta = catalogoProvider.rutas[index];
                               return _buildRutaCard(ruta);
@@ -594,7 +598,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   nombre,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -699,13 +704,14 @@ class _HomeScreenState extends State<HomeScreen> {
     String ubicacion = '';
     int capacidad = 0;
     String imagenPrincipal = '';
-    
+
     if (finca is Map) {
       nombre = finca['nombre'] ?? '';
       precio = (finca['precio_por_noche'] ?? 0).toDouble();
       ubicacion = finca['ubicacion'] ?? '';
       capacidad = finca['capacidad_personas'] ?? 0;
-      imagenPrincipal = (finca['imagen_principal'] ?? finca['imagen'] ?? '').toString();
+      imagenPrincipal =
+          (finca['imagen_principal'] ?? finca['imagen'] ?? '').toString();
     } else {
       nombre = finca.nombre ?? '';
       precio = finca.precioNoche ?? 0;
@@ -865,8 +871,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           icon: const Icon(Icons.info_outline, size: 16),
-                          label: const Text('Ver',
-                              style: TextStyle(fontSize: 12)),
+                          label:
+                              const Text('Ver', style: TextStyle(fontSize: 12)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,

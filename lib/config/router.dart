@@ -99,21 +99,20 @@ final appRouter = GoRouter(
     } catch (e) {
       // Provider no disponible aún, no redirigir
     }
-    
+
     return null; // No redirigir
   },
   routes: [
     // ============================================
     // PANTALLAS DE AUTENTICACIÓN
     // ============================================
-    
+
     // Pantalla de Inicio de Sesión
     GoRoute(
       path: '/login',
       name: 'login',
       builder: (context, state) {
-        final showLogoutMessage =
-            state.uri.queryParameters['logout'] == '1';
+        final showLogoutMessage = state.uri.queryParameters['logout'] == '1';
         return LoginScreen(showLogoutMessage: showLogoutMessage);
       },
     ),
@@ -155,11 +154,11 @@ final appRouter = GoRouter(
         return ResetPasswordScreen(email: email, token: token);
       },
     ),
-    
+
     // ============================================
     // PANTALLAS DE APLICACIÓN PRINCIPAL
     // ============================================
-    
+
     // Pantalla Home
     GoRoute(
       path: '/home',
