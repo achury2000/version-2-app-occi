@@ -14,6 +14,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _formatCiudadPais(String? ciudad, String? pais) {
+    final partes = [ciudad, pais]
+        .where((value) => value != null && value.isNotEmpty)
+        .toList();
+    return partes.isEmpty ? '-' : partes.join(', ');
+  }
+
   int _selectedIndex = 0;
 
   @override
@@ -473,20 +480,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 _buildInfoCard(
                   'Ciudad / País',
-                  [
+                  _formatCiudadPais(
                     clienteProvider.cliente?.ciudad,
                     clienteProvider.cliente?.pais,
-                  ]
-                          .where((value) => value != null && value!.isNotEmpty)
-                          .join(', ')
-                          .isEmpty
-                      ? '-'
-                      : [
-                          clienteProvider.cliente?.ciudad,
-                          clienteProvider.cliente?.pais,
-                        ]
-                          .where((value) => value != null && value!.isNotEmpty)
-                          .join(', '),
+                  ),
                   Icons.location_city,
                 ),
                 const SizedBox(height: 12),
