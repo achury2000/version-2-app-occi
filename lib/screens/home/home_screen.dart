@@ -529,10 +529,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await authProvider.logout();
-                      if (!context.mounted) return;
-                      context.go('/login?logout=1');
+                    onPressed: () {
+                      // Mostrar diálogo de confirmación
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext dialogContext) {
+                          return AlertDialog(
+                            title: const Text('¿Cerrar sesión?'),
+                            content: const Text(
+                              '¿Estás seguro de que deseas cerrar sesión? Tendrás que iniciar sesión nuevamente para acceder a tu cuenta.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop(); // Cancelar
+                                },
+                                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                                  // Ejecutar logout
+                                  await authProvider.logout();
+                                  if (!context.mounted) return;
+                                  context.go('/login?logout=1');
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Sí, cerrar sesión'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     },
                     icon: const Icon(Icons.logout),
                     label: const Text('Cerrar Sesión'),
