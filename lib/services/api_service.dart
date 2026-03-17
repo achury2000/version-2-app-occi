@@ -25,6 +25,11 @@ class ApiService {
     _initializeDio();
   }
 
+  String _normalizeEndpoint(String endpoint) {
+    if (endpoint.isEmpty) return '/';
+    return endpoint.startsWith('/') ? endpoint : '/$endpoint';
+  }
+
   /// Inicializa Dio con configuración predeterminada e interceptor JWT
   void _initializeDio() {
     _dio = Dio(
@@ -44,7 +49,8 @@ class ApiService {
           final token = await _tokenService.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
-            print('🔐 [ApiService] Token incluido en header: ${token.substring(0, 20)}...');
+            print(
+                '🔐 [ApiService] Token incluido en header: ${token.substring(0, 20)}...');
           } else {
             print('⚠️ [ApiService] ¡SIN TOKEN EN HEADER!');
           }
@@ -84,13 +90,14 @@ class ApiService {
   Future<dynamic> get(String endpoint,
       {Map<String, dynamic>? queryParameters}) async {
     try {
+      final normalizedEndpoint = _normalizeEndpoint(endpoint);
       final response = await _dio.get(
-        endpoint,
+        normalizedEndpoint,
         queryParameters: queryParameters,
       );
       return response.data;
     } on DioException catch (e) {
-      _handleError(e, 'GET', endpoint);
+      _handleError(e, 'GET', _normalizeEndpoint(endpoint));
     }
   }
 
@@ -101,14 +108,15 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
+      final normalizedEndpoint = _normalizeEndpoint(endpoint);
       final response = await _dio.post(
-        endpoint,
+        normalizedEndpoint,
         data: data,
         queryParameters: queryParameters,
       );
       return response.data;
     } on DioException catch (e) {
-      _handleError(e, 'POST', endpoint);
+      _handleError(e, 'POST', _normalizeEndpoint(endpoint));
     }
   }
 
@@ -119,14 +127,15 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
+      final normalizedEndpoint = _normalizeEndpoint(endpoint);
       final response = await _dio.put(
-        endpoint,
+        normalizedEndpoint,
         data: data,
         queryParameters: queryParameters,
       );
       return response.data;
     } on DioException catch (e) {
-      _handleError(e, 'PUT', endpoint);
+      _handleError(e, 'PUT', _normalizeEndpoint(endpoint));
     }
   }
 
@@ -136,30 +145,34 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
+      final normalizedEndpoint = _normalizeEndpoint(endpoint);
       final response = await _dio.delete(
-        endpoint,
+        normalizedEndpoint,
         queryParameters: queryParameters,
       );
       return response.data;
     } on DioException catch (e) {
-      _handleError(e, 'DELETE', endpoint);
+      _handleError(e, 'DELETE', _normalizeEndpoint(endpoint));
     }
   }
 
   /// Manejo centralizado de errores
   dynamic _handleError(DioException error, String method, String endpoint) {
     String message = 'Error en $method: $endpoint';
-    
+
     print('⚠️ [ApiService] DioException tipo: ${error.type}');
     print('⚠️ [ApiService] Status Code: ${error.response?.statusCode}');
     print('⚠️ [ApiService] Response Data: ${error.response?.data}');
 
     // Manejar errores de autenticación
     if (error.response?.statusCode == 403) {
-      print('🔐 [ApiService] Error 403 - Acceso Denegado (Permisos insuficientes)');
-      message = '❌ Acceso denegado: No tienes permisos para esta acción. Verifica que hayas iniciado sesión correctamente.';
+      print(
+          '🔐 [ApiService] Error 403 - Acceso Denegado (Permisos insuficientes)');
+      message =
+          '❌ Acceso denegado: No tienes permisos para esta acción. Verifica que hayas iniciado sesión correctamente.';
     } else if (error.response?.statusCode == 401) {
-      print('🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)');
+      print(
+          '🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)');
       message = '❌ Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
     } else if (error.type == DioExceptionType.connectionTimeout) {
       message = 'Timeout: No se puede conectar al servidor';
@@ -171,7 +184,7 @@ class ApiService {
       // Intentar extraer el mensaje del JSON de respuesta
       final responseData = error.response?.data;
       print('⚠️ [ApiService] Response data type: ${responseData.runtimeType}');
-      
+
       if (responseData != null && responseData is Map) {
         // Priorizar el campo 'message', luego 'error', luego el primer valor
         message = responseData['message'] ??
@@ -179,7 +192,7 @@ class ApiService {
             responseData['errors'] ??
             responseData['validations'] ??
             'Error ${error.response?.statusCode}: ${error.response?.statusMessage}';
-        
+
         // Si validations es un mapa, intenta extraer el primer error
         if (responseData['validations'] is Map) {
           final validations = responseData['validations'] as Map;

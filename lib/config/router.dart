@@ -7,6 +7,7 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/auth/verify_email_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/home/completar_perfil_page.dart';
 import '../screens/home/mis_reservas_screen.dart';
 import '../screens/home/role_dashboard_screen.dart';
 import '../providers/auth_provider.dart';
@@ -41,10 +42,15 @@ const Set<String> _authRoutes = {
 
 const Set<String> _protectedRoutes = {
   '/home',
+  '/completar-perfil',
   '/mis-reservas',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
+};
+
+const Set<String> _crossRoleAllowedRoutes = {
+  '/completar-perfil',
 };
 
 /// Configuración de rutas para toda la aplicación
@@ -92,7 +98,9 @@ final appRouter = GoRouter(
           return target;
         }
 
-        if (_protectedRoutes.contains(location) && location != target) {
+        if (_protectedRoutes.contains(location) &&
+            location != target &&
+            !_crossRoleAllowedRoutes.contains(location)) {
           return target;
         }
       }
@@ -164,6 +172,11 @@ final appRouter = GoRouter(
       path: '/home',
       name: 'home',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/completar-perfil',
+      name: 'completarPerfil',
+      builder: (context, state) => const CompletarPerfilPage(),
     ),
     GoRoute(
       path: '/mis-reservas',

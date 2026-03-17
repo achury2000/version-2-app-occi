@@ -30,7 +30,7 @@ class CatalogoProvider extends ChangeNotifier {
     try {
       // Primero intentar del backend
       try {
-        final response = await _apiService.get('fincas');
+        final response = await _apiService.get('/fincas');
 
         if (response is List) {
           _fincas = response.map((json) => Finca.fromJson(json)).toList();
@@ -50,7 +50,8 @@ class CatalogoProvider extends ChangeNotifier {
             return image.startsWith('assets/');
           }
           if (f is Map) {
-            final image = (f['imagen_principal'] ?? f['imagen'] ?? '').toString().trim();
+            final image =
+                (f['imagen_principal'] ?? f['imagen'] ?? '').toString().trim();
             return image.startsWith('assets/');
           }
           return false;
@@ -63,7 +64,7 @@ class CatalogoProvider extends ChangeNotifier {
         // Si falla la conexión al backend, usar datos locales
         _fincas = FincasData.getAllFincas();
       }
-      
+
       _isLoadingFincas = false;
     } catch (e) {
       _error = e.toString();
@@ -83,7 +84,7 @@ class CatalogoProvider extends ChangeNotifier {
     try {
       // Primero intentar del backend
       try {
-        final response = await _apiService.get('rutas');
+        final response = await _apiService.get('/rutas');
 
         if (response is List) {
           _rutas = response.map((json) => Ruta.fromJson(json)).toList();
@@ -99,7 +100,7 @@ class CatalogoProvider extends ChangeNotifier {
         // Si falla la conexión al backend, usar datos locales
         _rutas = RutasData.getAllRutas();
       }
-      
+
       _isLoadingRutas = false;
     } catch (e) {
       _error = e.toString();
@@ -138,62 +139,56 @@ class CatalogoProvider extends ChangeNotifier {
   /// Buscar fincas por nombre
   List<dynamic> searchFincas(String query) {
     if (query.isEmpty) return _fincas;
-    return _fincas
-        .where((f) {
-          String nombre = '';
-          String ubicacion = '';
-          
-          if (f is Finca) {
-            nombre = f.nombre;
-            ubicacion = f.ubicacion;
-          } else if (f is Map) {
-            nombre = f['nombre'] ?? '';
-            ubicacion = f['ubicacion'] ?? '';
-          }
-          
-          return nombre.toLowerCase().contains(query.toLowerCase()) ||
-              ubicacion.toLowerCase().contains(query.toLowerCase());
-        })
-        .toList();
+    return _fincas.where((f) {
+      String nombre = '';
+      String ubicacion = '';
+
+      if (f is Finca) {
+        nombre = f.nombre;
+        ubicacion = f.ubicacion;
+      } else if (f is Map) {
+        nombre = f['nombre'] ?? '';
+        ubicacion = f['ubicacion'] ?? '';
+      }
+
+      return nombre.toLowerCase().contains(query.toLowerCase()) ||
+          ubicacion.toLowerCase().contains(query.toLowerCase());
+    }).toList();
   }
 
   /// Buscar rutas por nombre
   List<dynamic> searchRutas(String query) {
     if (query.isEmpty) return _rutas;
-    return _rutas
-        .where((r) {
-          String nombre = '';
-          String ubicacion = '';
-          
-          if (r is Ruta) {
-            nombre = r.nombre;
-            ubicacion = r.ubicacion;
-          } else if (r is Map) {
-            nombre = r['nombre'] ?? '';
-            ubicacion = r['ubicacion'] ?? '';
-          }
-          
-          return nombre.toLowerCase().contains(query.toLowerCase()) ||
-              ubicacion.toLowerCase().contains(query.toLowerCase());
-        })
-        .toList();
+    return _rutas.where((r) {
+      String nombre = '';
+      String ubicacion = '';
+
+      if (r is Ruta) {
+        nombre = r.nombre;
+        ubicacion = r.ubicacion;
+      } else if (r is Map) {
+        nombre = r['nombre'] ?? '';
+        ubicacion = r['ubicacion'] ?? '';
+      }
+
+      return nombre.toLowerCase().contains(query.toLowerCase()) ||
+          ubicacion.toLowerCase().contains(query.toLowerCase());
+    }).toList();
   }
 
   /// Filtrar fincas por precio
   List<dynamic> filterFincasByPrice(double minPrice, double maxPrice) {
-    return _fincas
-        .where((f) {
-          double precio = 0;
-          
-          if (f is Finca) {
-            precio = f.precioNoche;
-          } else if (f is Map) {
-            precio = (f['precio_por_noche'] ?? 0).toDouble();
-          }
-          
-          return precio >= minPrice && precio <= maxPrice;
-        })
-        .toList();
+    return _fincas.where((f) {
+      double precio = 0;
+
+      if (f is Finca) {
+        precio = f.precioNoche;
+      } else if (f is Map) {
+        precio = (f['precio_por_noche'] ?? 0).toDouble();
+      }
+
+      return precio >= minPrice && precio <= maxPrice;
+    }).toList();
   }
 
   /// Filtrar rutas por dificultad

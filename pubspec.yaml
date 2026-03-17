@@ -17,6 +17,7 @@ dependencies:
   
   # HTTP y Networking
   dio: ^5.3.0
+  http: ^1.2.2
   
   # Serialización y Modelos
   json_serializable: ^6.7.0

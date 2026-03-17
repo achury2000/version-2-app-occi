@@ -44,42 +44,21 @@ class ClienteProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      late Cliente clienteGuardado;
+      final clienteNormalizado = cliente.copyWith(
+        id: _cliente?.id ?? cliente.id,
+        idUsuario: idUsuario,
+      );
 
-      if (_cliente?.id != null) {
-        // Actualizar cliente existente
-        print('🌐 [ClienteProvider] Actualizando cliente con ID: ${_cliente?.id}');
-        clienteGuardado =
-            await _clienteService.updateCliente(_cliente!.id!, cliente);
-      } else {
-        // Crear nuevo cliente
-        print('🌐 [ClienteProvider] Creando nuevo cliente para usuario: $idUsuario');
-        
-        final nuevoCliente = Cliente(
-          idUsuario: idUsuario,
-          tipoDocumento: cliente.tipoDocumento,
-          numeroDocumento: cliente.numeroDocumento,
-          telefono: cliente.telefono,
-          direccion: cliente.direccion,
-          ciudad: cliente.ciudad,
-          pais: cliente.pais,
-          codigoPostal: cliente.codigoPostal,
-          fechaNacimiento: cliente.fechaNacimiento,
-          genero: cliente.genero,
-          nacionalidad: cliente.nacionalidad,
-          preferencias: cliente.preferencias,
-          notas: cliente.notas,
-          newsletter: cliente.newsletter,
-          estado: cliente.estado,
-        );
-        
-        print('📋 [ClienteProvider] Cliente a crear:');
-        print('   idUsuario: ${nuevoCliente.idUsuario}');
-        print('   tipoDocumento: ${nuevoCliente.tipoDocumento}');
-        print('   numeroDocumento: ${nuevoCliente.numeroDocumento}');
-        
-        clienteGuardado = await _clienteService.createCliente(nuevoCliente);
-      }
+      print(
+          '🌐 [ClienteProvider] Guardando perfil cliente para usuario: $idUsuario');
+      print('📋 [ClienteProvider] Payload normalizado:');
+      print('   id: ${clienteNormalizado.id}');
+      print('   idUsuario: ${clienteNormalizado.idUsuario}');
+      print('   tipoDocumento: ${clienteNormalizado.tipoDocumento}');
+      print('   numeroDocumento: ${clienteNormalizado.numeroDocumento}');
+
+      final clienteGuardado =
+          await _clienteService.upsertClienteByUsuario(clienteNormalizado);
 
       _cliente = clienteGuardado;
       _perfilCompleto = _cliente!.isPerfilCompleto;
@@ -93,7 +72,7 @@ class ClienteProvider extends ChangeNotifier {
     } catch (e) {
       // Extraer el mensaje de error más legible
       String errorMsg = e.toString();
-      
+
       // Si contiene información útil del backend, extraerla
       if (errorMsg.contains('Exception: ')) {
         errorMsg = errorMsg.replaceFirst('Exception: ', '');
@@ -101,7 +80,7 @@ class ClienteProvider extends ChangeNotifier {
       if (errorMsg.contains('HttpException: ')) {
         errorMsg = errorMsg.replaceFirst('HttpException: ', '');
       }
-      
+
       _error = errorMsg;
       print('❌ [ClienteProvider] Error al guardar cliente: $errorMsg');
       _isLoading = false;
@@ -113,8 +92,7 @@ class ClienteProvider extends ChangeNotifier {
   /// Verificar si el perfil está completo
   Future<bool> verificarPerfilCompleto(int idUsuario) async {
     try {
-      _perfilCompleto =
-          await _clienteService.hasPerfilCompleto(idUsuario);
+      _perfilCompleto = await _clienteService.hasPerfilCompleto(idUsuario);
       notifyListeners();
       return _perfilCompleto;
     } catch (e) {

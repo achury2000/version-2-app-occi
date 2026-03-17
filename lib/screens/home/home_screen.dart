@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/catalogo_provider.dart';
 import '../../providers/cliente_provider.dart';
-import 'profile_edit_screen.dart';
 import '../catalogo/finca_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -462,8 +461,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Info Cards
                 _buildInfoCard(
                   'Teléfono',
-                  authProvider.usuario?.telefono ?? '-',
+                  clienteProvider.cliente?.telefono ?? '-',
                   Icons.phone,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoCard(
+                  'Documento',
+                  clienteProvider.cliente?.numeroDocumento ?? '-',
+                  Icons.badge_outlined,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoCard(
+                  'Ciudad / País',
+                  [
+                    clienteProvider.cliente?.ciudad,
+                    clienteProvider.cliente?.pais,
+                  ]
+                          .where((value) => value != null && value!.isNotEmpty)
+                          .join(', ')
+                          .isEmpty
+                      ? '-'
+                      : [
+                          clienteProvider.cliente?.ciudad,
+                          clienteProvider.cliente?.pais,
+                        ]
+                          .where((value) => value != null && value!.isNotEmpty)
+                          .join(', '),
+                  Icons.location_city,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoCard(
@@ -479,12 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 54,
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileEditScreen(),
-                        ),
-                      );
+                      final result = await context.push('/completar-perfil');
 
                       // Si vuelve con cambios, recargar perfil
                       if (result == true && mounted) {
@@ -544,11 +563,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () {
                                   Navigator.of(dialogContext).pop(); // Cancelar
                                 },
-                                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                                child: const Text('Cancelar',
+                                    style: TextStyle(color: Colors.grey)),
                               ),
                               ElevatedButton(
                                 onPressed: () async {
-                                  Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                                  Navigator.of(dialogContext)
+                                      .pop(); // Cerrar diálogo
                                   // Ejecutar logout
                                   await authProvider.logout();
                                   if (!context.mounted) return;
