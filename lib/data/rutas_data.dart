@@ -85,6 +85,47 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción',
     },
+    {
+      'id': 3,
+      'nombre': 'Tour de cata de vinos',
+      'ubicacion': 'Occidente Antioqueño',
+      'descripcion':
+          'El mejor vino de Colombia y de los mejores del mundo en una experiencia única. En las montañas de Antioquia existe un lugar donde se producen vinos tan '
+          'finos que han conquistado el mundo. Un destino exclusivo donde la naturaleza, la tradición y la innovación se unen para crear verdaderas joyas en cada copa.\n\n'
+          'Caminarás entre viñedos sorprendentes, descubrirás el proceso que transforma la uva en arte líquido, visitarás el Salón de la Fama repleto de premios '
+          'internacionales y terminarás con una cata profesional que despertará todos tus sentidos.\n\n'
+          'Aquí no solo pruebas vino. Vives una experiencia memorable, sofisticada y auténticamente colombiana. Un lugar que no se cuenta... se vive.',
+      'duracion': 3.0, // en horas
+      'distancia': 7.0, // en km aprox
+      'precio': 90000, // por persona
+      'capacidad': 15,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Guía sommelier especializado',
+        'Acceso a viñedos privados',
+        'Cata de vinos profesional',
+        'Maridaje gourmet',
+        'Visita al Salón de la Fama',
+        'Degustación de vinos premium',
+      ],
+      'imagen_principal': 'assets/rutas/tour_cata_vinos/principal.png',
+      'zonas_paso': [
+        'Recepción y bienvenida en la bodega',
+        'Recorrido por los viñedos',
+        'Explicación del proceso de producción',
+        'Visita al Salón de la Fama',
+        'Cata profesional y maridaje',
+      ],
+      'mejor_epoca': 'Todo el año',
+      'equipo_necesario': [
+        'Ropa casual y elegante',
+        'Zapatos cómodos',
+        'Protección solar',
+        'Chaqueta ligera (noches pueden ser frías)',
+      ],
+      'requisitos': 'Mayores de 18 años',
+      'restricciones': 'Personas mayores de 18 años, no se permite conducir después de la cata',
+    },
   ];
 
   /// Obtener ruta por ID
