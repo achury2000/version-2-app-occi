@@ -167,8 +167,50 @@ class RutasData {
       'requisitos': 'Saber nadar, condición física moderada',
       'restricciones': 'Menores acompañados por adulto, no apto para personas con lesiones',
     },
-
-  /// Obtener ruta por ID
+    {
+      'id': 5,
+      'nombre': 'Tour al puente occidente',
+      'ubicacion': 'Occidente Antioqueño',
+      'descripcion':
+          'En esta experiencia recorrerás su historia y su valor cultural mientras disfrutas de: una visita a los barequeros, guardianes de las tradiciones mineras. '
+          'El mirador del puente, con paisajes que enamoran. Una caminata sobre el puente, sintiendo la majestuosidad de su estructura. '
+          'El comercio local, lleno de sabores y recuerdos auténticos. '
+          'La historia viva de una obra que une pasado y presente.\n\n'
+          'Más que un tour, es un viaje al corazón de la tradición, la cultura y el orgullo antioqueño.',
+      'duracion': 3.0, // en horas
+      'distancia': 4.0, // en km aprox
+      'precio': 65000, // por persona
+      'capacidad': 20,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Guía especializado en historia local',
+        'Acceso al puente',
+        'Visita a comercio local',
+        'Seguro de viajero',
+        'Snacks y bebidas',
+      ],
+      'imagen_principal': 'assets/rutas/tour_al_puente_occidente/principal.png',
+      'zonas_paso': [
+        'Bienvenida y explicación histórica',
+        'Encuentro con barequeros y tradiciones mineras',
+        'Mirador con vistas panorámicas',
+        'Caminata sobre el puente',
+        'Recorrido por comercio local',
+        'Cierre y despedida',
+      ],
+      'mejor_epoca': 'Todo el año',
+      'equipo_necesario': [
+        'Ropa cómoda',
+        'Zapatos con buen agarre',
+        'Cámara fotográfica',
+        'Protector solar',
+        'Gafas de sol',
+        'Bolsa para compras en comercio local',
+      ],
+      'requisitos': 'Ninguno, apto para todas las edades',
+      'restricciones': 'Ninguna restricción especial',
+    },
+  ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
       return rutas.firstWhere((ruta) => ruta['id'] == id);
