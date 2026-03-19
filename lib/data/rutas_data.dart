@@ -126,7 +126,47 @@ class RutasData {
       'requisitos': 'Mayores de 18 años',
       'restricciones': 'Personas mayores de 18 años, no se permite conducir después de la cata',
     },
-  ];
+    {
+      'id': 4,
+      'nombre': 'Tours de tres cascadas',
+      'ubicacion': 'Occidente Antioqueño',
+      'descripcion':
+          'Vive una experiencia completa donde la naturaleza lo tiene todo en un solo recorrido. La Ruta de Tres Cascadas combina la frescura del agua cristalina, la magia de la selva, '
+          'la adrenalina de los retos en el camino y el sabor auténtico de la gastronomía campesina. '
+          'Cada parada es una nueva aventura: un encuentro con la fuerza del agua, la calma de los paisajes y la energía que solo Sopetrán puede regalar.',
+      'duracion': 5.0, // en horas
+      'distancia': 10.0, // en km aprox
+      'precio': 85000, // por persona
+      'capacidad': 15,
+      'dificultad': 'Moderado',
+      'incluye': [
+        'Guía experimentado',
+        'Almuerzo campesino (Fiambre)',
+        'Acceso permitido a todas las cascadas',
+        'Seguro de aventura',
+        'Transporte ida y vuelta',
+        'Refrigerios y bebidas',
+      ],
+      'imagen_principal': 'assets/rutas/tours_tres_cascadas/principal.png',
+      'zonas_paso': [
+        'Primera cascada - Acuatinta - 20 minutos desde el inicio',
+        'Segunda cascada - Salto del Ángel - 45 minutos',
+        'Tercer cascada - Cascada Brava - 1 hora 30 minutos',
+        'Regreso y almuerzo campesino en zona intermedia',
+      ],
+      'mejor_epoca': 'Todo el año',
+      'equipo_necesario': [
+        'Ropa de baño',
+        'Tenis o zapatos acuáticos que cierren atrás',
+        'Ropa cómoda que se pueda mojar',
+        'Toalla',
+        'Protector solar (resistente al agua)',
+        'Gafas de sol',
+        'Bolsa impermeable para objetos',
+      ],
+      'requisitos': 'Saber nadar, condición física moderada',
+      'restricciones': 'Menores acompañados por adulto, no apto para personas con lesiones',
+    },
 
   /// Obtener ruta por ID
   static Map<String, dynamic>? getRutaById(int id) {
