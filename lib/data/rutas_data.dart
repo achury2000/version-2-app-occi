@@ -301,6 +301,48 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción especial',
     },
+    {
+      'id': 8,
+      'nombre': 'Tour de cuatrimotos',
+      'ubicacion': 'Sopetrán',
+      'descripcion':
+          'Vive la emoción del tour en cuatrimotos en Sopetrán: una experiencia cargada de adrenalina, donde cada camino te lleva a descubrir paisajes sorprendentes, '
+          'atravesar bosques encantadores y sentir la fuerza de los ríos que dan vida a la región.\n\n'
+          'Un plan perfecto para aventureros que buscan velocidad, naturaleza y diversión en un solo recorrido.',
+      'duracion': 4.0, // en horas
+      'distancia': 25.0, // en km aprox
+      'precio': 150000, // por persona
+      'capacidad': 10,
+      'dificultad': 'Moderado',
+      'incluye': [
+        'Guía especializado en motos',
+        'Cuatrimoto equipado y asegurado',
+        'Equipo de protección completo (casco, chaleco)',
+        'Seguro de accidente',
+        'Experiencia de tiro con rifle',
+        'Snacks y bebidas',
+      ],
+      'imagen_principal': 'assets/rutas/tour_cuatrimotos/principal.png',
+      'zonas_paso': [
+        'Punto de encuentro y equipamiento',
+        'Instrucción de seguridad en cuatrimotos',
+        'Senderos de montaña',
+        'Bosques naturales',
+        'Cruce de ríos y arroyos',
+        'Zona de tiro con rifle',
+        'Retorno y cierre de experiencia',
+      ],
+      'mejor_epoca': 'Verano (diciembre-marzo)',
+      'equipo_necesario': [
+        'Ropa cómoda y resistente',
+        'Botas cerradas',
+        'Gafas para proteger del polvo',
+        'Protector solar',
+        'Cámara de acción (GoPro)',
+      ],
+      'requisitos': 'Licencia de conducción vigente, mayores de 18 años',
+      'restricciones': 'No se recomienda para menores de 18 años ni personas con molestias en espalda o cuello',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
