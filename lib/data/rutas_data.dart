@@ -480,6 +480,50 @@ class RutasData {
       'requisitos': 'Saber nadar, apto para todas las edades',
       'restricciones': 'Personas con miedo al agua o en estado de embarazo pueden requerir asesoramiento médico',
     },
+    {
+      'id': 12,
+      'nombre': 'Ruta de la uva en Sopetrán',
+      'ubicacion': 'Sopetrán',
+      'descripcion':
+          'Un tour honrando la tierra de las frutas, Sopetrán. Entre senderos y viñedos, conocerás a don Nato, un campesino auténtico antioqueño, recordado por su hospitalidad y gran sentido del humor. '
+          'Con él descubrirás la tradición ancestral del cultivo de la uva y la magia de transformarla en vino artesanal.\n\n'
+          'Más que una visita, esta ruta es un homenaje a la cultura campesina y a la riqueza natural del territorio, '
+          'una experiencia que despierta los sentidos y te invita a vivir el turismo con sentido: cercano, humano y auténtico.',
+      'duracion': 2.5, // en horas
+      'distancia': 5.0, // en km aprox
+      'precio': 65000, // por persona
+      'capacidad': 15,
+      'dificultad': 'Muy Fácil',
+      'incluye': [
+        'Guía especializado en cultivo de uva',
+        'Encuentro con don Nato',
+        'Recorrido por viñedos',
+        'Degustación de vino artesanal',
+        'Souvenirs y productos locales',
+        'Seguro de viajero',
+        'Refrigerio',
+      ],
+      'imagen_principal': 'assets/rutas/ruta_uva_sopetran/principal.png',
+      'zonas_paso': [
+        'Centro de recepción',
+        'Viñedos principales',
+        'Taller de elaboración de vino',
+        'Casa de Don Nato',
+        'Zona de degustación',
+        'Tienda de souvenirs',
+      ],
+      'mejor_epoca': 'Todo el año (cosecha: octubre-noviembre)',
+      'equipo_necesario': [
+        'Calzado cómodo',
+        'Protector solar',
+        'Gafas de sol',
+        'Sombrero o gorra',
+        'Ropa ligera',
+        'Cámara fotográfica',
+      ],
+      'requisitos': 'Ninguno, apto para todas las edades',
+      'restricciones': 'Ninguna restricción especial',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
