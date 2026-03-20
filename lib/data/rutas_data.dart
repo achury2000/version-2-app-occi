@@ -430,7 +430,55 @@ class RutasData {
         'Ropa cómoda y clima-apropiada',
       ],
       'requisitos': 'Experiencia básica en equitación recomendada, mayores de 10 años',
-      'restricciones': 'No recomendado para personas con miedo a caballos o problemas de columna'.
+      'restricciones': 'No recomendado para personas con miedo a caballos o problemas de columna',
+    },
+    {
+      'id': 11,
+      'nombre': 'Bote paseo San Nicolas',
+      'ubicacion': 'Río Cauca',
+      'descripcion':
+          'Vive la adrenalina navegando por la estrella fluvial del occidente colombiano, el majestuoso río Cauca. Durante este recorrido, sentirás la emoción de deslizarte sobre sus aguas '
+          'mientras disfrutas del espectacular paisaje del cañón del río Cauca y conoces el corregimiento de San Nicolás, '
+          'un antiguo asentamiento lleno de historia y cultura ribereña.\n\n'
+          'Qué harás:\n'
+          '• Navegar por el imponente río Cauca bajo adrenalina del recorrido\n'
+          '• Admirar el espectacular paisaje del cañón mientras tu corazón se acelera\n'
+          '• Conocer el pintoresco pueblo ribereño de San Nicolás',
+      'duracion': 3.0, // en horas
+      'distancia': 20.0, // en km aprox
+      'precio': 85000, // por persona
+      'capacidad': 20,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Bote motorizado equipado',
+        'Guía experimentado en navegación',
+        'Chaleco salvavidas',
+        'Transporte al embarcadero',
+        'Seguro de viajero',
+        'Parada en San Nicolás',
+      ],
+      'imagen_principal': 'assets/rutas/bote_paseo_san_nicolas/principal.png',
+      'zonas_paso': [
+        'Embarcadero principal',
+        'Navegación río Cauca inicio',
+        'Cañón del río Cauca',
+        'Paisajes panorámicos',
+        'Corregimiento San Nicolás',
+        'Parada cultural y gastronómica',
+        'Retorno por río',
+      ],
+      'mejor_epoca': 'Noviembre a abril (verano)',
+      'equipo_necesario': [
+        'Ropa ligera de secado rápido',
+        'Sandalias o zapatos de agua',
+        'Protector solar resistente al agua',
+        'Toalla',
+        'Cámara impermeable o funda',
+        'Gafas de sol',
+        'Sombrero o gorra',
+      ],
+      'requisitos': 'Saber nadar, apto para todas las edades',
+      'restricciones': 'Personas con miedo al agua o en estado de embarazo pueden requerir asesoramiento médico',
     },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
