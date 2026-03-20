@@ -524,6 +524,52 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción especial',
     },
+    {
+      'id': 13,
+      'nombre': 'City Tours Tierra De Las Frutas',
+      'ubicacion': 'Sopetrán',
+      'descripcion':
+          'Un recorrido por la memoria y tradición del municipio, visitando el Mirador de Sopetrán, caminos ancestrales y calles de arquitectura republicana. '
+          'Conocerás antiguas casas de personajes ilustres, instituciones educativas con gran legado y el Centro de Historia. '
+          'El tour culmina en la plaza principal, con su imponente Basílica Menor, esculturas emblemáticas y monumentos culturales. '
+          'Para cerrar con un broche de oro, disfrutarás del sabor tradicional en la panadería artesanal de Don Julio, con más de 70 años de historia.',
+      'duracion': 2.5, // en horas
+      'distancia': 4.0, // en km aprox
+      'precio': 60000, // por persona
+      'capacidad': 15,
+      'dificultad': 'Muy Fácil',
+      'incluye': [
+        'Guía especializado en historia local',
+        'Acceso a sitios históricos',
+        'Visita a panadería Don Julio',
+        'Degustación de pan artesanal',
+        'Souvenirs locales',
+        'Seguro de viajero',
+      ],
+      'imagen_principal': 'assets/rutas/city_tours_tierra_frutas/principal.png',
+      'zonas_paso': [
+        'Mirador de Sopetrán',
+        'Caminos ancestrales',
+        'Centro histórico',
+        'Casas de personajes ilustres',
+        'Instituciones educativas',
+        'Centro de Historia',
+        'Plaza principal',
+        'Basílica Menor',
+        'Panadería Don Julio',
+      ],
+      'mejor_epoca': 'Todo el año',
+      'equipo_necesario': [
+        'Calzado cómodo para caminata urbana',
+        'Protector solar',
+        'Gafas de sol',
+        'Sombrero o gorra',
+        'Cámara fotográfica',
+        'Bolsa para compras de artesanías',
+      ],
+      'requisitos': 'Ninguno, apto para todas las edades',
+      'restricciones': 'Ninguna restricción especial',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
