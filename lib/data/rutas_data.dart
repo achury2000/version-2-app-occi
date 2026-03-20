@@ -253,6 +253,54 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción especial',
     },
+    {
+      'id': 7,
+      'nombre': 'Experiencia viña del tigre',
+      'ubicacion': 'Occidente Antioqueño',
+      'descripcion':
+          'Viña del Tigre es un refugio en medio de la naturaleza, donde cada día se convierte en una experiencia auténtica de vida campesina. '
+          'Aquí te esperan rutas del café, el cacao y la uva; la magia de la granja con sus animales; '
+          'y la tranquilidad de un entorno natural que invita a respirar aire puro, caminar senderos, descubrir cascadas '
+          'y compartir momentos inolvidables en pareja, familia o con amigos.\n\n'
+          'Un lugar para desconectarte del ruido y reconectar con lo esencial.',
+      'duracion': 5.0, // en horas
+      'distancia': 6.0, // en km aprox
+      'precio': 80000, // por persona
+      'capacidad': 20,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Rutas guiadas del café, cacao y uva',
+        'Experiencia de vida en la granja',
+        'Interacción con animales',
+        'Senderos naturales',
+        'Cascadas y piscinas naturales',
+        'Almuerzo típico',
+        'Seguro de viajero',
+      ],
+      'imagen_principal': 'assets/rutas/experiencia_viña_tigre/principal.png',
+      'zonas_paso': [
+        'Recibimiento en la granja',
+        'Ruta del café - cultivo y proceso',
+        'Campos de cacao - recolección y transformación',
+        'Viñedos - uva de mesa y vino local',
+        'Senderos naturales con cascadas',
+        'Zona de animales y convivencia',
+        'Almuerzo campesino',
+        'Descanso y meditación natural',
+      ],
+      'mejor_epoca': 'Todo el año',
+      'equipo_necesario': [
+        'Ropa cómoda y ligera',
+        'Zapatos de senderismo',
+        'Protector solar y gafas de sol',
+        'Sombrero o gorra',
+        'Botella para agua reutilizable',
+        'Cámara fotográfica',
+        'Repelente de insectos',
+      ],
+      'requisitos': 'Ninguno, apto para todas las edades',
+      'restricciones': 'Ninguna restricción especial',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
