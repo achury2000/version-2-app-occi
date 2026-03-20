@@ -343,6 +343,50 @@ class RutasData {
       'requisitos': 'Licencia de conducción vigente, mayores de 18 años',
       'restricciones': 'No se recomienda para menores de 18 años ni personas con molestias en espalda o cuello',
     },
+    {
+      'id': 9,
+      'nombre': 'Senderismo ecológico',
+      'ubicacion': 'Sopetrán',
+      'descripcion':
+          'Caminar por Sopetrán es adentrarse en un territorio lleno de historia, paisajes y vida. Con 19 rutas identificadas, cada recorrido es una experiencia única que combina aventura, naturaleza y tradición, '
+          'permitiendo descubrir cascadas, montañas, bosques y la esencia misma del campo antioqueño.\n\n'
+          'Más que un recorrido, es una oportunidad de conexión auténtica con las comunidades locales, quienes compartirán sus saberes, su cultura y la calidez campesina que enriquece cada paso.',
+      'duracion': 6.0, // en horas
+      'distancia': 15.0, // en km aprox
+      'precio': 95000, // por persona
+      'capacidad': 15,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Guía naturalista especializado',
+        'Reconocimiento del territorio',
+        'Acceso a cascadas y mirador',
+        'Seguro de viajero',
+        'Almuerzo típico local',
+        'Interacción con comunidades',
+      ],
+      'imagen_principal': 'assets/rutas/senderismo_ecologico/principal.png',
+      'zonas_paso': [
+        'Inicio en zona rural de Sopetrán',
+        'Senderos principales de las 19 rutas',
+        'Cascadas y piscinas naturales',
+        'Bosques primarios y secundarios',
+        'Encuentro con comunidades locales',
+        'Mirador con vistas panorámicas',
+        'Zona de descanso y almuerzo',
+      ],
+      'mejor_epoca': 'Todo el año (evitar lluvias fuertes)',
+      'equipo_necesario': [
+        'Calzado de senderismo impermeables',
+        'Ropa ligera pero protectora',
+        'Capa impermeable',
+        'Protector solar y gafas de sol',
+        'Botella de agua reutilizable',
+        'Cámara fotográfica',
+        'Bolsa impermeable para valuables',
+      ],
+      'requisitos': 'Condición física media, apto para todas las edades',
+      'restricciones': 'Personas con limitaciones de movilidad pueden requerir guía adicional',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
