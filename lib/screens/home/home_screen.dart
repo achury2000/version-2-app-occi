@@ -6,6 +6,7 @@ import '../../providers/catalogo_provider.dart';
 import '../../providers/cliente_provider.dart';
 import 'profile_edit_screen.dart';
 import '../catalogo/finca_detail_screen.dart';
+import '../catalogo/rutas_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -303,53 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Tab 3: Rutas
   Widget _buildRutasTab() {
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade400, Colors.green.shade600],
-              ),
-            ),
-            child: const Text(
-              'Rutas',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Consumer<CatalogoProvider>(
-              builder: (context, catalogoProvider, _) {
-                if (catalogoProvider.isLoadingRutas) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (catalogoProvider.rutas.isEmpty) {
-                  return const Center(
-                    child: Text('No hay rutas disponibles'),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: catalogoProvider.rutas.length,
-                  itemBuilder: (context, index) {
-                    return _buildRutaListItem(
-                      catalogoProvider.rutas[index],
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+    return const RutasScreen();
   }
 
   // Tab 4: Perfil
@@ -975,48 +930,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (normalized.startsWith('la maria')) return 'la_maria';
 
     return normalized.replaceAll(' ', '_');
-  }
-
-  Widget _buildRutaListItem(dynamic ruta) {
-    String nombre = '';
-    double distancia = 0;
-    int duracion = 0;
-    double precio = 0;
-
-    if (ruta is Map) {
-      nombre = (ruta['nombre'] ?? '').toString();
-      distancia = (ruta['distancia'] ?? 0).toDouble();
-      duracion = (ruta['duracion'] ?? 0).toInt();
-      precio = (ruta['precio'] ?? 0).toDouble();
-    } else {
-      nombre = ruta.nombre ?? '';
-      distancia = (ruta.distancia ?? 0).toDouble();
-      duracion = (ruta.duracion ?? 0).toInt();
-      precio = (ruta.precio ?? 0).toDouble();
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Container(
-          width: 60,
-          decoration: BoxDecoration(
-            color: Colors.green.shade200,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.hiking),
-        ),
-        title: Text(nombre),
-        subtitle: Text('${distancia.toStringAsFixed(1)}km - ${duracion}h'),
-        trailing: Text(
-          '\$${precio.toStringAsFixed(0)}',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildInfoCard(String title, String value, IconData icon) {

@@ -190,14 +190,8 @@ class _FincasScreenState extends State<FincasScreen> {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
                   itemCount: fincas.length,
                   itemBuilder: (context, index) {
                     final finca = fincas[index];
@@ -218,182 +212,159 @@ class _FincasScreenState extends State<FincasScreen> {
     int id = 0;
     String nombre = '';
     String ubicacion = '';
+    int capacidad = 0;
     double precio = 0;
     
     if (finca is Map) {
       id = finca['id'] ?? 0;
       nombre = finca['nombre'] ?? '';
       ubicacion = finca['ubicacion'] ?? '';
+      capacidad = (finca['capacidad_personas'] ?? 0).toInt();
       precio = (finca['precio_por_noche'] ?? 0).toDouble();
     } else {
       id = finca.id ?? 0;
       nombre = finca.nombre ?? '';
       ubicacion = finca.ubicacion ?? '';
+      capacidad = finca.capacidad ?? 0;
       precio = finca.precioNoche ?? 0;
     }
 
-    return GestureDetector(
-      onTap: () {
-        // Obtener datos completos de la finca desde FincasData
-        dynamic fincaCompleta;
-        
-        if (finca is Map) {
-          fincaCompleta = finca;
-        } else {
-          fincaCompleta = FincasData.getFincaById(id) ??
-              {
-                'nombre': nombre,
-                'ubicacion': ubicacion,
-                'capacidad_personas': finca.capacidad,
-                'precio_por_noche': precio.toInt(),
-                'descripcion': finca.descripcion,
-              };
-        }
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          // Obtener datos completos de la finca desde FincasData
+          dynamic fincaCompleta;
+          
+          if (finca is Map) {
+            fincaCompleta = finca;
+          } else {
+            fincaCompleta = FincasData.getFincaById(id) ??
+                {
+                  'nombre': nombre,
+                  'ubicacion': ubicacion,
+                  'capacidad_personas': capacidad,
+                  'precio_por_noche': precio.toInt(),
+                  'descripcion': finca.descripcion,
+                };
+          }
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FincaDetailScreen(finca: fincaCompleta),
-          ),
-        );
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.green.shade200,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  // Cargar imagen si existe
-                  _getImageWidget(finca),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.star, size: 12, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text(
-                            '4.8',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FincaDetailScreen(finca: fincaCompleta),
             ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Icono
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.home, size: 40, color: Colors.green),
+              ),
+              const SizedBox(width: 16),
 
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+              // Información
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Nombre
                     Text(
                       nombre,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 8),
+
+                    // Ubicación
                     Row(
                       children: [
                         const Icon(Icons.location_on,
-                            size: 10, color: Colors.grey),
-                        const SizedBox(width: 2),
+                            size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             ubicacion,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: 12,
                               color: Colors.grey,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 8),
+
+                    // Capacidad
+                    Row(
+                      children: [
+                        const Icon(Icons.people,
+                            size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$capacidad personas',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Precio
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      '\$${precio.toStringAsFixed(0)}/noche',
+                      '\$${precio.toStringAsFixed(0)}',
                       style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
-                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '/noche',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  /// Cargar imagen de la finca
-  Widget _getImageWidget(dynamic finca) {
-    String? imagenPath;
-    
-    if (finca is Map) {
-      imagenPath = finca['imagen_principal'] as String?;
-    } else {
-      imagenPath = finca.imagenPrincipal;
-    }
-
-    if (imagenPath != null && imagenPath.isNotEmpty) {
-      return Image.asset(
-        imagenPath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.green.shade100,
-            child: const Center(
-              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-            ),
-          );
-        },
-      );
-    }
-
-    return Container(
-      color: Colors.green.shade100,
-      child: const Center(
-        child: Icon(Icons.image, size: 40, color: Colors.grey),
       ),
     );
   }

@@ -211,8 +211,14 @@ class _RutasScreenState extends State<RutasScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                return GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
                   itemCount: rutas.length,
                   itemBuilder: (context, index) {
                     final ruta = rutas[index];
@@ -263,115 +269,209 @@ class _RutasScreenState extends State<RutasScreen> {
       }
     }
 
-    return Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 4,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RutaDetailScreen(ruta: ruta),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RutaDetailScreen(ruta: ruta),
-              ),
-            );
-          },
-          child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Imagen
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade200,
-                  borderRadius: BorderRadius.circular(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.green.shade200,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                child: const Icon(Icons.hiking, size: 40),
               ),
-              const SizedBox(width: 16),
+              child: Stack(
+                children: [
+                  // Imagen de la ruta (si existe)
+                  _getImageWidget(ruta),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: getDifficultyColor(dificultad),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.signal_cellular_alt, size: 12, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(
+                            dificultad,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-              // Información
-              Expanded(
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Nombre
                     Text(
                       nombre,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
-
-                    // Ubicación
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.location_on,
-                            size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
+                            size: 10, color: Colors.grey),
+                        const SizedBox(width: 2),
                         Expanded(
                           child: Text(
                             ubicacion,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 10,
                               color: Colors.grey,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-
-                    // Stats
+                    const SizedBox(height: 4),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Chip(
-                          label: Text(
-                            dificultad,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                            ),
-                          ),
-                          backgroundColor: getDifficultyColor(dificultad),
-                          padding: EdgeInsets.zero,
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.schedule,
-                                size: 14, color: Colors.green),
-                            const SizedBox(width: 4),
-                            Text('${duracion}h',
-                                style: const TextStyle(fontSize: 12)),
-                          ],
-                        ),
+                        const Icon(Icons.schedule, size: 10, color: Colors.grey),
+                        const SizedBox(width: 2),
                         Text(
-                          '\$${precio.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                            fontSize: 13,
-                          ),
+                          '${duracion}h',
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      '\$${precio.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Botones
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RutaDetailScreen(ruta: ruta),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.visibility, size: 14),
+                      label: const Text('Ver', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$nombre agregada al carrito'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.shopping_cart, size: 14),
+                      label: const Text('Reservar', style: TextStyle(fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        side: const BorderSide(color: Colors.green),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// Cargar imagen de la ruta
+  Widget _getImageWidget(dynamic ruta) {
+    String? imagenPath;
+    
+    if (ruta is Map) {
+      imagenPath = ruta['imagen_principal'] as String?;
+    } else {
+      imagenPath = ruta.imagenUrl;
+    }
+
+    if (imagenPath != null && imagenPath.isNotEmpty) {
+      return Image.asset(
+        imagenPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.green.shade100,
+            child: const Center(
+              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+            ),
+          );
+        },
+      );
+    }
+
+    return Container(
+      color: Colors.green.shade100,
+      child: const Center(
+        child: Icon(Icons.hiking, size: 40, color: Colors.grey),
       ),
     );
   }
