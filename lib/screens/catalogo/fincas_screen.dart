@@ -190,14 +190,8 @@ class _FincasScreenState extends State<FincasScreen> {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
                   itemCount: fincas.length,
                   itemBuilder: (context, index) {
                     final finca = fincas[index];
