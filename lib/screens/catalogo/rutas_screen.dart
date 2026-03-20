@@ -298,7 +298,6 @@ class _RutasScreenState extends State<RutasScreen> {
               ),
               child: Stack(
                 children: [
-                  // Imagen de la ruta (si existe)
                   _getImageWidget(ruta),
                   Positioned(
                     top: 8,
@@ -443,7 +442,6 @@ class _RutasScreenState extends State<RutasScreen> {
     );
   }
 
-  /// Cargar imagen de la ruta
   Widget _getImageWidget(dynamic ruta) {
     String? imagenPath;
     
