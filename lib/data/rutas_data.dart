@@ -387,6 +387,51 @@ class RutasData {
       'requisitos': 'Condición física media, apto para todas las edades',
       'restricciones': 'Personas con limitaciones de movilidad pueden requerir guía adicional',
     },
+    {
+      'id': 10,
+      'nombre': 'Paseo a caballo por el bosque',
+      'ubicacion': 'Río Tonusco',
+      'descripcion':
+          'Montar a caballo siempre es una experiencia única. En este recorrido por las riveras del río Tonusco, disfrutarás de senderos tranquilos y paisajes impresionantes, '
+          'mientras conectas con la naturaleza y la cultura local.\n\n'
+          'Durante 2.5 horas, vivirás la aventura de guiar tu propio caballo, cruzarás el río y descubrirás escenarios que solo este lugar puede ofrecer. '
+          'Combinaremos la pasión por los caballos y la naturaleza en un recorrido donde apreciaremos el imponente bosque seco tropical, conoceremos su importancia para el ecosistema '
+          'y degustaremos un refrescante refrigerio de la casa. Si amas la naturaleza, los caballos y apreciar paisajes sin igual, esta experiencia es para ti.',
+      'duracion': 2.5, // en horas
+      'distancia': 8.0, // en km aprox
+      'precio': 75000, // por persona
+      'capacidad': 12,
+      'dificultad': 'Fácil',
+      'incluye': [
+        'Caballo equipado y seleccionado',
+        'Guía ecuestre especializado',
+        'Cruce de río',
+        'Transporte al punto de partida',
+        'Refrigerio casero',
+        'Seguro de viajero',
+      ],
+      'imagen_principal': 'assets/rutas/paseo_caballo_bosque/principal.png',
+      'zonas_paso': [
+        'Centro de equitación - punto de partida',
+        'Riveras del río Tonusco',
+        'Cruce del río',
+        'Senderos del bosque seco tropical',
+        'Mirador natural',
+        'Zona de descanso y refrigerio',
+        'Retorno seguro',
+      ],
+      'mejor_epoca': 'Todo el año (verano ideal)',
+      'equipo_necesario': [
+        'Pantalón largo (no muy ajustado)',
+        'Botas cerradas o zapatos con apoyo tobillo',
+        'Sombrero o gorra',
+        'Protector solar',
+        'Cámara fotográfica',
+        'Ropa cómoda y clima-apropiada',
+      ],
+      'requisitos': 'Experiencia básica en equitación recomendada, mayores de 10 años',
+      'restricciones': 'No recomendado para personas con miedo a caballos o problemas de columna'.
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
