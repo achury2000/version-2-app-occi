@@ -570,6 +570,51 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción especial',
     },
+    {
+      'id': 14,
+      'nombre': 'Ruta de avistamiento de aves',
+      'ubicacion': 'Del Cauca al Páramo (Sopetrán)',
+      'descripcion':
+          'Una experiencia de aprendizaje y profundo contacto con la naturaleza, recorriendo senderos que resguardan el bosque seco tropical. '
+          'Sopetrán es hogar de especies endémicas como el Cucarachero Paisa (Thryophilus sernai) y el imponente Ara Militaris, símbolos de identidad y conservación.\n\n'
+          'A lo largo del recorrido, nuestros guías especializados te acompañarán en la observación de una gran diversidad de aves, '
+          'compartiendo conocimientos que hacen de este tour un encuentro único con la riqueza natural del territorio y su avifauna.',
+      'duracion': 3.5, // en horas
+      'distancia': 10.0, // en km aprox
+      'precio': 110000, // por persona
+      'capacidad': 12,
+      'dificultad': 'Moderado',
+      'incluye': [
+        'Guía especializado en ornitología',
+        'Binoculares profesionales',
+        'Mapa de especies endémicas',
+        'Senderos en bosque seco tropical',
+        'Seguro de viajero',
+        'Refrigerio y agua',
+      ],
+      'imagen_principal': 'assets/rutas/avistamiento_aves/principal.png',
+      'zonas_paso': [
+        'Centro de recepción y equipamiento',
+        'Senderos principales del bosque seco',
+        'Zonas de avistamiento especies endémicas',
+        'Laguna o espejo de agua',
+        'Mirador ornitológico',
+        'Zona de descanso y observación',
+      ],
+      'mejor_epoca': 'Diciembre a abril (migración de aves)',
+      'equipo_necesario': [
+        'Calzado de senderismo',
+        'Ropa neutra (verde, camuflaje)',
+        'Protector solar',
+        'Gafas de sol y gorra',
+        'Botella de agua reutilizable',
+        'Cámara télescopio o zoom',
+        'Libreta de observaciones',
+        'Repelente de insectos',
+      ],
+      'requisitos': 'Condición física media, paciencia para observación',
+      'restricciones': 'Personas con problemas auditivos pueden llevar asistente',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
