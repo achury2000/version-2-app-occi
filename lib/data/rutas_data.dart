@@ -210,6 +210,49 @@ class RutasData {
       'requisitos': 'Ninguno, apto para todas las edades',
       'restricciones': 'Ninguna restricción especial',
     },
+    {
+      'id': 6,
+      'nombre': 'City tours Santa Fe',
+      'ubicacion': 'Centro Histórico, Santa Fe de Antioquia',
+      'descripcion':
+          'Adéntrate en el encanto colonial de Santa Fe de Antioquia, la ciudad madre de Antioquia y patrimonio cultural de Colombia. Sus calles empedradas, sus casas blancas con balcones coloridos y su imponente arquitectura colonial te invitan a un viaje en el tiempo.\n\n'
+          'En este recorrido por el Centro Histórico, vivirás una experiencia única con visitas a:\n'
+          '• 4 parques y 4 templos llenos de historia\n'
+          '• La majestuosa Catedral Basílica\n'
+          '• El Museo Juan del Corral Histórico\n'
+          '• La Casa Comfama y la Casa de la Cultura, guardianas de la memoria del pueblo\n'
+          '• El Taller de Filigrana Carolina Vélez, el taller principal de la Casa de la Cultura\n'
+          '• El tradicional Hotel Mariscal Robledo y el Parque de las Artesanías',
+      'duracion': 2.0, // en horas
+      'distancia': 3.5, // en km aprox
+      'precio': 55000, // por persona
+      'capacidad': 12,
+      'dificultad': 'Muy Fácil',
+      'incluye': [
+        'Guía especializado en historia colonial',
+        'Acceso a sitios históricos',
+        'Seguro de viajero',
+      ],
+      'imagen_principal': 'assets/rutas/city_tours_santa_fe/principal.png',
+      'zonas_paso': [
+        'Centro Histórico - Inicio del recorrido',
+        'Parque Principal y Catedral Basílica',
+        'Templos históricos (4 templos)',
+        'Casa Comfama y Casa de la Cultura',
+        'Taller de Filigrana Carolina Vélez',
+        'Parque de las Artesanías y Hotel Mariscal Robledo',
+      ],
+      'mejor_epoca': 'Todo el año (ideal Diciembre-Enero festividades)',
+      'equipo_necesario': [
+        'Calzado cómodo para caminata urbana',
+        'Cámara fotográfica',
+        'Protector solar',
+        'Gafas de sol',
+        'Bolsa para compras de artesanías',
+      ],
+      'requisitos': 'Ninguno, apto para todas las edades',
+      'restricciones': 'Ninguna restricción especial',
+    },
   ];
   static Map<String, dynamic>? getRutaById(int id) {
     try {
