@@ -211,14 +211,8 @@ class _RutasScreenState extends State<RutasScreen> {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
                   itemCount: rutas.length,
                   itemBuilder: (context, index) {
                     final ruta = rutas[index];
@@ -279,198 +273,191 @@ class _RutasScreenState extends State<RutasScreen> {
         );
       },
       child: Card(
-        elevation: 2,
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.green.shade200,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RutaDetailScreen(ruta: ruta),
               ),
-              child: Stack(
-                children: [
-                  _getImageWidget(ruta),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Imagen
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _getImageWidget(ruta),
+                ),
+                const SizedBox(width: 16),
+
+                // Información
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nombre
+                      Text(
+                        nombre,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: getDifficultyColor(dificultad),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
+                      const SizedBox(height: 8),
+
+                      // Ubicación
+                      Row(
                         children: [
-                          const Icon(Icons.signal_cellular_alt, size: 12, color: Colors.white),
+                          const Icon(Icons.location_on,
+                              size: 12, color: Colors.grey),
                           const SizedBox(width: 4),
-                          Text(
-                            dificultad,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              ubicacion,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                      const SizedBox(height: 8),
 
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      nombre,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on,
-                            size: 10, color: Colors.grey),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            ubicacion,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      // Duración
+                      Row(
+                        children: [
+                          const Icon(Icons.schedule,
+                              size: 12, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${duracion}h',
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: 12,
                               color: Colors.grey,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.schedule, size: 10, color: Colors.grey),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${duracion}h',
-                          style: const TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      '\$${precio.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        fontSize: 12,
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
 
-            // Botones
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RutaDetailScreen(ruta: ruta),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.visibility, size: 14),
-                      label: const Text('Ver', style: TextStyle(fontSize: 12)),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        backgroundColor: Colors.green,
-                      ),
-                    ),
+                // Dificultad
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: getDifficultyColor(dificultad).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('$nombre agregada al carrito'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.shopping_cart, size: 14),
-                      label: const Text('Reservar', style: TextStyle(fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        side: const BorderSide(color: Colors.green),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        dificultad,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: getDifficultyColor(dificultad),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '\$${precio.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  String _getRutaFolderPath(String nombre) {
+    final normalized = nombre
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // Mapeo de nombres de rutas a carpetas
+    if (normalized.startsWith('sendero') && normalized.contains('condor')) return 'sendero_condor';
+    if (normalized.startsWith('tour') && normalized.contains('chocolate')) return 'tour_del_chocolate';
+    if (normalized.contains('tour') && normalized.contains('cata') && normalized.contains('vino')) return 'tour_cata_vinos';
+    if (normalized.contains('tour') && normalized.contains('cascada')) return 'tours_tres_cascadas';
+    if (normalized.contains('tour') && normalized.contains('puente')) return 'tour_al_puente_occidente';
+    if (normalized.contains('city') && normalized.contains('santa')) return 'city_tours_santa_fe';
+    if (normalized.contains('city') && normalized.contains('tierra')) return 'city_tours_tierra_frutas';
+    if (normalized.contains('experiencia') && normalized.contains('viña')) return 'experiencia_viña_tigre';
+    if (normalized.contains('tour') && normalized.contains('cuatrimotos')) return 'tour_cuatrimotos';
+    if (normalized.contains('senderismo') && normalized.contains('ecologico')) return 'senderismo_ecologico';
+    if (normalized.contains('paseo') && normalized.contains('caballo')) return 'paseo_caballo_bosque';
+    if (normalized.contains('bote') || normalized.contains('paseo') && normalized.contains('nicolas')) return 'bote_paseo_san_nicolas';
+    if (normalized.contains('ruta') && normalized.contains('uva')) return 'ruta_uva_sopetran';
+    if (normalized.contains('avistamiento')) return 'avistamiento_aves';
+
+    return normalized.replaceAll(' ', '_');
+  }
+
   Widget _getImageWidget(dynamic ruta) {
+    String nombre = '';
     String? imagenPath;
     
     if (ruta is Map) {
-      imagenPath = ruta['imagen_principal'] as String?;
+      nombre = ruta['nombre'] ?? '';
+      imagenPath = ruta['imagen_principal']?.toString();
     } else {
-      imagenPath = ruta.imagenUrl;
+      nombre = ruta.nombre ?? '';
     }
 
-    if (imagenPath != null && imagenPath.isNotEmpty) {
-      return Image.asset(
-        imagenPath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.green.shade100,
-            child: const Center(
-              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-            ),
-          );
-        },
-      );
+    // Si no hay imagen en los datos, generar ruta basándome en el nombre
+    if (imagenPath == null || imagenPath.isEmpty) {
+      final folderPath = _getRutaFolderPath(nombre);
+      imagenPath = 'assets/rutas/$folderPath/principal.png';
     }
 
-    return Container(
-      color: Colors.green.shade100,
-      child: const Center(
-        child: Icon(Icons.hiking, size: 40, color: Colors.grey),
-      ),
+    return Image.asset(
+      imagenPath,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.green.shade100,
+          child: const Center(
+            child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+          ),
+        );
+      },
     );
   }
 }

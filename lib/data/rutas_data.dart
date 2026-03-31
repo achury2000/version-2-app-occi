@@ -24,7 +24,7 @@ class RutasData {
         'Transporte desde punto de encuentro',
         'Binoculares para avistamiento',
       ],
-      'imagen_principal': 'assets/rutas/sendero_condor/principal.jpg',
+      'imagen_principal': 'assets/rutas/sendero_condor/principal.png',
       'zonas_paso': [
         'Laguna de la Virgen - Inicio a 2100m',
         'Campamento Alto - Descanso a 2800m',

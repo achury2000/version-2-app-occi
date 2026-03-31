@@ -9,6 +9,9 @@ import '../screens/auth/verify_email_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/home/mis_reservas_screen.dart';
 import '../screens/home/role_dashboard_screen.dart';
+import '../screens/catalogo/disponibilidades_screen.dart';
+import '../screens/reservas/crear_reserva_screen.dart';
+import '../screens/reservas/reserva_detalle_screen.dart';
 import '../providers/auth_provider.dart';
 
 String _normalizeRole(String? role) {
@@ -42,6 +45,9 @@ const Set<String> _authRoutes = {
 const Set<String> _protectedRoutes = {
   '/home',
   '/mis-reservas',
+  '/disponibilidades',
+  '/crear-reserva',
+  '/reserva-detalle',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
@@ -169,6 +175,46 @@ final appRouter = GoRouter(
       path: '/mis-reservas',
       name: 'misReservas',
       builder: (context, state) => const MisReservasScreen(),
+    ),
+    GoRoute(
+      path: '/disponibilidades',
+      name: 'disponibilidades',
+      builder: (context, state) => const DisponibilidadesScreen(),
+    ),
+    GoRoute(
+      path: '/crear-reserva',
+      name: 'crearReserva',
+      builder: (context, state) {
+        final idProgramacion = state.uri.queryParameters['idProgramacion'];
+        return CrearReservaScreen(
+          idProgramacion:
+              idProgramacion != null ? int.tryParse(idProgramacion) : null,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/reserva-detalle',
+      name: 'reservaDetalle',
+      builder: (context, state) {
+        final idReserva = state.uri.queryParameters['id'] as String?;
+        int? id;
+        if (idReserva != null) {
+          id = int.tryParse(idReserva);
+        } else if (state.extra != null) {
+          id = state.extra as int?;
+        }
+        
+        if (id == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(
+              child: Text('ID de reserva inválido'),
+            ),
+          );
+        }
+
+        return ReservaDetalleScreen(idReserva: id);
+      },
     ),
     GoRoute(
       path: '/admin-home',

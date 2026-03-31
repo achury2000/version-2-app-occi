@@ -538,6 +538,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Widgets auxiliares
+  String _getFincaFolderPath(String nombre) {
+    final normalized = nombre
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (normalized.startsWith('las margaritas')) return 'las_margaritas';
+    if (normalized.startsWith('las heliconias')) return 'las_heliconias';
+    if (normalized.startsWith('las palmas')) return 'las_palmas';
+    if (normalized.startsWith('la ilusion')) return 'la_ilusion';
+    if (normalized.startsWith('la maria')) return 'la_maria';
+
+    return normalized.replaceAll(' ', '_');
+  }
+
   Widget _buildFincaCard(dynamic finca) {
     String nombre = '';
     double precio = 0;
@@ -552,6 +574,9 @@ class _HomeScreenState extends State<HomeScreen> {
       precio = finca.precioNoche ?? 0;
       rating = (finca.rating ?? 4.8).toDouble();
     }
+
+    final folderPath = _getFincaFolderPath(nombre);
+    final imagePath = 'assets/fincas/$folderPath/principal.png';
 
     return Container(
       width: 150,
@@ -572,7 +597,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 topRight: Radius.circular(12),
               ),
             ),
-            child: const Icon(Icons.image, size: 35),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.green.shade200,
+                    child: const Icon(Icons.image, size: 35),
+                  );
+                },
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(8),
@@ -611,19 +651,59 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _getRutaFolderPath(String nombre) {
+    final normalized = nombre
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // Mapeo de nombres de rutas a carpetas
+    if (normalized.startsWith('sendero') && normalized.contains('condor')) return 'sendero_condor';
+    if (normalized.startsWith('tour') && normalized.contains('chocolate')) return 'tour_del_chocolate';
+    if (normalized.contains('tour') && normalized.contains('cata') && normalized.contains('vino')) return 'tour_cata_vinos';
+    if (normalized.contains('tour') && normalized.contains('cascada')) return 'tours_tres_cascadas';
+    if (normalized.contains('tour') && normalized.contains('puente')) return 'tour_al_puente_occidente';
+    if (normalized.contains('city') && normalized.contains('santa')) return 'city_tours_santa_fe';
+    if (normalized.contains('city') && normalized.contains('tierra')) return 'city_tours_tierra_frutas';
+    if (normalized.contains('experiencia') && normalized.contains('viña')) return 'experiencia_viña_tigre';
+    if (normalized.contains('tour') && normalized.contains('cuatrimotos')) return 'tour_cuatrimotos';
+    if (normalized.contains('senderismo') && normalized.contains('ecologico')) return 'senderismo_ecologico';
+    if (normalized.contains('paseo') && normalized.contains('caballo')) return 'paseo_caballo_bosque';
+    if (normalized.contains('bote') || normalized.contains('paseo') && normalized.contains('nicolas')) return 'bote_paseo_san_nicolas';
+    if (normalized.contains('ruta') && normalized.contains('uva')) return 'ruta_uva_sopetran';
+    if (normalized.contains('avistamiento')) return 'avistamiento_aves';
+
+    return normalized.replaceAll(' ', '_');
+  }
+
   Widget _buildRutaCard(dynamic ruta) {
     String nombre = '';
     double precio = 0;
     double rating = 4.8;
+    String? imagenPath;
 
     if (ruta is Map) {
       nombre = (ruta['nombre'] ?? '').toString();
       precio = (ruta['precio'] ?? 0).toDouble();
       rating = (ruta['rating'] ?? 4.8).toDouble();
+      imagenPath = ruta['imagen_principal']?.toString();
     } else {
       nombre = ruta.nombre ?? '';
       precio = ruta.precio ?? 0;
       rating = (ruta.rating ?? 4.8).toDouble();
+    }
+
+    // Si no hay imagen en los datos, generar ruta basándome en el nombre
+    if (imagenPath == null || imagenPath.isEmpty) {
+      final folderPath = _getRutaFolderPath(nombre);
+      imagenPath = 'assets/rutas/$folderPath/principal.png';
     }
 
     return Container(
@@ -645,7 +725,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 topRight: Radius.circular(12),
               ),
             ),
-            child: const Icon(Icons.image, size: 40),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.asset(
+                imagenPath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.green.shade200,
+                    child: const Icon(Icons.image, size: 40),
+                  );
+                },
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(12),

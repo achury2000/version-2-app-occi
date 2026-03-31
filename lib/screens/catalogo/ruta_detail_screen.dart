@@ -376,11 +376,12 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
 
                                       setModalState(() => isSaving = true);
                                       try {
+                                        // Usar el nuevo flujo: crear reserva para una programación
                                         await _reservaService.crear(
                                           idCliente: idCliente,
-                                          fechaInicio: _formatApiDate(fechaInicio!),
-                                          fechaFin: _formatApiDate(fechaFin!),
+                                          idProgramacion: 0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
+                                          metodoPago: 'transferencia',
                                           observaciones:
                                               'Ruta: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
                                         );

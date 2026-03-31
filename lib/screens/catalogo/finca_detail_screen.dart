@@ -420,11 +420,12 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
 
                                       setModalState(() => isSaving = true);
                                       try {
+                                        // Usar el nuevo flujo: crear reserva para una programación
                                         await _reservaService.crear(
                                           idCliente: idCliente,
-                                          fechaInicio: _formatApiDate(fechaInicio!),
-                                          fechaFin: _formatApiDate(fechaFin!),
+                                          idProgramacion: 0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
+                                          metodoPago: 'transferencia',
                                           observaciones:
                                               'Finca: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
                                         );

@@ -169,6 +169,40 @@ class ReservaProvider extends ChangeNotifier {
     }
   }
 
+  /// Crear una nueva reserva
+  Future<void> crearReserva({
+    required int idCliente,
+    required int idProgramacion,
+    required int cantidadPersonas,
+    String? metodoPago,
+    String? observaciones,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final nuevaReserva = await _reservaService.crear(
+        idCliente: idCliente,
+        idProgramacion: idProgramacion,
+        cantidadPersonas: cantidadPersonas,
+        metodoPago: metodoPago,
+        observaciones: observaciones,
+      );
+
+      // Agregar a la lista local
+      _reservas.insert(0, nuevaReserva);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Error al crear reserva: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Comparar si la reserva puede ser editada
   bool puedeEditarse(Reserva reserva) {
     if (reserva.estado == null) return false;
@@ -178,13 +212,23 @@ class ReservaProvider extends ChangeNotifier {
     return estado != 'cancelada' && estado != 'completada';
   }
 
+  /// Iniciar una reserva con programación seleccionada (para PHASE 4)
+  void iniciarReservaConProgramacion({
+    required int idProgramacion,
+    required String? nombreRuta,
+    required double? precio,
+  }) {
+    // Este método prepara el estado para la creación de una new reserva
+    // Será usado en el flujo de check-in en PHASE 4
+    _error = null;
+    notifyListeners();
+  }
+
   /// Limpiar error
   void limpiarError() {
     _error = null;
     notifyListeners();
   }
-
-  /// Copiar con (helper para actualizaciones)
 }
 
 extension ReservaX on Reserva {
@@ -193,13 +237,19 @@ extension ReservaX on Reserva {
     int? idCliente,
     String? nombreCliente,
     String? apellidoCliente,
+    int? idProgramacion,
     DateTime? fechaReserva,
     DateTime? fechaInicio,
     DateTime? fechaFin,
     int? cantidadPersonas,
     double? precioTotal,
+    double? precioPorPersona,
     String? estado,
+    String? estadoPago,
+    String? metodoPago,
+    String? comprobantePago,
     String? observaciones,
+    String? motivoCancelacion,
     List<dynamic>? programaciones,
     List<dynamic>? fincas,
     List<dynamic>? servicios,
@@ -210,13 +260,19 @@ extension ReservaX on Reserva {
       idCliente: idCliente ?? this.idCliente,
       nombreCliente: nombreCliente ?? this.nombreCliente,
       apellidoCliente: apellidoCliente ?? this.apellidoCliente,
+      idProgramacion: idProgramacion ?? this.idProgramacion,
       fechaReserva: fechaReserva ?? this.fechaReserva,
       fechaInicio: fechaInicio ?? this.fechaInicio,
       fechaFin: fechaFin ?? this.fechaFin,
       cantidadPersonas: cantidadPersonas ?? this.cantidadPersonas,
       precioTotal: precioTotal ?? this.precioTotal,
+      precioPorPersona: precioPorPersona ?? this.precioPorPersona,
       estado: estado ?? this.estado,
+      estadoPago: estadoPago ?? this.estadoPago,
+      metodoPago: metodoPago ?? this.metodoPago,
+      comprobantePago: comprobantePago ?? this.comprobantePago,
       observaciones: observaciones ?? this.observaciones,
+      motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
       programaciones: programaciones ?? this.programaciones,
       fincas: fincas ?? this.fincas,
       servicios: servicios ?? this.servicios,
