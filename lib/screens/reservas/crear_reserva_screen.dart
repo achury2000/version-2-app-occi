@@ -97,6 +97,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         cantidadPersonas: _cantidadPersonas,
         metodoPago: _metodoPago,
         observaciones: _observacionesController.text,
+        servicios: _serviciosSeleccionados.isNotEmpty ? _serviciosSeleccionados : null,
       );
 
       if (!mounted) return;
@@ -120,6 +121,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
       // Navegar a detalle de la nueva reserva
       if (mounted) {
+        // Limpiar servicios seleccionados para próxima reserva
+        context.read<ServicioProvider>().limpiarSeleccion();
+        
         context.pop();
         // Esperar a que se cierre esta pantalla
         Future.delayed(const Duration(milliseconds: 300), () {

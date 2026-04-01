@@ -93,12 +93,14 @@ class ReservaService {
   /// Crear una nueva reserva.
   ///
   /// El cliente puede crear su propia reserva desde una programación.
+  /// Opcionalmente puede incluir servicios adicionales.
   Future<Reserva> crear({
     required int idCliente,
     required int idProgramacion,
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
+    List<int>? servicios,
   }) async {
     try {
       final body = <String, dynamic>{
@@ -109,6 +111,9 @@ class ReservaService {
 
       if (metodoPago != null) body['metodo_pago'] = metodoPago;
       if (observaciones != null) body['observaciones'] = observaciones;
+      if (servicios != null && servicios.isNotEmpty) {
+        body['servicios'] = servicios;
+      }
 
       final response = await _api.post('/reservas', body);
 
