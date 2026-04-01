@@ -130,18 +130,27 @@ class ReservaService {
     }
   }
 
-  /// Cancelar una reserva existente.
+  /// Cancelar una reserva existente con motivo/justificación.
   ///
-  /// El cliente puede cancelar su propia reserva.
-  Future<bool> cancelar(int idReserva) async {
+  /// El cliente puede cancelar su propia reserva con un motivo.
+  /// Opcionalmente puede proporcionar un motivo de cancelación.
+  Future<Reserva> cancelar(int idReserva, {String? motivo}) async {
     try {
-      final response = await _api.post('/reservas/$idReserva/cancelar', {});
-
-      if (response is Map) {
-        return response['success'] == true;
+      final body = <String, dynamic>{};
+      if (motivo != null && motivo.isNotEmpty) {
+        body['motivo_cancelacion'] = motivo;
       }
 
-      return false;
+      final response = await _api.post('/reservas/$idReserva/cancelar', body);
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al cancelar reserva');
     } catch (e) {
       rethrow;
     }

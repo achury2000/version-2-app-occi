@@ -49,22 +49,49 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   void _mostrarConfirmacionCancelacion() {
     if (_reserva == null) return;
 
+    final motivoController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Cancelar Reserva'),
-        content: const Text(
-          '¿Estás seguro de que deseas cancelar esta reserva? Esta acción no puede revertirse.',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '¿Estás seguro de que deseas cancelar esta reserva?\n\nEsta acción no puede revertirse.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Motivo/Justificación (opcional):',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: motivoController,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: 'Escribe el motivo de cancelación...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('No, mantener'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              _cancelarReserva();
+              Navigator.pop(dialogContext);
+              _cancelarReserva(motivoController.text.trim());
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sí, cancelar'),
@@ -74,7 +101,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     );
   }
 
-  Future<void> _cancelarReserva() async {
+  Future<void> _cancelarReserva(String motivo) async {
     if (_reserva == null) return;
 
     setState(() {
@@ -84,7 +111,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     try {
       await context
           .read<ReservaProvider>()
-          .cancelarReserva(_reserva!.id);
+          .cancelarReserva(_reserva!.id, motivo: motivo.isNotEmpty ? motivo : null);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

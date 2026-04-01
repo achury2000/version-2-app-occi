@@ -144,18 +144,18 @@ class ReservaProvider extends ChangeNotifier {
     };
   }
 
-  /// Cancelar una reserva
-  Future<void> cancelarReserva(int idReserva) async {
+  /// Cancelar una reserva con motivo opcional
+  Future<void> cancelarReserva(int idReserva, {String? motivo}) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      await _reservaService.cancelar(idReserva);
+      final reservaActualizada = await _reservaService.cancelar(idReserva, motivo: motivo);
 
-      // Actualizar lista local
+      // Actualizar lista local con la reserva actualizada del backend
       final index = _reservas.indexWhere((r) => r.id == idReserva);
       if (index >= 0) {
-        _reservas[index] = _reservas[index].copyWith(estado: 'cancelada');
+        _reservas[index] = reservaActualizada;
       }
 
       _isLoading = false;
