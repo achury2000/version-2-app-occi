@@ -676,35 +676,20 @@ class _HomeScreenState extends State<HomeScreen> {
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 
-    // Mapeo de nombres de rutas a carpetas
-    if (normalized.startsWith('sendero') && normalized.contains('condor'))
-      return 'sendero_condor';
-    if (normalized.startsWith('tour') && normalized.contains('chocolate'))
-      return 'tour_del_chocolate';
-    if (normalized.contains('tour') &&
-        normalized.contains('cata') &&
-        normalized.contains('vino')) return 'tour_cata_vinos';
-    if (normalized.contains('tour') && normalized.contains('cascada'))
-      return 'tours_tres_cascadas';
-    if (normalized.contains('tour') && normalized.contains('puente'))
-      return 'tour_al_puente_occidente';
-    if (normalized.contains('city') && normalized.contains('santa'))
-      return 'city_tours_santa_fe';
-    if (normalized.contains('city') && normalized.contains('tierra'))
-      return 'city_tours_tierra_frutas';
-    if (normalized.contains('experiencia') && normalized.contains('viña'))
-      return 'experiencia_viña_tigre';
-    if (normalized.contains('tour') && normalized.contains('cuatrimotos'))
-      return 'tour_cuatrimotos';
-    if (normalized.contains('senderismo') && normalized.contains('ecologico'))
-      return 'senderismo_ecologico';
-    if (normalized.contains('paseo') && normalized.contains('caballo'))
-      return 'paseo_caballo_bosque';
-    if (normalized.contains('bote') ||
-        normalized.contains('paseo') && normalized.contains('nicolas'))
-      return 'bote_paseo_san_nicolas';
-    if (normalized.contains('ruta') && normalized.contains('uva'))
-      return 'ruta_uva_sopetran';
+    // Mapeo flexible de nombres de rutas a carpetas
+    if (normalized.contains('sendero') && normalized.contains('condor')) return 'sendero_condor';
+    if ((normalized.contains('tour') || normalized.contains('chocolate')) && normalized.contains('chocolate')) return 'tour_del_chocolate';
+    if ((normalized.contains('tour') || normalized.contains('cata')) && (normalized.contains('cata') || normalized.contains('vino'))) return 'tour_cata_vinos';
+    if ((normalized.contains('tour') || normalized.contains('cascada')) && normalized.contains('cascada')) return 'tours_tres_cascadas';
+    if ((normalized.contains('tour') || normalized.contains('puente')) && normalized.contains('puente')) return 'tour_al_puente_occidente';
+    if ((normalized.contains('city') || normalized.contains('santa')) && normalized.contains('santa')) return 'city_tours_santa_fe';
+    if ((normalized.contains('city') || normalized.contains('tierra')) && normalized.contains('tierra')) return 'city_tours_tierra_frutas';
+    if ((normalized.contains('experiencia') || normalized.contains('vina')) && (normalized.contains('experiencia') || normalized.contains('vina'))) return 'experiencia_viña_tigre';
+    if ((normalized.contains('tour') || normalized.contains('cuatrimotos')) && normalized.contains('cuatrimotos')) return 'tour_cuatrimotos';
+    if ((normalized.contains('senderismo') || normalized.contains('ecologico')) && (normalized.contains('senderismo') || normalized.contains('ecologico'))) return 'senderismo_ecologico';
+    if ((normalized.contains('paseo') || normalized.contains('caballo')) && normalized.contains('caballo')) return 'paseo_caballo_bosque';
+    if (normalized.contains('bote') || (normalized.contains('paseo') && normalized.contains('nicolas'))) return 'bote_paseo_san_nicolas';
+    if ((normalized.contains('ruta') || normalized.contains('uva')) && normalized.contains('uva')) return 'ruta_uva_sopetran';
     if (normalized.contains('avistamiento')) return 'avistamiento_aves';
 
     return normalized.replaceAll(' ', '_');
@@ -714,23 +699,15 @@ class _HomeScreenState extends State<HomeScreen> {
     String nombre = '';
     double precio = 0;
     double rating = 4.8;
-    String? imagenPath;
 
     if (ruta is Map) {
       nombre = (ruta['nombre'] ?? '').toString();
       precio = (ruta['precio'] ?? 0).toDouble();
       rating = (ruta['rating'] ?? 4.8).toDouble();
-      imagenPath = ruta['imagen_principal']?.toString();
     } else {
       nombre = ruta.nombre ?? '';
       precio = ruta.precio ?? 0;
       rating = (ruta.rating ?? 4.8).toDouble();
-    }
-
-    // Si no hay imagen en los datos, generar ruta basándome en el nombre
-    if (imagenPath == null || imagenPath.isEmpty) {
-      final folderPath = _getRutaFolderPath(nombre);
-      imagenPath = 'assets/rutas/$folderPath/principal.png';
     }
 
     return GestureDetector(
@@ -750,26 +727,21 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             height: 100,
             decoration: BoxDecoration(
-              color: Colors.green.shade200,
+              gradient: LinearGradient(
+                colors: [Colors.green.shade400, Colors.green.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),
             ),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              child: Image.asset(
-                imagenPath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.green.shade200,
-                    child: const Icon(Icons.image, size: 40),
-                  );
-                },
+            child: Center(
+              child: Icon(
+                Icons.hiking,
+                size: 50,
+                color: Colors.white.withOpacity(0.9),
               ),
             ),
           ),
