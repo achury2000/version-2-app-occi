@@ -190,10 +190,16 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             _buildSeccionPrecio(reserva),
             const SizedBox(height: 20),
 
+            /// SERVICIOS ADICIONALES
+            if (reserva.servicios != null && (reserva.servicios as List).isNotEmpty)
+              _buildSeccionServicios(reserva),
+
             /// OBSERVACIONES
             if (reserva.observaciones != null &&
-                reserva.observaciones!.isNotEmpty)
+                reserva.observaciones!.isNotEmpty) ...[
+              const SizedBox(height: 20),
               _buildSeccionObservaciones(reserva),
+            ],
 
             /// BOTONES DE ACCIÓN
             const SizedBox(height: 24),
@@ -422,12 +428,18 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     );
   }
 
-  Widget _buildSeccionPago() {
+  Widget _buildSeccionServicios(Reserva reserva) {
+    final servicios = reserva.servicios ?? [];
+    
+    if (servicios.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Información de Pago',
+          'Servicios Adicionales',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -435,16 +447,78 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _buildFilaDetalle(
-          'Estado de Pago',
-          (_reserva?.estadoPago ?? 'N/A').toUpperCase(),
-          Icons.payment,
-          colors: _getEstadoPagoColor(_reserva?.estadoPago),
-        ),
-        _buildFilaDetalle(
-          'Método',
-          _capitalizarPrimer(_reserva?.metodoPago ?? 'N/A'),
-          Icons.credit_card,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber.shade300),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: servicios.length,
+            separatorBuilder: (context, index) =>
+                Divider(color: Colors.amber.shade200, height: 12),
+            itemBuilder: (context, index) {
+              final servicio = servicios[index];
+              final nombre = servicio['nombre'] ?? 'Servicio sin nombre';
+              final descripcion = servicio['descripcion'] ?? '';
+              final precio = (servicio['precio'] as num?)?.toDouble() ?? 0.0;
+
+              return Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            nombre,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade600,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '+\$${precio.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (descripcion.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        descripcion,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -582,11 +656,6 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     return hasta.difference(desde).inDays;
   }
 
-  String _capitalizarPrimer(String texto) {
-    if (texto.isEmpty) return texto;
-    return texto[0].toUpperCase() + texto.substring(1);
-  }
-
   Color _getEstadoColor(String? estado) {
     switch ((estado ?? '').toLowerCase()) {
       case 'pendiente':
@@ -598,17 +667,6 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         return Colors.green;
       case 'cancelada':
         return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Color _getEstadoPagoColor(String? estado) {
-    switch ((estado ?? '').toLowerCase()) {
-      case 'pendiente':
-        return Colors.orange;
-      case 'pagada':
-        return Colors.green;
       default:
         return Colors.grey;
     }
