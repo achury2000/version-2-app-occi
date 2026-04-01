@@ -14,7 +14,10 @@ import '../screens/reservas/crear_reserva_screen.dart';
 import '../screens/reservas/reserva_detalle_screen.dart';
 import '../screens/reservas/editar_reserva_screen.dart';
 import '../screens/servicios/servicios_seleccion_screen.dart';
+import '../screens/programaciones_personales/lista_programaciones_personales_screen.dart';
+import '../screens/programaciones_personales/agregar_programacion_personal_screen.dart';
 import '../models/reserva.dart';
+import '../models/programacion_personal.dart';
 import '../providers/auth_provider.dart';
 
 String _normalizeRole(String? role) {
@@ -53,6 +56,9 @@ const Set<String> _protectedRoutes = {
   '/reserva-detalle',
   '/editar-reserva',
   '/servicios-seleccion',
+  '/programaciones-personales',
+  '/agregar-programacion-personal',
+  '/editar-programacion-personal',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
@@ -236,24 +242,42 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/editar-reserva',
-      name: 'editarReserva',
-      builder: (context, state) {
-        final reserva = state.extra;
-        if (reserva == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Error')),
-            body: const Center(child: Text('Reserva no encontrada')),
-          );
-        }
-        return EditarReservaScreen(reserva: reserva as Reserva);
-      },
-    ),
-    GoRoute(
       path: '/servicios-seleccion',
       name: 'serviciosSeleccion',
       builder: (context, state) => const ServiciosSeleccionScreen(),
     ),
+
+    // ============================================
+    // PROGRAMACIONES PERSONALES
+    // ============================================
+
+    GoRoute(
+      path: '/programaciones-personales',
+      name: 'programacionesPersonales',
+      builder: (context, state) => const ListaProgramacionesPersonalesScreen(),
+    ),
+    GoRoute(
+      path: '/agregar-programacion-personal',
+      name: 'agregarProgramacionPersonal',
+      builder: (context, state) => const AgregarProgramacionPersonalScreen(),
+    ),
+    GoRoute(
+      path: '/editar-programacion-personal',
+      name: 'editarProgramacionPersonal',
+      builder: (context, state) {
+        final programacion = state.extra;
+        if (programacion == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Programación no encontrada')),
+          );
+        }
+        return AgregarProgramacionPersonalScreen(
+          programacionParaEditar: programacion as ProgramacionPersonal,
+        );
+      },
+    ),
+
     GoRoute(
       path: '/admin-home',
       name: 'adminHome',

@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'providers/cliente_provider.dart';
 import 'providers/catalogo_provider.dart';
 import 'providers/reserva_provider.dart';
+import 'providers/programacion_personal_provider.dart';
 
 void main() {
   runApp(const OccitourApp());
@@ -32,6 +33,9 @@ class _OccitourAppState extends State<OccitourApp> {
         ),
         ChangeNotifierProvider(
           create: (_) => ReservaProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProgramacionPersonalProvider(),
         ),
       ],
       child: MaterialApp.router(
