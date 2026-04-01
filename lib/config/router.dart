@@ -12,6 +12,7 @@ import '../screens/home/role_dashboard_screen.dart';
 import '../screens/catalogo/disponibilidades_screen.dart';
 import '../screens/reservas/crear_reserva_screen.dart';
 import '../screens/reservas/reserva_detalle_screen.dart';
+import '../screens/servicios/servicios_seleccion_screen.dart';
 import '../providers/auth_provider.dart';
 
 String _normalizeRole(String? role) {
@@ -48,6 +49,7 @@ const Set<String> _protectedRoutes = {
   '/disponibilidades',
   '/crear-reserva',
   '/reserva-detalle',
+  '/servicios-seleccion',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
@@ -196,12 +198,12 @@ final appRouter = GoRouter(
       path: '/reserva-detalle',
       name: 'reservaDetalle',
       builder: (context, state) {
-        final idReserva = state.uri.queryParameters['id'] as String?;
+        final idReserva = state.uri.queryParameters['id'];
         int? id;
         if (idReserva != null) {
           id = int.tryParse(idReserva);
-        } else if (state.extra != null) {
-          id = state.extra as int?;
+        } else if (state.extra is int) {
+          id = state.extra as int;
         }
         
         if (id == null) {
@@ -215,6 +217,11 @@ final appRouter = GoRouter(
 
         return ReservaDetalleScreen(idReserva: id);
       },
+    ),
+    GoRoute(
+      path: '/servicios-seleccion',
+      name: 'serviciosSeleccion',
+      builder: (context, state) => const ServiciosSeleccionScreen(),
     ),
     GoRoute(
       path: '/admin-home',

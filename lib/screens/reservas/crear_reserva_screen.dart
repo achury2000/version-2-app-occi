@@ -5,6 +5,7 @@ import '../../models/programacion.dart';
 import '../../providers/programacion_provider.dart';
 import '../../providers/reserva_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/servicio_provider.dart';
 import '../../services/reserva_service.dart';
 
 class CrearReservaScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   late ReservaService _reservaService;
   int _cantidadPersonas = 1;
   String _metodoPago = 'transferencia';
+  List<int> _serviciosSeleccionados = [];
   final TextEditingController _observacionesController = TextEditingController();
   bool _cargando = false;
   Programacion? _programacionSeleccionada;
@@ -34,7 +36,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     super.initState();
     _reservaService = ReservaService();
     _programacionSeleccionada = widget.programacion;
-    _cargarProgramacion();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarProgramacion();
+    });
   }
 
   @override
@@ -98,8 +102,14 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       if (!mounted) return;
 
       // Actualizar lista de reservas en el provider
-      await context.read<ReservaProvider>().cargarReservas(idCliente: idCliente);
+      if (mounted) {
+        // ignore: use_build_context_synchronously
+        await context.read<ReservaProvider>().cargarReservas(idCliente: idCliente);
+      }
 
+      if (!mounted) return;
+
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Reserva #${nuevaReserva.id} creada exitosamente'),
@@ -168,15 +178,19 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 _buildSeccionPago(),
                 const SizedBox(height: 24),
 
-                /// SECCIÓN 4: Observaciones
+                /// SECCIÓN 4: Servicios Adicionales
+                _buildSeccionServicios(),
+                const SizedBox(height: 24),
+
+                /// SECCIÓN 5: Observaciones
                 _buildSeccionObservaciones(),
                 const SizedBox(height: 24),
 
-                /// SECCIÓN 5: Resumen de Precio
+                /// SECCIÓN 6: Resumen de Precio
                 _buildResumenPrecio(),
                 const SizedBox(height: 24),
 
-                /// SECCIÓN 6: Botones
+                /// SECCIÓN 7: Botones
                 _buildBotones(),
               ],
             ),
@@ -394,71 +408,115 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     final precioUnitario = _programacionSeleccionada?.precio ?? 0;
     final precioTotal = _calcularPrecioTotal();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade300),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<ServicioProvider>(
+      builder: (context, servicioProvider, _) {
+        final serviciosTotal = servicioProvider.totalServiciosSeleccionados;
+        final totalConServicios = precioTotal + serviciosTotal;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.shade300),
+          ),
+          child: Column(
             children: [
-              const Text(
-                'Precio por persona:',
-                style: TextStyle(color: Colors.grey),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Precio por persona:',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    '\$${precioUnitario.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '\$${precioUnitario.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Cantidad:',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    '$_cantidadPersonas persona${_cantidadPersonas > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Experiencia:',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    '\$${precioTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (serviciosTotal > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Servicios:',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    Text(
+                      '\$${serviciosTotal.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber,
+                      ),
+                    ),
+                  ],
                 ),
+              ],
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '\$${totalConServicios.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Cantidad:',
-                style: TextStyle(color: Colors.grey),
-              ),
-              Text(
-                '$_cantidadPersonas persona${_cantidadPersonas > 1 ? 's' : ''}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Precio Total:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '\$${precioTotal.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -504,5 +562,84 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   String _capitalizarPrimer(String texto) {
     if (texto.isEmpty) return texto;
     return texto[0].toUpperCase() + texto.substring(1);
+  }
+
+  /// Construir sección de servicios adicionales
+  Widget _buildSeccionServicios() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Servicios Adicionales',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Consumer<ServicioProvider>(
+          builder: (context, servicioProvider, _) {
+            final cantidad = servicioProvider.idsServiciosSeleccionados.length;
+            return GestureDetector(
+              onTap: () async {
+                final resultado = await context.pushNamed('serviciosSeleccion');
+                if (resultado != null && resultado is List<int>) {
+                  setState(() {
+                    _serviciosSeleccionados = resultado;
+                  });
+                  // Actualizar el provider con los servicios seleccionados
+                  servicioProvider.cargarServiciosSeleccionados(_serviciosSeleccionados);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: cantidad > 0 ? Colors.amber.shade300 : Colors.grey.shade300,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  color: cantidad > 0 ? Colors.amber.shade50 : Colors.grey.shade50,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cantidad == 0
+                              ? 'Sin servicios seleccionados'
+                              : '$cantidad servicio${cantidad > 1 ? 's' : ''} seleccionado${cantidad > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: cantidad > 0 ? Colors.amber.shade900 : Colors.grey,
+                          ),
+                        ),
+                        if (cantidad > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Toca para editar',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.amber.shade700,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    Icon(
+                      Icons.edit,
+                      color: cantidad > 0 ? Colors.amber.shade700 : Colors.grey,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
