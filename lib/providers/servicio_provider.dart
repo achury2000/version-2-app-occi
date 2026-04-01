@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/servicio.dart';
+import '../services/servicio_service.dart';
 import '../data/servicios_data.dart';
 
 /// Provider para manejar el estado de Servicios
-/// Maneja carga, filtrado y selección de servicios
+/// Maneja carga desde API, filtrado y selección de servicios
 class ServicioProvider extends ChangeNotifier {
+  final ServicioService _service = ServicioService();
+
   List<Servicio> _servicios = [];
   List<Servicio> _serviciosFiltrados = [];
   List<int> _serviciosSeleccionados = [];
   bool _isLoading = false;
+  bool _usandoApiReal = false;
   String? _error;
 
   // Getters
@@ -19,40 +23,69 @@ class ServicioProvider extends ChangeNotifier {
       .toList();
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get usandoApiReal => _usandoApiReal;
 
   /// Calcular precio total de servicios seleccionados
   double get totalServiciosSeleccionados {
     return serviciosSeleccionados.fold(0, (sum, s) => sum + s.precio);
   }
 
-  /// Cargar servicios desde datos locales o API
+  /// Cargar servicios desde API real
+  /// Intenta conectar con backend, si falla usa datos locales
   Future<void> cargarServicios() async {
     _isLoading = true;
     _error = null;
+    _usandoApiReal = false;
     notifyListeners();
 
     try {
-      // TODO: Reemplazar con llamada a API cuando esté lista
-      // const url = 'https://api.occi.com/servicios/disponibles';
-      // final response = await http.get(Uri.parse(url));
-      // if (response.statusCode == 200) {
-      //   final List<dynamic> data = jsonDecode(response.body);
-      //   _servicios = data.map((j) => Servicio.fromJson(j)).toList();
-      // }
-
-      // Por ahora, usar datos locales
-      await Future.delayed(const Duration(milliseconds: 500));
-      _servicios = serviciosData;
+      // Intentar cargar desde API
+      _servicios = await _service.obtenerServiciosDisponibles();
+      _usandoApiReal = true;
       _serviciosFiltrados = List.from(_servicios);
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _error = 'Error al cargar servicios: $e';
+      // Si falla, usar datos locales como fallback
+      debugPrint('Error al conectar con API: $e. Usando datos locales...');
+      try {
+        await Future.delayed(const Duration(milliseconds: 300));
+        _servicios = serviciosData;
+        _serviciosFiltrados = List.from(_servicios);
+        _usandoApiReal = false;
+      } catch (fallbackError) {
+        _error = 'Error al cargar servicios: $fallbackError';
+      }
+
       _isLoading = false;
       notifyListeners();
-      rethrow;
     }
+  }
+
+  /// Cargar servicios de un tipo específico desde la API
+  Future<void> cargarServiciosPorTipo(String tipo) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _servicios = await _service.obtenerServiciosPorTipo(tipo);
+      _serviciosFiltrados = List.from(_servicios);
+      _usandoApiReal = true;
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Error al cargar servicios por tipo: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Recargar datos desde API (manual refresh)
+  Future<void> recargarDatos() async {
+    return cargarServicios();
   }
 
   /// Filtrar servicios por nombre o descripción
