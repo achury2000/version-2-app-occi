@@ -140,37 +140,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Botones de Acceso Rápido (FASES 11-13)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => context.pushNamed('busquedaAvanzada'),
-                            icon: const Icon(Icons.search),
-                            label: const Text('Búsqueda\nAvanzada'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: Colors.blue,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => context.pushNamed('auditoria'),
-                            icon: const Icon(Icons.history),
-                            label: const Text('Historial de\nCambios'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: Colors.purple,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 32),
 
                     // Sección Fincas
@@ -530,11 +499,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () {
                                   Navigator.of(dialogContext).pop(); // Cancelar
                                 },
-                                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                                child: const Text('Cancelar',
+                                    style: TextStyle(color: Colors.grey)),
                               ),
                               ElevatedButton(
                                 onPressed: () async {
-                                  Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                                  Navigator.of(dialogContext)
+                                      .pop(); // Cerrar diálogo
                                   // Ejecutar logout
                                   await authProvider.logout();
                                   if (!context.mounted) return;
@@ -609,75 +580,85 @@ class _HomeScreenState extends State<HomeScreen> {
     final folderPath = _getFincaFolderPath(nombre);
     final imagePath = 'assets/fincas/$folderPath/principal.png';
 
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 90,
-            decoration: BoxDecoration(
-              color: Colors.green.shade200,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.green.shade200,
-                    child: const Icon(Icons.image, size: 35),
-                  );
-                },
-              ),
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FincaDetailScreen(finca: finca),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nombre,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 12),
+        );
+      },
+      child: Container(
+        width: 150,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade200,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.green.shade200,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.star, size: 12, color: Colors.amber),
-                    const SizedBox(width: 3),
-                    Text('$rating', style: const TextStyle(fontSize: 11)),
-                  ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '\$${precio.toStringAsFixed(0)}/noche',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 11,
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.green.shade200,
+                      child: const Icon(Icons.image, size: 35),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 12, color: Colors.amber),
+                      const SizedBox(width: 3),
+                      Text('$rating', style: const TextStyle(fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '\$${precio.toStringAsFixed(0)}/noche',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -696,19 +677,34 @@ class _HomeScreenState extends State<HomeScreen> {
         .trim();
 
     // Mapeo de nombres de rutas a carpetas
-    if (normalized.startsWith('sendero') && normalized.contains('condor')) return 'sendero_condor';
-    if (normalized.startsWith('tour') && normalized.contains('chocolate')) return 'tour_del_chocolate';
-    if (normalized.contains('tour') && normalized.contains('cata') && normalized.contains('vino')) return 'tour_cata_vinos';
-    if (normalized.contains('tour') && normalized.contains('cascada')) return 'tours_tres_cascadas';
-    if (normalized.contains('tour') && normalized.contains('puente')) return 'tour_al_puente_occidente';
-    if (normalized.contains('city') && normalized.contains('santa')) return 'city_tours_santa_fe';
-    if (normalized.contains('city') && normalized.contains('tierra')) return 'city_tours_tierra_frutas';
-    if (normalized.contains('experiencia') && normalized.contains('viña')) return 'experiencia_viña_tigre';
-    if (normalized.contains('tour') && normalized.contains('cuatrimotos')) return 'tour_cuatrimotos';
-    if (normalized.contains('senderismo') && normalized.contains('ecologico')) return 'senderismo_ecologico';
-    if (normalized.contains('paseo') && normalized.contains('caballo')) return 'paseo_caballo_bosque';
-    if (normalized.contains('bote') || normalized.contains('paseo') && normalized.contains('nicolas')) return 'bote_paseo_san_nicolas';
-    if (normalized.contains('ruta') && normalized.contains('uva')) return 'ruta_uva_sopetran';
+    if (normalized.startsWith('sendero') && normalized.contains('condor'))
+      return 'sendero_condor';
+    if (normalized.startsWith('tour') && normalized.contains('chocolate'))
+      return 'tour_del_chocolate';
+    if (normalized.contains('tour') &&
+        normalized.contains('cata') &&
+        normalized.contains('vino')) return 'tour_cata_vinos';
+    if (normalized.contains('tour') && normalized.contains('cascada'))
+      return 'tours_tres_cascadas';
+    if (normalized.contains('tour') && normalized.contains('puente'))
+      return 'tour_al_puente_occidente';
+    if (normalized.contains('city') && normalized.contains('santa'))
+      return 'city_tours_santa_fe';
+    if (normalized.contains('city') && normalized.contains('tierra'))
+      return 'city_tours_tierra_frutas';
+    if (normalized.contains('experiencia') && normalized.contains('viña'))
+      return 'experiencia_viña_tigre';
+    if (normalized.contains('tour') && normalized.contains('cuatrimotos'))
+      return 'tour_cuatrimotos';
+    if (normalized.contains('senderismo') && normalized.contains('ecologico'))
+      return 'senderismo_ecologico';
+    if (normalized.contains('paseo') && normalized.contains('caballo'))
+      return 'paseo_caballo_bosque';
+    if (normalized.contains('bote') ||
+        normalized.contains('paseo') && normalized.contains('nicolas'))
+      return 'bote_paseo_san_nicolas';
+    if (normalized.contains('ruta') && normalized.contains('uva'))
+      return 'ruta_uva_sopetran';
     if (normalized.contains('avistamiento')) return 'avistamiento_aves';
 
     return normalized.replaceAll(' ', '_');
@@ -737,7 +733,11 @@ class _HomeScreenState extends State<HomeScreen> {
       imagenPath = 'assets/rutas/$folderPath/principal.png';
     }
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedIndex = 2);
+      },
+      child: Container(
       width: 160,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
@@ -804,6 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
