@@ -44,20 +44,21 @@ class _OccitourAppState extends State<OccitourApp> {
           create: (_) => NotificacionesProvider(),
         ),
       ],
-      child: NotificacionesWidget(
-        child: MaterialApp.router(
-          title: 'Occitours',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.green,
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-            scaffoldBackgroundColor: const Color(0xFAF9F6),
+      child: MaterialApp.router(
+        title: 'Occitours',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.green,
+            brightness: Brightness.light,
           ),
-          themeMode: ThemeMode.light,
-          routerConfig: appRouter,
+          useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFAF9F6),
         ),
+        themeMode: ThemeMode.light,
+        routerConfig: appRouter,
+        builder: (context, child) {
+          return NotificacionesWidget(child: child ?? const SizedBox());
+        },
       ),
     );
   }
