@@ -147,6 +147,41 @@ class ReservaService {
     }
   }
 
+  /// Actualizar una reserva existente.
+  ///
+  /// El cliente puede editar su propia reserva si está en estado pendiente.
+  Future<Reserva> actualizar({
+    required int idReserva,
+    int? cantidadPersonas,
+    String? metodoPago,
+    String? observaciones,
+    List<int>? servicios,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+
+      if (cantidadPersonas != null) body['cantidad_personas'] = cantidadPersonas;
+      if (metodoPago != null) body['metodo_pago'] = metodoPago;
+      if (observaciones != null) body['observaciones'] = observaciones;
+      if (servicios != null && servicios.isNotEmpty) {
+        body['servicios'] = servicios;
+      }
+
+      final response = await _api.put('/reservas/$idReserva', body);
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al actualizar reserva');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Agregar un acompañante a una reserva.
   ///
   /// El cliente puede agregar acompañantes a sus reservas.

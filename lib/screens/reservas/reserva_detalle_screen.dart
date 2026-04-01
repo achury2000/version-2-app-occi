@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/reserva.dart';
 import '../../providers/reserva_provider.dart';
@@ -561,7 +562,27 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (puedeEditar && puedesCancelar)
+        if (puedeEditar)
+          ElevatedButton.icon(
+            onPressed: () {
+              context.pushNamed(
+                'editarReserva',
+                extra: reserva,
+              ).then((resultado) {
+                if (resultado == true && mounted) {
+                  _cargarDetalle();
+                }
+              });
+            },
+            icon: const Icon(Icons.edit),
+            label: const Text('Editar Reserva'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        if (puedeEditar && puedesCancelar) ...[
+          const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: _cancelando ? null : _mostrarConfirmacionCancelacion,
             icon: _cancelando
@@ -580,6 +601,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
+        ],
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () => Navigator.pop(context),

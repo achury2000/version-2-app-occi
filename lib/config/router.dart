@@ -12,7 +12,9 @@ import '../screens/home/role_dashboard_screen.dart';
 import '../screens/catalogo/disponibilidades_screen.dart';
 import '../screens/reservas/crear_reserva_screen.dart';
 import '../screens/reservas/reserva_detalle_screen.dart';
+import '../screens/reservas/editar_reserva_screen.dart';
 import '../screens/servicios/servicios_seleccion_screen.dart';
+import '../models/reserva.dart';
 import '../providers/auth_provider.dart';
 
 String _normalizeRole(String? role) {
@@ -49,6 +51,7 @@ const Set<String> _protectedRoutes = {
   '/disponibilidades',
   '/crear-reserva',
   '/reserva-detalle',
+  '/editar-reserva',
   '/servicios-seleccion',
   '/admin-home',
   '/asesor-home',
@@ -216,6 +219,34 @@ final appRouter = GoRouter(
         }
 
         return ReservaDetalleScreen(idReserva: id);
+      },
+    ),
+    GoRoute(
+      path: '/editar-reserva',
+      name: 'editarReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return EditarReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/editar-reserva',
+      name: 'editarReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return EditarReservaScreen(reserva: reserva as Reserva);
       },
     ),
     GoRoute(
