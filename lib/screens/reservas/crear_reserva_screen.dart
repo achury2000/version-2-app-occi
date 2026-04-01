@@ -95,7 +95,6 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         idCliente: idCliente,
         idProgramacion: _programacionSeleccionada!.id,
         cantidadPersonas: _cantidadPersonas,
-        metodoPago: _metodoPago,
         observaciones: _observacionesController.text,
         servicios: _serviciosSeleccionados.isNotEmpty ? _serviciosSeleccionados : null,
       );

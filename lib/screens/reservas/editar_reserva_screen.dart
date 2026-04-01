@@ -72,7 +72,6 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       final reservaActualizada = await _reservaService.actualizar(
         idReserva: widget.reserva.id,
         cantidadPersonas: _cantidadPersonas,
-        metodoPago: _metodoPago,
         observaciones: _observacionesController.text,
         servicios: _serviciosSeleccionados.isNotEmpty ? _serviciosSeleccionados : null,
       );
