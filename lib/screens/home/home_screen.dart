@@ -140,6 +140,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // Botones de Acceso Rápido (FASES 11-13)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => context.pushNamed('busquedaAvanzada'),
+                            icon: const Icon(Icons.search),
+                            label: const Text('Búsqueda\nAvanzada'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: Colors.blue,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => context.pushNamed('auditoria'),
+                            icon: const Icon(Icons.history),
+                            label: const Text('Historial de\nCambios'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: Colors.purple,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 32),
 
                     // Sección Fincas

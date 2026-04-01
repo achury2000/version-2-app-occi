@@ -651,6 +651,21 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           ),
         ],
         const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: () {
+            context.pushNamed(
+              'comprobanteReserva',
+              extra: reserva,
+            );
+          },
+          icon: const Icon(Icons.receipt_long),
+          label: const Text('Ver Comprobante'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),

@@ -17,6 +17,9 @@ import '../screens/reservas/gestion_servicios_reserva_screen.dart';
 import '../screens/servicios/servicios_seleccion_screen.dart';
 import '../screens/programaciones_personales/lista_programaciones_personales_screen.dart';
 import '../screens/programaciones_personales/agregar_programacion_personal_screen.dart';
+import '../screens/auditoria_screen.dart';
+import '../screens/comprobante_reserva_screen.dart';
+import '../screens/busqueda_avanzada_screen.dart';
 import '../models/reserva.dart';
 import '../models/programacion_personal.dart';
 import '../providers/auth_provider.dart';
@@ -61,6 +64,9 @@ const Set<String> _protectedRoutes = {
   '/programaciones-personales',
   '/agregar-programacion-personal',
   '/editar-programacion-personal',
+  '/auditoria',
+  '/comprobante-reserva',
+  '/busqueda-avanzada',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
@@ -292,6 +298,35 @@ final appRouter = GoRouter(
           programacionParaEditar: programacion as ProgramacionPersonal,
         );
       },
+    ),
+
+    // ============================================
+    // FASES 11-13: AUDITORÍA, COMPROBANTES Y BÚSQUEDA
+    // ============================================
+
+    GoRoute(
+      path: '/auditoria',
+      name: 'auditoria',
+      builder: (context, state) => const AuditoriaScreen(),
+    ),
+    GoRoute(
+      path: '/comprobante-reserva',
+      name: 'comprobanteReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return ComprobanteReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/busqueda-avanzada',
+      name: 'busquedaAvanzada',
+      builder: (context, state) => const BusquedaAvanzadaScreen(),
     ),
 
     GoRoute(
