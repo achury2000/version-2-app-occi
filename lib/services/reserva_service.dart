@@ -228,4 +228,55 @@ class ReservaService {
       rethrow;
     }
   }
+
+  /// Agregar un servicio adicional a una reserva existente.
+  ///
+  /// El cliente puede agregar servicios después de crear la reserva.
+  Future<Reserva> agregarServicio({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      final response = await _api.post(
+        '/reservas/$idReserva/servicios',
+        {'id_servicio': idServicio},
+      );
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al agregar servicio');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Eliminar un servicio de una reserva existente.
+  ///
+  /// El cliente puede eliminar servicios que agregó.
+  Future<Reserva> eliminarServicio({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      final response = await _api.delete(
+        '/reservas/$idReserva/servicios/$idServicio',
+      );
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al eliminar servicio');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

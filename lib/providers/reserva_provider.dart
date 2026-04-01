@@ -224,6 +224,68 @@ class ReservaProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Agregar un servicio a una reserva existente
+  Future<void> agregarServicioAReserva({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final reservaActualizada = await _reservaService.agregarServicio(
+        idReserva: idReserva,
+        idServicio: idServicio,
+      );
+
+      // Actualizar en la lista
+      final index = _reservas.indexWhere((r) => r.id == idReserva);
+      if (index >= 0) {
+        _reservas[index] = reservaActualizada;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Error al agregar servicio: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Eliminar un servicio de una reserva existente
+  Future<void> eliminarServicioDeReserva({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final reservaActualizada = await _reservaService.eliminarServicio(
+        idReserva: idReserva,
+        idServicio: idServicio,
+      );
+
+      // Actualizar en la lista
+      final index = _reservas.indexWhere((r) => r.id == idReserva);
+      if (index >= 0) {
+        _reservas[index] = reservaActualizada;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Error al eliminar servicio: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Limpiar error
   void limpiarError() {
     _error = null;

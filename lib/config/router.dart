@@ -13,6 +13,7 @@ import '../screens/catalogo/disponibilidades_screen.dart';
 import '../screens/reservas/crear_reserva_screen.dart';
 import '../screens/reservas/reserva_detalle_screen.dart';
 import '../screens/reservas/editar_reserva_screen.dart';
+import '../screens/reservas/gestion_servicios_reserva_screen.dart';
 import '../screens/servicios/servicios_seleccion_screen.dart';
 import '../screens/programaciones_personales/lista_programaciones_personales_screen.dart';
 import '../screens/programaciones_personales/agregar_programacion_personal_screen.dart';
@@ -55,6 +56,7 @@ const Set<String> _protectedRoutes = {
   '/crear-reserva',
   '/reserva-detalle',
   '/editar-reserva',
+  '/gestion-servicios-reserva',
   '/servicios-seleccion',
   '/programaciones-personales',
   '/agregar-programacion-personal',
@@ -239,6 +241,20 @@ final appRouter = GoRouter(
           );
         }
         return EditarReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/gestion-servicios-reserva',
+      name: 'gestionServiciosReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return GestionServiciosReservaScreen(reserva: reserva as Reserva);
       },
     ),
     GoRoute(

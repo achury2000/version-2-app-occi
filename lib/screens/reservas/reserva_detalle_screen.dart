@@ -629,6 +629,27 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             ),
           ),
         ],
+        if (puedeEditar) ...[
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.pushNamed(
+                'gestionServiciosReserva',
+                extra: reserva,
+              ).then((resultado) {
+                if (resultado == true && mounted) {
+                  _cargarDetalle();
+                }
+              });
+            },
+            icon: const Icon(Icons.miscellaneous_services),
+            label: const Text('Gestionar Servicios'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () => Navigator.pop(context),
