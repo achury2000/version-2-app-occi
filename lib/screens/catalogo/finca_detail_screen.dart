@@ -425,7 +425,6 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                           idCliente: idCliente,
                                           idProgramacion: 0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
-                                          metodoPago: 'transferencia',
                                           observaciones:
                                               'Finca: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
                                         );

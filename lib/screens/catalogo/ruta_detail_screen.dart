@@ -381,7 +381,6 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                           idCliente: idCliente,
                                           idProgramacion: 0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
-                                          metodoPago: 'transferencia',
                                           observaciones:
                                               'Ruta: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
                                         );

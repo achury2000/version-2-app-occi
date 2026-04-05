@@ -174,7 +174,6 @@ class ReservaProvider extends ChangeNotifier {
     required int idCliente,
     required int idProgramacion,
     required int cantidadPersonas,
-    String? metodoPago,
     String? observaciones,
   }) async {
     try {
@@ -186,7 +185,6 @@ class ReservaProvider extends ChangeNotifier {
         idCliente: idCliente,
         idProgramacion: idProgramacion,
         cantidadPersonas: cantidadPersonas,
-        metodoPago: metodoPago,
         observaciones: observaciones,
       );
 
