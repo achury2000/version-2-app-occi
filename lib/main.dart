@@ -5,6 +5,9 @@ import 'providers/auth_provider.dart';
 import 'providers/cliente_provider.dart';
 import 'providers/catalogo_provider.dart';
 import 'providers/reserva_provider.dart';
+import 'providers/programacion_personal_provider.dart';
+import 'providers/notificaciones_provider.dart';
+import 'widgets/notificaciones_widget.dart';
 
 void main() {
   runApp(const OccitourApp());
@@ -18,6 +21,7 @@ class OccitourApp extends StatefulWidget {
 }
 
 class _OccitourAppState extends State<OccitourApp> {
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
@@ -33,6 +37,12 @@ class _OccitourAppState extends State<OccitourApp> {
         ChangeNotifierProvider(
           create: (_) => ReservaProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ProgramacionPersonalProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificacionesProvider(),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Occitours',
@@ -46,6 +56,9 @@ class _OccitourAppState extends State<OccitourApp> {
         ),
         themeMode: ThemeMode.light,
         routerConfig: appRouter,
+        builder: (context, child) {
+          return NotificacionesWidget(child: child ?? const SizedBox());
+        },
       ),
     );
   }

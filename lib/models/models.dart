@@ -8,8 +8,8 @@ export 'finca.dart';
 export 'ruta.dart';
 export 'reserva.dart';
 export 'programacion.dart';
+export 'servicio.dart';
 
 // TODO: Agregar más modelos según se necesiten
-// export 'servicio.dart';
 // export 'pago.dart';
 // export 'proveedor.dart';

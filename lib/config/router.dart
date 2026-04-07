@@ -10,6 +10,19 @@ import '../screens/home/home_screen.dart';
 import '../screens/home/completar_perfil_page.dart';
 import '../screens/home/mis_reservas_screen.dart';
 import '../screens/home/role_dashboard_screen.dart';
+import '../screens/catalogo/disponibilidades_screen.dart';
+import '../screens/reservas/crear_reserva_screen.dart';
+import '../screens/reservas/reserva_detalle_screen.dart';
+import '../screens/reservas/editar_reserva_screen.dart';
+import '../screens/reservas/gestion_servicios_reserva_screen.dart';
+import '../screens/servicios/servicios_seleccion_screen.dart';
+import '../screens/programaciones_personales/lista_programaciones_personales_screen.dart';
+import '../screens/programaciones_personales/agregar_programacion_personal_screen.dart';
+import '../screens/auditoria_screen.dart';
+import '../screens/comprobante_reserva_screen.dart';
+import '../screens/busqueda_avanzada_screen.dart';
+import '../models/reserva.dart';
+import '../models/programacion_personal.dart';
 import '../providers/auth_provider.dart';
 
 String _normalizeRole(String? role) {
@@ -44,6 +57,18 @@ const Set<String> _protectedRoutes = {
   '/home',
   '/completar-perfil',
   '/mis-reservas',
+  '/disponibilidades',
+  '/crear-reserva',
+  '/reserva-detalle',
+  '/editar-reserva',
+  '/gestion-servicios-reserva',
+  '/servicios-seleccion',
+  '/programaciones-personales',
+  '/agregar-programacion-personal',
+  '/editar-programacion-personal',
+  '/auditoria',
+  '/comprobante-reserva',
+  '/busqueda-avanzada',
   '/admin-home',
   '/asesor-home',
   '/guia-home',
@@ -183,6 +208,140 @@ final appRouter = GoRouter(
       name: 'misReservas',
       builder: (context, state) => const MisReservasScreen(),
     ),
+    GoRoute(
+      path: '/disponibilidades',
+      name: 'disponibilidades',
+      builder: (context, state) => const DisponibilidadesScreen(),
+    ),
+    GoRoute(
+      path: '/crear-reserva',
+      name: 'crearReserva',
+      builder: (context, state) {
+        final idProgramacion = state.uri.queryParameters['idProgramacion'];
+        return CrearReservaScreen(
+          idProgramacion:
+              idProgramacion != null ? int.tryParse(idProgramacion) : null,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/reserva-detalle',
+      name: 'reservaDetalle',
+      builder: (context, state) {
+        final idReserva = state.uri.queryParameters['id'];
+        int? id;
+        if (idReserva != null) {
+          id = int.tryParse(idReserva);
+        } else if (state.extra is int) {
+          id = state.extra as int;
+        }
+        
+        if (id == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(
+              child: Text('ID de reserva inválido'),
+            ),
+          );
+        }
+
+        return ReservaDetalleScreen(idReserva: id);
+      },
+    ),
+    GoRoute(
+      path: '/editar-reserva',
+      name: 'editarReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return EditarReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/gestion-servicios-reserva',
+      name: 'gestionServiciosReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return GestionServiciosReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/servicios-seleccion',
+      name: 'serviciosSeleccion',
+      builder: (context, state) => const ServiciosSeleccionScreen(),
+    ),
+
+    // ============================================
+    // PROGRAMACIONES PERSONALES
+    // ============================================
+
+    GoRoute(
+      path: '/programaciones-personales',
+      name: 'programacionesPersonales',
+      builder: (context, state) => const ListaProgramacionesPersonalesScreen(),
+    ),
+    GoRoute(
+      path: '/agregar-programacion-personal',
+      name: 'agregarProgramacionPersonal',
+      builder: (context, state) => const AgregarProgramacionPersonalScreen(),
+    ),
+    GoRoute(
+      path: '/editar-programacion-personal',
+      name: 'editarProgramacionPersonal',
+      builder: (context, state) {
+        final programacion = state.extra;
+        if (programacion == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Programación no encontrada')),
+          );
+        }
+        return AgregarProgramacionPersonalScreen(
+          programacionParaEditar: programacion as ProgramacionPersonal,
+        );
+      },
+    ),
+
+    // ============================================
+    // FASES 11-13: AUDITORÍA, COMPROBANTES Y BÚSQUEDA
+    // ============================================
+
+    GoRoute(
+      path: '/auditoria',
+      name: 'auditoria',
+      builder: (context, state) => const AuditoriaScreen(),
+    ),
+    GoRoute(
+      path: '/comprobante-reserva',
+      name: 'comprobanteReserva',
+      builder: (context, state) {
+        final reserva = state.extra;
+        if (reserva == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(child: Text('Reserva no encontrada')),
+          );
+        }
+        return ComprobanteReservaScreen(reserva: reserva as Reserva);
+      },
+    ),
+    GoRoute(
+      path: '/busqueda-avanzada',
+      name: 'busquedaAvanzada',
+      builder: (context, state) => const BusquedaAvanzadaScreen(),
+    ),
+
     GoRoute(
       path: '/admin-home',
       name: 'adminHome',

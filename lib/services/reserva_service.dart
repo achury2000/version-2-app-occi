@@ -92,23 +92,28 @@ class ReservaService {
 
   /// Crear una nueva reserva.
   ///
-  /// El cliente puede crear su propia reserva.
+  /// El cliente puede crear su propia reserva desde una programación.
+  /// Opcionalmente puede incluir servicios adicionales.
   Future<Reserva> crear({
     required int idCliente,
-    required String fechaInicio,
-    required String fechaFin,
+    required int idProgramacion,
     required int cantidadPersonas,
+    String? metodoPago,
     String? observaciones,
+    List<int>? servicios,
   }) async {
     try {
       final body = <String, dynamic>{
         'id_cliente': idCliente,
-        'fecha_inicio': fechaInicio,
-        'fecha_fin': fechaFin,
+        'id_programacion': idProgramacion,
         'cantidad_personas': cantidadPersonas,
       };
 
+      if (metodoPago != null) body['metodo_pago'] = metodoPago;
       if (observaciones != null) body['observaciones'] = observaciones;
+      if (servicios != null && servicios.isNotEmpty) {
+        body['servicios'] = servicios;
+      }
 
       final response = await _api.post('/reservas', body);
 
@@ -125,18 +130,62 @@ class ReservaService {
     }
   }
 
-  /// Cancelar una reserva existente.
+  /// Cancelar una reserva existente con motivo/justificación.
   ///
-  /// El cliente puede cancelar su propia reserva.
-  Future<bool> cancelar(int idReserva) async {
+  /// El cliente puede cancelar su propia reserva con un motivo.
+  /// Opcionalmente puede proporcionar un motivo de cancelación.
+  Future<Reserva> cancelar(int idReserva, {String? motivo}) async {
     try {
-      final response = await _api.post('/reservas/$idReserva/cancelar', {});
-
-      if (response is Map) {
-        return response['success'] == true;
+      final body = <String, dynamic>{};
+      if (motivo != null && motivo.isNotEmpty) {
+        body['motivo_cancelacion'] = motivo;
       }
 
-      return false;
+      final response = await _api.post('/reservas/$idReserva/cancelar', body);
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al cancelar reserva');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Actualizar una reserva existente.
+  ///
+  /// El cliente puede editar su propia reserva si está en estado pendiente.
+  Future<Reserva> actualizar({
+    required int idReserva,
+    int? cantidadPersonas,
+    String? metodoPago,
+    String? observaciones,
+    List<int>? servicios,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+
+      if (cantidadPersonas != null) body['cantidad_personas'] = cantidadPersonas;
+      if (metodoPago != null) body['metodo_pago'] = metodoPago;
+      if (observaciones != null) body['observaciones'] = observaciones;
+      if (servicios != null && servicios.isNotEmpty) {
+        body['servicios'] = servicios;
+      }
+
+      final response = await _api.put('/reservas/$idReserva', body);
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al actualizar reserva');
     } catch (e) {
       rethrow;
     }
@@ -175,6 +224,57 @@ class ReservaService {
       }
 
       return false;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Agregar un servicio adicional a una reserva existente.
+  ///
+  /// El cliente puede agregar servicios después de crear la reserva.
+  Future<Reserva> agregarServicio({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      final response = await _api.post(
+        '/reservas/$idReserva/servicios',
+        {'id_servicio': idServicio},
+      );
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al agregar servicio');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Eliminar un servicio de una reserva existente.
+  ///
+  /// El cliente puede eliminar servicios que agregó.
+  Future<Reserva> eliminarServicio({
+    required int idReserva,
+    required int idServicio,
+  }) async {
+    try {
+      final response = await _api.delete(
+        '/reservas/$idReserva/servicios/$idServicio',
+      );
+
+      if (response is Map<String, dynamic>) {
+        if (response.containsKey('data')) {
+          return Reserva.fromJson(response['data']);
+        }
+        return Reserva.fromJson(response);
+      }
+
+      throw Exception('Error al eliminar servicio');
     } catch (e) {
       rethrow;
     }

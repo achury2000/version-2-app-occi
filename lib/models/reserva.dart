@@ -6,13 +6,19 @@ class Reserva {
   final int? idCliente;
   final String? nombreCliente;
   final String? apellidoCliente;
+  final int? idProgramacion;  // NUEVO - FK a programación
   final DateTime? fechaReserva;
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
   final int? cantidadPersonas;
   final double? precioTotal;
-  final String? estado;
+  final double? precioPorPersona;  // NUEVO - Precio unitario
+  final String? estado;  // pendiente, confirmada, completada, cancelada
+  final String? estadoPago;  // NUEVO - pendiente, pagada
+  final String? metodoPago;  // NUEVO - transferencia, tarjeta, efectivo
+  final String? comprobantePago;  // NUEVO - URL del comprobante
   final String? observaciones;
+  final String? motivoCancelacion;  // NUEVO - Motivo si se cancela
   final List<dynamic>? programaciones;
   final List<dynamic>? fincas;
   final List<dynamic>? servicios;
@@ -23,13 +29,19 @@ class Reserva {
     this.idCliente,
     this.nombreCliente,
     this.apellidoCliente,
+    this.idProgramacion,
     this.fechaReserva,
     this.fechaInicio,
     this.fechaFin,
     this.cantidadPersonas,
     this.precioTotal,
+    this.precioPorPersona,
     this.estado,
+    this.estadoPago,
+    this.metodoPago,
+    this.comprobantePago,
     this.observaciones,
+    this.motivoCancelacion,
     this.programaciones,
     this.fincas,
     this.servicios,
@@ -42,6 +54,7 @@ class Reserva {
       idCliente: json['id_cliente'],
       nombreCliente: json['nombre_cliente'] ?? json['nombre'],
       apellidoCliente: json['apellido_cliente'] ?? json['apellido'],
+      idProgramacion: json['id_programacion'],  // NUEVO
       fechaReserva: json['fecha_reserva'] != null
           ? DateTime.tryParse(json['fecha_reserva'].toString())
           : null,
@@ -53,8 +66,13 @@ class Reserva {
           : null,
       cantidadPersonas: json['cantidad_personas'],
       precioTotal: (json['precio_total'] as num?)?.toDouble(),
+      precioPorPersona: (json['precio_por_persona'] as num?)?.toDouble(),  // NUEVO
       estado: json['estado'],
+      estadoPago: json['estado_pago'],  // NUEVO
+      metodoPago: json['metodo_pago'],  // NUEVO
+      comprobantePago: json['comprobante_pago'],  // NUEVO
       observaciones: json['observaciones'],
+      motivoCancelacion: json['motivo_cancelacion'],  // NUEVO
       programaciones: json['programaciones'],
       fincas: json['fincas'],
       servicios: json['servicios'],
@@ -66,10 +84,18 @@ class Reserva {
     return {
       'id': id,
       'id_cliente': idCliente,
+      'id_programacion': idProgramacion,  // NUEVO
       'fecha_inicio': fechaInicio?.toIso8601String(),
       'fecha_fin': fechaFin?.toIso8601String(),
       'cantidad_personas': cantidadPersonas,
+      'precio_total': precioTotal,
+      'precio_por_persona': precioPorPersona,  // NUEVO
+      'estado': estado,
+      'estado_pago': estadoPago,  // NUEVO
+      'metodo_pago': metodoPago,  // NUEVO
+      'comprobante_pago': comprobantePago,  // NUEVO
       'observaciones': observaciones,
+      'motivo_cancelacion': motivoCancelacion,  // NUEVO
     };
   }
 
@@ -77,13 +103,40 @@ class Reserva {
   String get clienteNombreCompleto =>
       '${nombreCliente ?? ''} ${apellidoCliente ?? ''}'.trim();
 
-  /// Verifica si la reserva está activa
+  /// Verifica si la reserva está activa (pendiente o confirmada)
   bool get estaActiva =>
       estado?.toLowerCase() == 'activa' ||
-      estado?.toLowerCase() == 'confirmada';
+      estado?.toLowerCase() == 'confirmada' ||
+      estado?.toLowerCase() == 'pendiente';
 
   /// Verifica si la reserva fue cancelada
   bool get estaCancelada => estado?.toLowerCase() == 'cancelada';
+
+  /// Verifica si la reserva está completada
+  bool get estaCompletada => estado?.toLowerCase() == 'completada';
+
+  /// Verifica si el pago está pendiente
+  bool get pagoPendiente => estadoPago?.toLowerCase() == 'pendiente';
+
+  /// Verifica si el pago está hecho
+  bool get pagoPagada => estadoPago?.toLowerCase() == 'pagada';
+
+  /// Verifica si tiene comprobante de pago
+  bool get tieneComprobante =>
+      comprobantePago != null && comprobantePago!.isNotEmpty;
+
+  /// Obtiene el nombre de la ruta o finca (si está disponible)
+  String get nombreExperiencia {
+    if (programaciones != null && programaciones!.isNotEmpty) {
+      return programaciones![0]['nombre_ruta'] ??
+          programaciones![0]['nombre_finca'] ??
+          'Experiencia';
+    }
+    return 'Experiencia';
+  }
+
+  /// Verifica si puede ser cancelada (estados permitidos)
+  bool get puedeSerCancelada => estaActiva && !estaCompletada;
 }
 
 /// Modelo para un acompañante de reserva

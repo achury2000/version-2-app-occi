@@ -263,10 +263,10 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     if (!mounted) return;
 
     try {
-      final ok = await _reservaService.cancelar(reserva.id);
+      final reservaCancelada = await _reservaService.cancelar(reserva.id);
       if (!mounted) return;
 
-      if (!ok) {
+      if (reservaCancelada == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('❌ No se pudo cancelar la reserva'),
