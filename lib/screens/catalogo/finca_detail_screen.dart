@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../services/reserva_service.dart';
+import '../../services/finca_service.dart';
 
 class FincaDetailScreen extends StatefulWidget {
   final dynamic finca;
@@ -16,59 +17,59 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
   int _selectedImageIndex = 0;
   late final PageController _pageController;
   final ReservaService _reservaService = ReservaService();
+  final FincaService _fincaService = FincaService();
 
-  // Fotos de la finca (por ahora solo una, luego agregaremos más)
   late List<String> _images;
+
+  int _fincaId() {
+    if (widget.finca is Map) {
+      final id = widget.finca['id'] ?? widget.finca['id_finca'];
+      if (id is int) return id;
+      return int.tryParse(id?.toString() ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  String _fincaImagePrincipal() {
+    if (widget.finca is Map) {
+      return (widget.finca['imagen_principal'] ?? widget.finca['imagen'] ?? '')
+          .toString();
+    }
+    return '';
+  }
+
+  Future<void> _loadFincaImages() async {
+    final idFinca = _fincaId();
+    final urls = idFinca > 0
+        ? await _fincaService.getImagenes(idFinca)
+        : <String>[];
+
+    if (!mounted) return;
+
+    if (urls.isNotEmpty) {
+      setState(() => _images = urls);
+      return;
+    }
+
+    final principal = _fincaImagePrincipal();
+    if (principal.isNotEmpty && principal.startsWith('http')) {
+      setState(() => _images = [principal]);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
 
-    final name = (widget.finca is Map)
-        ? (widget.finca['nombre']?.toString() ?? '')
-        : '';
-    final folder = _folderFromFincaName(name);
-
-    _images = [
-      'assets/fincas/$folder/principal.png',
-      'assets/fincas/$folder/foto2.png',
-      'assets/fincas/$folder/foto3.png',
-      'assets/fincas/$folder/foto4.png',
-      'assets/fincas/$folder/foto5.png',
-    ];
-
-    if (_images.isEmpty) {
-      _images = ['assets/fincas/las_margaritas/principal.png'];
-    }
+    _images = [];
+    _loadFincaImages();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  String _folderFromFincaName(String name) {
-    final normalized = name
-        .toLowerCase()
-        .replaceAll('á', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ú', 'u')
-        .replaceAll('ñ', 'n')
-        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    if (normalized.startsWith('las margaritas')) return 'las_margaritas';
-    if (normalized.startsWith('las heliconias')) return 'las_heliconias';
-    if (normalized.startsWith('las palmas')) return 'las_palmas';
-    if (normalized.startsWith('la ilusion')) return 'la_ilusion';
-    if (normalized.startsWith('la maria')) return 'la_maria';
-
-    return normalized.replaceAll(' ', '_');
   }
 
   String _formatApiDate(DateTime date) {
@@ -89,9 +90,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     if (!clienteProvider.perfilCompleto) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            '❌ Debes completar tu perfil antes de hacer reservas',
-          ),
+          content: Text('❌ Debes completar tu perfil antes de hacer reservas'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -218,20 +217,28 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                   context: context,
                                   initialDate: tomorrow,
                                   firstDate: tomorrow,
-                                  lastDate: DateTime.now().add(const Duration(days: 730)),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 730),
+                                  ),
                                 );
                                 if (picked != null) {
                                   setModalState(() {
                                     fechaInicio = picked;
-                                    if (fechaFin != null && !fechaFin!.isAfter(picked)) {
-                                      fechaFin = picked.add(const Duration(days: 1));
+                                    if (fechaFin != null &&
+                                        !fechaFin!.isAfter(picked)) {
+                                      fechaFin = picked.add(
+                                        const Duration(days: 1),
+                                      );
                                     }
                                   });
                                 }
                               },
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade300),
                             borderRadius: BorderRadius.circular(10),
@@ -259,7 +266,9 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                   context: context,
                                   initialDate: minDate,
                                   firstDate: minDate,
-                                  lastDate: DateTime.now().add(const Duration(days: 730)),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 730),
+                                  ),
                                 );
                                 if (picked != null) {
                                   setModalState(() => fechaFin = picked);
@@ -267,7 +276,10 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                               },
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade300),
                             borderRadius: BorderRadius.circular(10),
@@ -320,7 +332,10 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                       ),
                       Text(
                         'Máximo $capacidad personas',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -356,7 +371,9 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
-                            Text('Precio por noche: \$${precio.toStringAsFixed(0)}'),
+                            Text(
+                              'Precio por noche: \$${precio.toStringAsFixed(0)}',
+                            ),
                             Text('Noches: $noches'),
                             Text('Número de personas: $cantidadPersonas'),
                             const Divider(),
@@ -388,10 +405,15 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                               onPressed: isSaving
                                   ? null
                                   : () async {
-                                      if (fechaInicio == null || fechaFin == null) {
-                                        ScaffoldMessenger.of(this.context).showSnackBar(
+                                      if (fechaInicio == null ||
+                                          fechaFin == null) {
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('Selecciona fecha de entrada y salida'),
+                                            content: Text(
+                                              'Selecciona fecha de entrada y salida',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -399,9 +421,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                       }
 
                                       if (fechaFin!.isBefore(fechaInicio!)) {
-                                        ScaffoldMessenger.of(this.context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('La fecha de salida debe ser al menos un día después de la entrada'),
+                                            content: Text(
+                                              'La fecha de salida debe ser al menos un día después de la entrada',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -409,9 +435,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                       }
 
                                       if (!fechaFin!.isAfter(fechaInicio!)) {
-                                        ScaffoldMessenger.of(this.context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('La reserva debe ser de mínimo 1 noche'),
+                                            content: Text(
+                                              'La reserva debe ser de mínimo 1 noche',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -423,7 +453,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         // Usar el nuevo flujo: crear reserva para una programación
                                         await _reservaService.crear(
                                           idCliente: idCliente,
-                                          idProgramacion: 0, // TODO: Obtener de programación seleccionada
+                                          idProgramacion:
+                                              0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
                                           metodoPago: 'transferencia',
                                           observaciones:
@@ -434,17 +465,25 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                           return;
                                         }
                                         Navigator.of(modalContext).pop();
-                                        ScaffoldMessenger.of(this.context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('✅ Reserva creada correctamente'),
+                                            content: Text(
+                                              '✅ Reserva creada correctamente',
+                                            ),
                                             backgroundColor: Colors.green,
                                           ),
                                         );
                                       } catch (e) {
                                         if (!mounted) return;
-                                        ScaffoldMessenger.of(this.context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           SnackBar(
-                                            content: Text('❌ No se pudo crear la reserva: $e'),
+                                            content: Text(
+                                              '❌ No se pudo crear la reserva: $e',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -463,7 +502,10 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                       width: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),
@@ -542,7 +584,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                     children: [
                       _buildInfoBadge(
                         icon: Icons.people,
-                        label: '${widget.finca['capacidad_personas'] ?? 0} personas',
+                        label:
+                            '${widget.finca['capacidad_personas'] ?? 0} personas',
                       ),
                       const SizedBox(width: 12),
                     ],
@@ -559,10 +602,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 children: [
                   const Text(
                     'Descripción',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -614,31 +654,33 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                           const SizedBox(height: 8),
                           Column(
                             children: (hab['detalles'] as List)
-                                .map((detalle) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 6,
-                                            height: 6,
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  const Color(0xFF0066CC),
-                                              borderRadius:
-                                                  BorderRadius.circular(3),
+                                .map(
+                                  (detalle) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0066CC),
+                                            borderRadius: BorderRadius.circular(
+                                              3,
                                             ),
                                           ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            detalle,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[700],
-                                            ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          detalle,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[700],
                                           ),
-                                        ],
-                                      ),
-                                    ))
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ],
@@ -764,7 +806,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                     setState(() => _selectedImageIndex = index);
                   },
                   itemBuilder: (context, index) {
-                    return Image.asset(
+                    return Image.network(
                       _images[index],
                       fit: BoxFit.cover,
                       width: double.infinity,
@@ -791,11 +833,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                   },
                 )
               : Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
+                  child: Icon(Icons.image, size: 80, color: Colors.grey[400]),
                 ),
         ),
         // Indicador de foto
@@ -830,7 +868,10 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.chevron_left, color: Colors.white),
                   onPressed: () {
-                    final prev = (_selectedImageIndex - 1).clamp(0, _images.length - 1);
+                    final prev = (_selectedImageIndex - 1).clamp(
+                      0,
+                      _images.length - 1,
+                    );
                     _pageController.animateToPage(
                       prev,
                       duration: const Duration(milliseconds: 250),
@@ -852,7 +893,10 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.chevron_right, color: Colors.white),
                   onPressed: () {
-                    final next = (_selectedImageIndex + 1).clamp(0, _images.length - 1);
+                    final next = (_selectedImageIndex + 1).clamp(
+                      0,
+                      _images.length - 1,
+                    );
                     _pageController.animateToPage(
                       next,
                       duration: const Duration(milliseconds: 250),
@@ -902,10 +946,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 Expanded(
                   child: Text(
                     amenity,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ),
               ],
