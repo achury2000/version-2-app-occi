@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/programacion.dart';
+import '../../providers/catalogo_provider.dart';
 import '../../providers/programacion_provider.dart';
 import '../../providers/reserva_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -10,11 +11,13 @@ import '../../services/reserva_service.dart';
 
 class CrearReservaScreen extends StatefulWidget {
   final int? idProgramacion;
+  final int? idRuta;
   final Programacion? programacion;
 
   const CrearReservaScreen({
     Key? key,
     this.idProgramacion,
+    this.idRuta,
     this.programacion,
   }) : super(key: key);
 
@@ -27,17 +30,24 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   int _cantidadPersonas = 1;
   String _metodoPago = 'transferencia';
   List<int> _serviciosSeleccionados = [];
-  final TextEditingController _observacionesController = TextEditingController();
+  final TextEditingController _observacionesController =
+      TextEditingController();
   bool _cargando = false;
   Programacion? _programacionSeleccionada;
+  int? _idRutaSeleccionada;
+  bool _usarProgramacion = true;
 
   @override
   void initState() {
     super.initState();
     _reservaService = ReservaService();
     _programacionSeleccionada = widget.programacion;
+    _idRutaSeleccionada = widget.idRuta;
+    _usarProgramacion =
+        widget.idProgramacion != null || widget.programacion != null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarProgramacion();
+      context.read<CatalogoProvider>().fetchRutas();
     });
   }
 
@@ -50,23 +60,29 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   void _cargarProgramacion() {
     if (widget.idProgramacion != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context
-            .read<ProgramacionProvider>()
-            .cargarDetalleProgramacion(widget.idProgramacion!);
+        context.read<ProgramacionProvider>().cargarDetalleProgramacion(
+          widget.idProgramacion!,
+        );
       });
     }
   }
 
-  double _calcularPrecioTotal() {
-    if (_programacionSeleccionada == null) return 0;
-    return (_programacionSeleccionada?.precio ?? 0) * _cantidadPersonas;
-  }
-
   Future<void> _crearReserva() async {
-    if (_programacionSeleccionada == null) {
+    if (_usarProgramacion && _programacionSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Selecciona una programación'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!_usarProgramacion &&
+        (_idRutaSeleccionada == null || _idRutaSeleccionada! <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona una ruta normal'),
           backgroundColor: Colors.red,
         ),
       );
@@ -93,10 +109,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     try {
       final nuevaReserva = await _reservaService.crear(
         idCliente: idCliente,
-        idProgramacion: _programacionSeleccionada!.id,
+        idProgramacion: _usarProgramacion
+            ? _programacionSeleccionada?.id
+            : null,
+        idRuta: _usarProgramacion ? null : _idRutaSeleccionada,
         cantidadPersonas: _cantidadPersonas,
+        metodoPago: _metodoPago,
         observaciones: _observacionesController.text,
-        servicios: _serviciosSeleccionados.isNotEmpty ? _serviciosSeleccionados : null,
       );
 
       if (!mounted) return;
@@ -104,7 +123,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       // Actualizar lista de reservas en el provider
       if (mounted) {
         // ignore: use_build_context_synchronously
-        await context.read<ReservaProvider>().cargarReservas(idCliente: idCliente);
+        await context.read<ReservaProvider>().cargarReservas(
+          idCliente: idCliente,
+        );
       }
 
       if (!mounted) return;
@@ -122,7 +143,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       if (mounted) {
         // Limpiar servicios seleccionados para próxima reserva
         context.read<ServicioProvider>().limpiarSeleccion();
-        
+
         context.pop();
         // Esperar a que se cierre esta pantalla
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -137,10 +158,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -169,6 +187,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// SECCIÓN 0: Tipo de reserva
+                _buildSeccionTipoReserva(),
+                const SizedBox(height: 24),
+
                 /// SECCIÓN 1: Seleccionar Programación
                 _buildSeccionProgramacion(progProvider),
                 const SizedBox(height: 24),
@@ -179,6 +201,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
                 /// SECCIÓN 3: Método de Pago
                 _buildSeccionPago(),
+                const SizedBox(height: 24),
+
+                /// SECCIÓN 3.1: Información de pago por QR
+                _buildSeccionInfoQr(),
                 const SizedBox(height: 24),
 
                 /// SECCIÓN 4: Servicios Adicionales
@@ -204,15 +230,16 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   Widget _buildSeccionProgramacion(ProgramacionProvider provider) {
+    if (!_usarProgramacion) {
+      return _buildSeccionRutaNormal();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Programación Seleccionada',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (_programacionSeleccionada == null)
@@ -265,7 +292,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                   'Cupos disponibles: ${_programacionSeleccionada?.cuposDisponibles ?? 0}/${_programacionSeleccionada?.cuposTotales ?? 0}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: (_programacionSeleccionada?.cuposDisponibles ?? 0) > 0
+                    color:
+                        (_programacionSeleccionada?.cuposDisponibles ?? 0) > 0
                         ? Colors.green
                         : Colors.red,
                   ),
@@ -278,17 +306,16 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   Widget _buildSeccionCantidad() {
-    final maxPersonas = _programacionSeleccionada?.cuposDisponibles ?? 1;
+    final maxPersonas = _usarProgramacion
+        ? (_programacionSeleccionada?.cuposDisponibles ?? 1)
+        : 20;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Cantidad de Personas',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
@@ -351,10 +378,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       children: [
         const Text(
           'Método de Pago',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Column(
@@ -379,16 +403,143 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     );
   }
 
+  Widget _buildSeccionInfoQr() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.teal.shade200),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.qr_code_2, color: Colors.teal),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Al confirmar la reserva podras ver el QR de pago en el detalle de tu reserva para completar el pago.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF0F172A),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeccionTipoReserva() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tipo de reserva',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Ruta programada'),
+                selected: _usarProgramacion,
+                onSelected: _cargando
+                    ? null
+                    : (selected) {
+                        if (!selected) return;
+                        setState(() => _usarProgramacion = true);
+                      },
+              ),
+              ChoiceChip(
+                label: const Text('Ruta normal'),
+                selected: !_usarProgramacion,
+                onSelected: _cargando
+                    ? null
+                    : (selected) {
+                        if (!selected) return;
+                        setState(() => _usarProgramacion = false);
+                      },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeccionRutaNormal() {
+    return Consumer<CatalogoProvider>(
+      builder: (context, catalogoProvider, _) {
+        final rutas = catalogoProvider.rutas;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ruta Normal Seleccionada',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            if (catalogoProvider.isLoadingRutas)
+              const Center(child: CircularProgressIndicator())
+            else if (rutas.isEmpty)
+              const Text('No hay rutas disponibles')
+            else
+              DropdownButtonFormField<int>(
+                value: _idRutaSeleccionada,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                items: rutas
+                    .whereType<Map<String, dynamic>>()
+                    .map<DropdownMenuItem<int>>((map) {
+                      final idRaw = map['id_ruta'] ?? map['id'];
+                      final id = idRaw is int
+                          ? idRaw
+                          : int.tryParse(idRaw?.toString() ?? '') ?? 0;
+                      final nombre = (map['nombre'] ?? 'Ruta').toString();
+                      return DropdownMenuItem<int>(
+                        value: id,
+                        child: Text(nombre),
+                      );
+                    })
+                    .where((item) => item.value != null && item.value! > 0)
+                    .toList(),
+                onChanged: _cargando
+                    ? null
+                    : (value) {
+                        setState(() => _idRutaSeleccionada = value);
+                      },
+              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Los servicios predefinidos de la ruta se incluiran automaticamente en backend.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildSeccionObservaciones() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Observaciones (Opcional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -397,9 +548,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           maxLines: 3,
           decoration: InputDecoration(
             hintText: 'Añade alguna nota especial para tu reserva...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding: const EdgeInsets.all(12),
           ),
         ),
@@ -408,8 +557,21 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   Widget _buildResumenPrecio() {
-    final precioUnitario = _programacionSeleccionada?.precio ?? 0;
-    final precioTotal = _calcularPrecioTotal();
+    double precioUnitario = _programacionSeleccionada?.precio ?? 0;
+    if (!_usarProgramacion && _idRutaSeleccionada != null) {
+      final ruta = context.read<CatalogoProvider>().getRutaById(
+        _idRutaSeleccionada!,
+      );
+      if (ruta is Map<String, dynamic>) {
+        final raw = ruta['precio'] ?? 0;
+        if (raw is num) {
+          precioUnitario = raw.toDouble();
+        } else {
+          precioUnitario = double.tryParse(raw.toString()) ?? 0;
+        }
+      }
+    }
+    final precioTotal = precioUnitario * _cantidadPersonas;
 
     return Consumer<ServicioProvider>(
       builder: (context, servicioProvider, _) {
@@ -445,10 +607,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Cantidad:',
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  const Text('Cantidad:', style: TextStyle(color: Colors.grey)),
                   Text(
                     '$_cantidadPersonas persona${_cantidadPersonas > 1 ? 's' : ''}',
                     style: const TextStyle(
@@ -501,10 +660,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 children: [
                   const Text(
                     'Total:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     '\$${totalConServicios.toStringAsFixed(2)}',
@@ -535,12 +691,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _cargando || _programacionSeleccionada == null
+            onPressed:
+                _cargando ||
+                    (_usarProgramacion && _programacionSeleccionada == null) ||
+                    (!_usarProgramacion && _idRutaSeleccionada == null)
                 ? null
                 : _crearReserva,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: _cargando
                 ? const SizedBox(
                     height: 20,
@@ -574,10 +731,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       children: [
         const Text(
           'Servicios Adicionales',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Consumer<ServicioProvider>(
@@ -591,17 +745,23 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     _serviciosSeleccionados = resultado;
                   });
                   // Actualizar el provider con los servicios seleccionados
-                  servicioProvider.cargarServiciosSeleccionados(_serviciosSeleccionados);
+                  servicioProvider.cargarServiciosSeleccionados(
+                    _serviciosSeleccionados,
+                  );
                 }
               },
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: cantidad > 0 ? Colors.amber.shade300 : Colors.grey.shade300,
+                    color: cantidad > 0
+                        ? Colors.amber.shade300
+                        : Colors.grey.shade300,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: cantidad > 0 ? Colors.amber.shade50 : Colors.grey.shade50,
+                  color: cantidad > 0
+                      ? Colors.amber.shade50
+                      : Colors.grey.shade50,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -616,7 +776,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: cantidad > 0 ? Colors.amber.shade900 : Colors.grey,
+                            color: cantidad > 0
+                                ? Colors.amber.shade900
+                                : Colors.grey,
                           ),
                         ),
                         if (cantidad > 0)

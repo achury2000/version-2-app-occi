@@ -1,5 +1,7 @@
 import 'api_service.dart';
 import '../models/reserva.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// Servicio para gestionar Reservas desde el backend Occitours.
 ///
@@ -56,6 +58,46 @@ class ReservaService {
     }
   }
 
+  /// Obtener QR de pago para una reserva.
+  ///
+  /// El backend puede responder con varias estructuras, por eso se valida
+  /// de forma defensiva para extraer una URL utilizable.
+  Future<String?> getQrReserva(int idReserva) async {
+    try {
+      final response = await _api.get('/reservas/$idReserva/qr');
+
+      if (response is Map<String, dynamic>) {
+        final data = response['data'];
+
+        if (data is Map<String, dynamic>) {
+          final url =
+              (data['url'] ??
+                      data['qr_url'] ??
+                      data['signed_url'] ??
+                      data['qr_signed_url'] ??
+                      '')
+                  .toString()
+                  .trim();
+          if (url.startsWith('http')) return url;
+        }
+
+        final rootUrl =
+            (response['url'] ??
+                    response['qr_url'] ??
+                    response['signed_url'] ??
+                    response['qr_signed_url'] ??
+                    '')
+                .toString()
+                .trim();
+        if (rootUrl.startsWith('http')) return rootUrl;
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Buscar reservas.
   Future<List<Reserva>> buscar({
     String? query,
@@ -92,42 +134,168 @@ class ReservaService {
 
   /// Crear una nueva reserva.
   ///
-  /// El cliente puede crear su propia reserva desde una programación.
-  /// Opcionalmente puede incluir servicios adicionales.
+  /// Soporta dos modos:
+  /// - Con programación: POST /reservas/crear-con-programacion
+  /// - Ruta normal (sin programación): POST /reservas
   Future<Reserva> crear({
+    required int idCliente,
+    int? idProgramacion,
+    int? idRuta,
+    required int cantidadPersonas,
+    String? metodoPago,
+    String? observaciones,
+  }) async {
+    try {
+      if ((idProgramacion == null || idProgramacion <= 0) &&
+          (idRuta == null || idRuta <= 0)) {
+        throw Exception('Debes seleccionar una programación o una ruta');
+      }
+
+      if (idProgramacion != null && idProgramacion > 0) {
+        return await _crearConProgramacion(
+          idCliente: idCliente,
+          idProgramacion: idProgramacion,
+          cantidadPersonas: cantidadPersonas,
+          metodoPago: metodoPago,
+          observaciones: observaciones,
+        );
+      }
+
+      return await _crearConRuta(
+        idCliente: idCliente,
+        idRuta: idRuta!,
+        cantidadPersonas: cantidadPersonas,
+        metodoPago: metodoPago,
+        observaciones: observaciones,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Reserva> _crearConProgramacion({
     required int idCliente,
     required int idProgramacion,
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
-    List<int>? servicios,
   }) async {
-    try {
-      final body = <String, dynamic>{
-        'id_cliente': idCliente,
-        'id_programacion': idProgramacion,
-        'cantidad_personas': cantidadPersonas,
-      };
+    final body = <String, dynamic>{
+      'id_cliente': idCliente,
+      'id_programacion': idProgramacion,
+      'cantidad_personas': cantidadPersonas,
+    };
 
-      if (metodoPago != null) body['metodo_pago'] = metodoPago;
-      if (observaciones != null) body['observaciones'] = observaciones;
-      if (servicios != null && servicios.isNotEmpty) {
-        body['servicios'] = servicios;
-      }
-
-      final response = await _api.post('/reservas', body);
-
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('data')) {
-          return Reserva.fromJson(response['data']);
-        }
-        return Reserva.fromJson(response);
-      }
-
-      throw Exception('Error al crear reserva');
-    } catch (e) {
-      rethrow;
+    if (observaciones != null && observaciones.trim().isNotEmpty) {
+      body['notas'] = observaciones;
     }
+
+    final response = await _api.post('/reservas/crear-con-programacion', body);
+
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      final idReserva = data is Map<String, dynamic>
+          ? (data['id_reserva'] ?? data['id'])
+          : null;
+
+      final idReservaInt = idReserva is int
+          ? idReserva
+          : int.tryParse(idReserva?.toString() ?? '');
+
+      if (idReservaInt != null && idReservaInt > 0) {
+        if (metodoPago != null && metodoPago.trim().isNotEmpty) {
+          try {
+            await actualizar(idReserva: idReservaInt, metodoPago: metodoPago);
+          } catch (_) {
+            // Mantener éxito de creación aunque falle este paso secundario.
+          }
+        }
+        return getById(idReservaInt);
+      }
+    }
+
+    throw Exception('Error al crear reserva con programación');
+  }
+
+  Future<Reserva> _crearConRuta({
+    required int idCliente,
+    required int idRuta,
+    required int cantidadPersonas,
+    String? metodoPago,
+    String? observaciones,
+  }) async {
+    final body = <String, dynamic>{
+      'id_cliente': idCliente,
+      'id_ruta': idRuta,
+      'cantidad_personas': cantidadPersonas,
+    };
+
+    if (metodoPago != null && metodoPago.trim().isNotEmpty) {
+      body['metodo_pago'] = metodoPago;
+    }
+    if (observaciones != null && observaciones.trim().isNotEmpty) {
+      body['notas'] = observaciones;
+    }
+
+    final response = await _api.post('/reservas', body);
+
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return Reserva.fromJson(data);
+      }
+      return Reserva.fromJson(response);
+    }
+
+    throw Exception('Error al crear reserva por ruta');
+  }
+
+  Future<int?> registrarPagoReserva({
+    required int idReserva,
+    required double monto,
+    required String metodoPago,
+    String? referencia,
+  }) async {
+    final body = <String, dynamic>{'monto': monto, 'metodo_pago': metodoPago};
+
+    if (referencia != null && referencia.trim().isNotEmpty) {
+      body['referencia'] = referencia;
+    }
+
+    final response = await _api.post('/reservas/$idReserva/pagos', body);
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        final idPago = data['id_pago'] ?? data['id'];
+        if (idPago is int) return idPago;
+        return int.tryParse(idPago?.toString() ?? '');
+      }
+    }
+    return null;
+  }
+
+  Future<void> subirComprobantePago({
+    required int idPago,
+    required PlatformFile archivo,
+  }) async {
+    MultipartFile multipart;
+
+    if (archivo.bytes != null) {
+      multipart = MultipartFile.fromBytes(
+        archivo.bytes!,
+        filename: archivo.name,
+      );
+    } else if (archivo.path != null) {
+      multipart = await MultipartFile.fromFile(
+        archivo.path!,
+        filename: archivo.name,
+      );
+    } else {
+      throw Exception('No se pudo leer el archivo seleccionado');
+    }
+
+    final formData = FormData.fromMap({'archivo': multipart});
+    await _api.postFormData('/pagos/$idPago/comprobante', formData);
   }
 
   /// Cancelar una reserva existente con motivo/justificación.
@@ -169,7 +337,9 @@ class ReservaService {
     try {
       final body = <String, dynamic>{};
 
-      if (cantidadPersonas != null) body['cantidad_personas'] = cantidadPersonas;
+      if (cantidadPersonas != null) {
+        body['cantidad_personas'] = cantidadPersonas;
+      }
       if (metodoPago != null) body['metodo_pago'] = metodoPago;
       if (observaciones != null) body['observaciones'] = observaciones;
       if (servicios != null && servicios.isNotEmpty) {
@@ -204,9 +374,7 @@ class ReservaService {
     int? edad,
   }) async {
     try {
-      final body = <String, dynamic>{
-        'nombre': nombre,
-      };
+      final body = <String, dynamic>{'nombre': nombre};
 
       if (apellido != null) body['apellido'] = apellido;
       if (tipoDocumento != null) body['tipo_documento'] = tipoDocumento;
@@ -235,12 +403,15 @@ class ReservaService {
   Future<Reserva> agregarServicio({
     required int idReserva,
     required int idServicio,
+    int cantidad = 1,
+    double? precioUnitario,
   }) async {
     try {
-      final response = await _api.post(
-        '/reservas/$idReserva/servicios',
-        {'id_servicio': idServicio},
-      );
+      final response = await _api.post('/reservas/$idReserva/servicio', {
+        'id_servicio': idServicio,
+        'cantidad': cantidad,
+        if (precioUnitario != null) 'precio_unitario': precioUnitario,
+      });
 
       if (response is Map<String, dynamic>) {
         if (response.containsKey('data')) {

@@ -63,10 +63,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -88,8 +85,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
 
       final diasEstancia =
           detalle.fechaFin != null && detalle.fechaInicio != null
-              ? detalle.fechaFin!.difference(detalle.fechaInicio!).inDays
-              : '-';
+          ? detalle.fechaFin!.difference(detalle.fechaInicio!).inDays
+          : '-';
 
       if (!mounted) return;
       await showModalBottomSheet<void>(
@@ -128,37 +125,25 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                     ),
                     const Divider(),
                     const SizedBox(height: 8),
-                    _buildSection(
-                      'INFORMACIÓN GENERAL',
-                      [
-                        ('Reserva #', detalle.id.toString()),
-                        ('Estado', estado),
-                        ('Fecha de reserva', _formatDate(detalle.fechaReserva)),
-                      ],
-                    ),
+                    _buildSection('INFORMACIÓN GENERAL', [
+                      ('Reserva #', detalle.id.toString()),
+                      ('Estado', estado),
+                      ('Fecha de reserva', _formatDate(detalle.fechaReserva)),
+                    ]),
                     const SizedBox(height: 16),
-                    _buildSection(
-                      'FECHAS DE ESTANCIA',
-                      [
-                        ('Entrada', _formatDate(detalle.fechaInicio)),
-                        ('Salida', _formatDate(detalle.fechaFin)),
-                        ('Duración', '$diasEstancia noche(s)'),
-                      ],
-                    ),
+                    _buildSection('FECHAS DE ESTANCIA', [
+                      ('Entrada', _formatDate(detalle.fechaInicio)),
+                      ('Salida', _formatDate(detalle.fechaFin)),
+                      ('Duración', '$diasEstancia noche(s)'),
+                    ]),
                     const SizedBox(height: 16),
-                    _buildSection(
-                      'DETALLES',
-                      [
-                        ('Personas', '${detalle.cantidadPersonas ?? 0}'),
-                        ('Precio total', '\$$total'),
-                      ],
-                    ),
+                    _buildSection('DETALLES', [
+                      ('Personas', '${detalle.cantidadPersonas ?? 0}'),
+                      ('Precio total', '\$$total'),
+                    ]),
                     if ((detalle.observaciones ?? '').trim().isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      _buildSection(
-                        'NOTAS',
-                        [('', detalle.observaciones!)],
-                      ),
+                      _buildSection('NOTAS', [('', detalle.observaciones!)]),
                     ],
                     const SizedBox(height: 20),
                   ],
@@ -171,10 +156,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -193,36 +175,38 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (item.$1.isNotEmpty) ...[
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        item.$1,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                  Expanded(
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.$1.isNotEmpty) ...[
+                  SizedBox(
+                    width: 110,
                     child: Text(
-                      item.$2,
+                      item.$1,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black87,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ],
-              ),
-            )),
+                Expanded(
+                  child: Text(
+                    item.$2,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -279,10 +263,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -301,6 +282,23 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     if (s == 'cancelada') return '❌';
     if (s == 'pendiente') return '⏳';
     return '📋';
+  }
+
+  Color _colorEstadoPago(String? estadoPago) {
+    final s = (estadoPago ?? '').toLowerCase();
+    if (s == 'pagada' || s == 'completado') return Colors.green;
+    if (s == 'en proceso' || s == 'proceso') return Colors.blue;
+    if (s == 'pendiente') return Colors.orange;
+    return Colors.blueGrey;
+  }
+
+  String _labelEstadoPago(String? estadoPago) {
+    final s = (estadoPago ?? '').toLowerCase();
+    if (s == 'pagada') return 'Pagada';
+    if (s == 'completado') return 'Completado';
+    if (s == 'en proceso' || s == 'proceso') return 'En proceso';
+    if (s == 'pendiente') return 'Pendiente';
+    return 'Sin dato';
   }
 
   Widget _barraFiltros(ReservaProvider provider) {
@@ -385,14 +383,10 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                   Wrap(
                     spacing: 8,
                     children: [
-                      _filtroChip(
-                        'Todas',
-                        _filtroEstado.isEmpty,
-                        () {
-                          setState(() => _filtroEstado = '');
-                          provider.setFiltroEstado('');
-                        },
-                      ),
+                      _filtroChip('Todas', _filtroEstado.isEmpty, () {
+                        setState(() => _filtroEstado = '');
+                        provider.setFiltroEstado('');
+                      }),
                       _filtroChip(
                         'Activas',
                         _filtroEstado.toLowerCase() == 'confirmada',
@@ -457,279 +451,293 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
             child: provider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : provider.error != null
-                    ? ListView(
-                        children: [
-                          const SizedBox(height: 120),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  size: 48,
-                                  color: Colors.red,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  provider.error!,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: _cargarReservas,
-                                  child: const Text('Reintentar'),
-                                ),
-                              ],
+                ? ListView(
+                    children: [
+                      const SizedBox(height: 120),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red,
                             ),
-                          ),
-                        ],
-                      )
-                    : !provider.tieneReservas
-                        ? ListView(
-                            children: const [
-                              SizedBox(height: 140),
-                              Center(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_month_outlined,
-                                      size: 56,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      'Sin reservas registradas',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'Haz una nueva reserva para verla aquí',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            const SizedBox(height: 12),
+                            Text(provider.error!, textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _cargarReservas,
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : !provider.tieneReservas
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 140),
+                      Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              size: 56,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Sin reservas registradas',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              _barraFiltros(provider),
-                              Expanded(
-                                child: provider.reservas.isEmpty
-                                    ? const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(20),
-                                          child: Text(
-                                            'No hay reservas que coincidan',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : ListView.builder(
-                                        padding: const EdgeInsets.all(16),
-                                        itemCount: provider.reservas.length,
-                                        itemBuilder: (context, index) {
-                                          final reserva =
-                                              provider.reservas[index];
-                                          final colorEstado =
-                                              _colorEstado(reserva.estado);
-                                          final iconoEstado =
-                                              _iconoEstado(reserva.estado);
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Haz una nueva reserva para verla aquí',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      _barraFiltros(provider),
+                      Expanded(
+                        child: provider.reservas.isEmpty
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Text(
+                                    'No hay reservas que coincidan',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: provider.reservas.length,
+                                itemBuilder: (context, index) {
+                                  final reserva = provider.reservas[index];
+                                  final colorEstado = _colorEstado(
+                                    reserva.estado,
+                                  );
+                                  final iconoEstado = _iconoEstado(
+                                    reserva.estado,
+                                  );
+                                  final colorPago = _colorEstadoPago(
+                                    reserva.estadoPago,
+                                  );
 
-                                          return Card(
-                                            margin: const EdgeInsets.only(
-                                                bottom: 12),
-                                            elevation: 2,
-                                            child: InkWell(
-                                              onTap: () =>
-                                                  _mostrarDetalle(reserva.id),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(14),
-                                                child: Column(
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    elevation: 2,
+                                    child: InkWell(
+                                      onTap: () => _mostrarDetalle(reserva.id),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
                                                       children: [
-                                                        Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Row(
-                                                              children: [
-                                                                Text(
-                                                                  iconoEstado,
-                                                                  style: const TextStyle(
-                                                                      fontSize:
-                                                                          18),
-                                                                ),
-                                                                const SizedBox(
-                                                                    width: 6),
-                                                                Text(
-                                                                  'Reserva #${reserva.id}',
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        15,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            const SizedBox(
-                                                                height: 4),
-                                                            Text(
-                                                              '${_formatDate(reserva.fechaInicio)} - ${_formatDate(reserva.fechaFin)}',
-                                                              style:
-                                                                  const TextStyle(
-                                                                fontSize: 12,
-                                                                color:
-                                                                    Colors.grey,
+                                                        Text(
+                                                          iconoEstado,
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 18,
                                                               ),
-                                                            ),
-                                                          ],
                                                         ),
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 4,
-                                                          ),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: colorEstado
-                                                                .withValues(
-                                                                    alpha:
-                                                                        0.15),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        6),
-                                                          ),
-                                                          child: Text(
-                                                            (reserva.estado ??
-                                                                    'pendiente')
-                                                                .toUpperCase(),
-                                                            style: TextStyle(
-                                                              color:
-                                                                  colorEstado,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 11,
-                                                            ),
-                                                          ),
+                                                        const SizedBox(
+                                                          width: 6,
+                                                        ),
+                                                        Text(
+                                                          'Reserva #${reserva.id}',
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 15,
+                                                              ),
                                                         ),
                                                       ],
                                                     ),
-                                                    const SizedBox(height: 10),
-                                                    Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.people,
-                                                          size: 16,
-                                                          color: Colors
-                                                              .grey.shade600,
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 4),
-                                                        Text(
-                                                          '${reserva.cantidadPersonas ?? 0} persona(s)',
-                                                          style:
-                                                              const TextStyle(
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 16),
-                                                        Icon(
-                                                          Icons.attach_money,
-                                                          size: 16,
-                                                          color: Colors
-                                                              .green.shade600,
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 4),
-                                                        Text(
-                                                          '\$${reserva.precioTotal?.toStringAsFixed(0) ?? 'N/D'}',
-                                                          style:
-                                                              const TextStyle(
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color: Colors.green,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: OutlinedButton
-                                                              .icon(
-                                                            onPressed: () =>
-                                                                _mostrarDetalle(
-                                                                    reserva.id),
-                                                            icon: const Icon(
-                                                                Icons
-                                                                    .visibility),
-                                                            label: const Text(
-                                                                'Detalles'),
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 10),
-                                                        Expanded(
-                                                          child: ElevatedButton
-                                                              .icon(
-                                                            onPressed: reserva
-                                                                    .estaActiva
-                                                                ? () =>
-                                                                    _cancelarReserva(
-                                                                        reserva)
-                                                                : null,
-                                                            style:
-                                                                ElevatedButton
-                                                                    .styleFrom(
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                            ),
-                                                            icon: const Icon(
-                                                                Icons.cancel),
-                                                            label: const Text(
-                                                                'Cancelar'),
-                                                          ),
-                                                        ),
-                                                      ],
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '${_formatDate(reserva.fechaInicio)} - ${_formatDate(reserva.fechaFin)}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
-                                              ),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: colorEstado
+                                                        .withValues(
+                                                          alpha: 0.15,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    (reserva.estado ??
+                                                            'pendiente')
+                                                        .toUpperCase(),
+                                                    style: TextStyle(
+                                                      color: colorEstado,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          );
-                                        },
+                                            const SizedBox(height: 10),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: colorPago.withValues(
+                                                      alpha: 0.15,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    'Pago: ${_labelEstadoPago(reserva.estadoPago)}',
+                                                    style: TextStyle(
+                                                      color: colorPago,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.people,
+                                                  size: 16,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${reserva.cantidadPersonas ?? 0} persona(s)',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Icon(
+                                                  Icons.attach_money,
+                                                  size: 16,
+                                                  color: Colors.green.shade600,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '\$${reserva.precioTotal?.toStringAsFixed(0) ?? 'N/D'}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.green,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: OutlinedButton.icon(
+                                                    onPressed: () =>
+                                                        _mostrarDetalle(
+                                                          reserva.id,
+                                                        ),
+                                                    icon: const Icon(
+                                                      Icons.visibility,
+                                                    ),
+                                                    label: const Text(
+                                                      'Detalles',
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: ElevatedButton.icon(
+                                                    onPressed:
+                                                        reserva.estaActiva
+                                                        ? () =>
+                                                              _cancelarReserva(
+                                                                reserva,
+                                                              )
+                                                        : null,
+                                                    style:
+                                                        ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              Colors.red,
+                                                        ),
+                                                    icon: const Icon(
+                                                      Icons.cancel,
+                                                    ),
+                                                    label: const Text(
+                                                      'Cancelar',
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ],
-                          ),
+                      ),
+                    ],
+                  ),
           );
         },
       ),

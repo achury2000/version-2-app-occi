@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../models/reserva.dart';
 import '../../providers/reserva_provider.dart';
+import '../../services/reserva_service.dart';
 
 class ReservaDetalleScreen extends StatefulWidget {
   final int idReserva;
 
   const ReservaDetalleScreen({Key? key, required this.idReserva})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<ReservaDetalleScreen> createState() => _ReservaDetalleScreenState();
@@ -19,6 +21,11 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   bool _cargando = true;
   String? _error;
   bool _cancelando = false;
+  bool _cargandoQr = false;
+  String? _qrUrl;
+  bool _procesandoPago = false;
+
+  final ReservaService _reservaService = ReservaService();
 
   @override
   void initState() {
@@ -36,6 +43,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           _cargando = false;
         });
       }
+      await _cargarQr(reserva.id);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -44,6 +52,22 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         });
       }
     }
+  }
+
+  Future<void> _cargarQr(int idReserva) async {
+    if (!mounted) return;
+
+    setState(() {
+      _cargandoQr = true;
+    });
+
+    final url = await _reservaService.getQrReserva(idReserva);
+
+    if (!mounted) return;
+    setState(() {
+      _qrUrl = url;
+      _cargandoQr = false;
+    });
   }
 
   void _mostrarConfirmacionCancelacion() {
@@ -109,9 +133,10 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     });
 
     try {
-      await context
-          .read<ReservaProvider>()
-          .cancelarReserva(_reserva!.id, motivo: motivo.isNotEmpty ? motivo : null);
+      await context.read<ReservaProvider>().cancelarReserva(
+        _reserva!.id,
+        motivo: motivo.isNotEmpty ? motivo : null,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,9 +175,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           title: const Text('Detalle de Reserva'),
           centerTitle: true,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -166,11 +189,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Colors.red.shade300,
-              ),
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
               const SizedBox(height: 16),
               Text(_error ?? 'Error desconocido'),
               const SizedBox(height: 24),
@@ -218,8 +237,13 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             _buildSeccionPrecio(reserva),
             const SizedBox(height: 20),
 
+            /// PAGO CON QR
+            _buildSeccionPagoQr(reserva),
+            const SizedBox(height: 20),
+
             /// SERVICIOS ADICIONALES
-            if (reserva.servicios != null && (reserva.servicios as List).isNotEmpty)
+            if (reserva.servicios != null &&
+                (reserva.servicios as List).isNotEmpty)
               _buildSeccionServicios(reserva),
 
             /// OBSERVACIONES
@@ -262,10 +286,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
               const SizedBox(height: 4),
               Text(
                 'Cliente: ${reserva.clienteNombreCompleto}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -374,7 +395,8 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           '${reserva.cantidadPersonas}',
           Icons.people,
         ),
-        if (reserva.acompanantes != null && (reserva.acompanantes as List).isNotEmpty)
+        if (reserva.acompanantes != null &&
+            (reserva.acompanantes as List).isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: _buildFilaDetalle(
@@ -417,10 +439,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Cantidad',
-                style: TextStyle(color: Colors.grey),
-              ),
+              const Text('Cantidad', style: TextStyle(color: Colors.grey)),
               Text(
                 '${reserva.cantidadPersonas}',
                 style: const TextStyle(
@@ -436,10 +455,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             children: [
               const Text(
                 'Total',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Text(
                 '\$${(reserva.precioTotal ?? 0).toStringAsFixed(2)}',
@@ -456,9 +472,321 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     );
   }
 
+  Future<void> _mostrarModalCompletarPago(Reserva reserva) async {
+    final montoController = TextEditingController(
+      text: (reserva.precioTotal ?? 0).toStringAsFixed(0),
+    );
+    final referenciaController = TextEditingController();
+    String metodoPago = (reserva.metodoPago ?? 'Transferencia').toString();
+    PlatformFile? comprobante;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Completar pago de reserva',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: montoController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Monto a pagar',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: metodoPago,
+                        decoration: const InputDecoration(
+                          labelText: 'Metodo de pago',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'QR', child: Text('QR')),
+                          DropdownMenuItem(
+                            value: 'Transferencia',
+                            child: Text('Transferencia'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Efectivo',
+                            child: Text('Efectivo'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setModalState(() {
+                            metodoPago = value ?? 'Transferencia';
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: referenciaController,
+                        decoration: const InputDecoration(
+                          labelText: 'Referencia (opcional)',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: _procesandoPago
+                            ? null
+                            : () async {
+                                final picked = await FilePicker.platform
+                                    .pickFiles(
+                                      type: FileType.custom,
+                                      withData: true,
+                                      allowedExtensions: const [
+                                        'jpg',
+                                        'jpeg',
+                                        'png',
+                                        'pdf',
+                                      ],
+                                    );
+                                if (picked != null && picked.files.isNotEmpty) {
+                                  setModalState(() {
+                                    comprobante = picked.files.first;
+                                  });
+                                }
+                              },
+                        icon: const Icon(Icons.upload_file),
+                        label: Text(
+                          comprobante == null
+                              ? 'Adjuntar comprobante'
+                              : 'Archivo: ${comprobante!.name}',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _procesandoPago
+                              ? null
+                              : () async {
+                                  final monto = double.tryParse(
+                                    montoController.text.trim().replaceAll(
+                                      ',',
+                                      '.',
+                                    ),
+                                  );
+
+                                  if (monto == null || monto <= 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Ingresa un monto valido',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  setState(() => _procesandoPago = true);
+                                  try {
+                                    final idPago = await _reservaService
+                                        .registrarPagoReserva(
+                                          idReserva: reserva.id,
+                                          monto: monto,
+                                          metodoPago: metodoPago,
+                                          referencia: referenciaController.text
+                                              .trim(),
+                                        );
+
+                                    if (idPago != null && comprobante != null) {
+                                      await _reservaService
+                                          .subirComprobantePago(
+                                            idPago: idPago,
+                                            archivo: comprobante!,
+                                          );
+                                    }
+
+                                    if (!mounted || !modalContext.mounted) {
+                                      return;
+                                    }
+                                    Navigator.of(modalContext).pop();
+                                    ScaffoldMessenger.of(
+                                      this.context,
+                                    ).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Pago registrado exitosamente',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                    _cargarDetalle();
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(
+                                      this.context,
+                                    ).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'No se pudo registrar el pago: $e',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _procesandoPago = false);
+                                    }
+                                  }
+                                },
+                          icon: _procesandoPago
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.payments_outlined),
+                          label: const Text(
+                            'Registrar pago y subir comprobante',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSeccionPagoQr(Reserva reserva) {
+    final estadoPago = (reserva.estadoPago ?? 'pendiente').toLowerCase();
+    final esPendiente = estadoPago == 'pendiente' || estadoPago == 'en proceso';
+    final colorPago = esPendiente ? Colors.orange : Colors.green;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorPago.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorPago.withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Pago y QR',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: colorPago,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  estadoPago.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (_cargandoQr)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_qrUrl != null && _qrUrl!.isNotEmpty)
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  _qrUrl!,
+                  width: 210,
+                  height: 210,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text('No fue posible cargar el QR.'),
+                  ),
+                ),
+              ),
+            )
+          else
+            const Text(
+              'El QR de pago no esta disponible aun para esta reserva.',
+              style: TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _mostrarModalCompletarPago(reserva);
+              },
+              icon: const Icon(Icons.payments_outlined),
+              label: Text(
+                esPendiente ? 'Completar pago' : 'Ver estado de pago',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorPago,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSeccionServicios(Reserva reserva) {
     final servicios = reserva.servicios ?? [];
-    
+
     if (servicios.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -592,10 +920,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         if (puedeEditar)
           ElevatedButton.icon(
             onPressed: () {
-              context.pushNamed(
-                'editarReserva',
-                extra: reserva,
-              ).then((resultado) {
+              context.pushNamed('editarReserva', extra: reserva).then((
+                resultado,
+              ) {
                 if (resultado == true && mounted) {
                   _cargarDetalle();
                 }
@@ -633,14 +960,13 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: () {
-              context.pushNamed(
-                'gestionServiciosReserva',
-                extra: reserva,
-              ).then((resultado) {
-                if (resultado == true && mounted) {
-                  _cargarDetalle();
-                }
-              });
+              context.pushNamed('gestionServiciosReserva', extra: reserva).then(
+                (resultado) {
+                  if (resultado == true && mounted) {
+                    _cargarDetalle();
+                  }
+                },
+              );
             },
             icon: const Icon(Icons.miscellaneous_services),
             label: const Text('Gestionar Servicios'),
@@ -653,10 +979,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         const SizedBox(height: 12),
         ElevatedButton.icon(
           onPressed: () {
-            context.pushNamed(
-              'comprobanteReserva',
-              extra: reserva,
-            );
+            context.pushNamed('comprobanteReserva', extra: reserva);
           },
           icon: const Icon(Icons.receipt_long),
           label: const Text('Ver Comprobante'),
@@ -696,10 +1019,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 Text(
                   value,
@@ -731,7 +1051,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
       'sep',
       'oct',
       'nov',
-      'dic'
+      'dic',
     ];
     return '${date.day} ${monthNames[date.month - 1]} ${date.year}';
   }

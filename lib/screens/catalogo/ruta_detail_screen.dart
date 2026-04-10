@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../services/reserva_service.dart';
@@ -40,8 +41,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
 
   Future<void> _loadRutaImages() async {
     final idRuta = _rutaId();
-    final urls =
-        idRuta > 0 ? await _rutaService.getImagenes(idRuta) : <String>[];
+    final urls = idRuta > 0
+        ? await _rutaService.getImagenes(idRuta)
+        : <String>[];
 
     if (!mounted) return;
 
@@ -63,6 +65,35 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     return '$d/$m/$y';
   }
 
+  Future<void> _irACrearReservaRuta(ClienteProvider clienteProvider) async {
+    if (!clienteProvider.perfilCompleto) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Debes completar tu perfil antes de hacer reservas'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final idRuta = _rutaId();
+    if (idRuta <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No se pudo identificar la ruta seleccionada'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    await context.push('/crear-reserva?idRuta=$idRuta');
+  }
+
+  // ignore: unused_element
   Future<void> _openReservaForm(ClienteProvider clienteProvider) async {
     if (!clienteProvider.perfilCompleto) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -461,8 +492,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),
@@ -636,7 +667,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                 builder: (context, clienteProvider, _) {
                   return ElevatedButton.icon(
                     onPressed: () {
-                      _openReservaForm(clienteProvider);
+                      _irACrearReservaRuta(clienteProvider);
                     },
                     icon: const Icon(Icons.calendar_today),
                     label: const Text('Reservar Ahora'),

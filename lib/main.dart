@@ -4,9 +4,11 @@ import 'config/router.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cliente_provider.dart';
 import 'providers/catalogo_provider.dart';
+import 'providers/programacion_provider.dart';
 import 'providers/reserva_provider.dart';
 import 'providers/programacion_personal_provider.dart';
 import 'providers/notificaciones_provider.dart';
+import 'providers/servicio_provider.dart';
 import 'widgets/notificaciones_widget.dart';
 
 void main() {
@@ -25,24 +27,14 @@ class _OccitourAppState extends State<OccitourApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider()..init(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ClienteProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CatalogoProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ReservaProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ProgramacionPersonalProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => NotificacionesProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+        ChangeNotifierProvider(create: (_) => ClienteProvider()),
+        ChangeNotifierProvider(create: (_) => CatalogoProvider()),
+        ChangeNotifierProvider(create: (_) => ProgramacionProvider()),
+        ChangeNotifierProvider(create: (_) => ReservaProvider()),
+        ChangeNotifierProvider(create: (_) => ServicioProvider()),
+        ChangeNotifierProvider(create: (_) => ProgramacionPersonalProvider()),
+        ChangeNotifierProvider(create: (_) => NotificacionesProvider()),
       ],
       child: MaterialApp.router(
         title: 'Occitours',

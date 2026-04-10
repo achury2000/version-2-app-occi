@@ -50,7 +50,8 @@ class ApiService {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
             print(
-                '🔐 [ApiService] Token incluido en header: ${token.substring(0, 20)}...');
+              '🔐 [ApiService] Token incluido en header: ${token.substring(0, 20)}...',
+            );
           } else {
             print('⚠️ [ApiService] ¡SIN TOKEN EN HEADER!');
           }
@@ -87,8 +88,10 @@ class ApiService {
   }
 
   /// GET request
-  Future<dynamic> get(String endpoint,
-      {Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> get(
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
       final normalizedEndpoint = _normalizeEndpoint(endpoint);
       final response = await _dio.get(
@@ -117,6 +120,26 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       _handleError(e, 'POST', _normalizeEndpoint(endpoint));
+    }
+  }
+
+  /// POST multipart/form-data request
+  Future<dynamic> postFormData(
+    String endpoint,
+    FormData formData, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final normalizedEndpoint = _normalizeEndpoint(endpoint);
+      final response = await _dio.post(
+        normalizedEndpoint,
+        data: formData,
+        queryParameters: queryParameters,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      _handleError(e, 'POST_FORMDATA', _normalizeEndpoint(endpoint));
     }
   }
 
@@ -167,12 +190,14 @@ class ApiService {
     // Manejar errores de autenticación
     if (error.response?.statusCode == 403) {
       print(
-          '🔐 [ApiService] Error 403 - Acceso Denegado (Permisos insuficientes)');
+        '🔐 [ApiService] Error 403 - Acceso Denegado (Permisos insuficientes)',
+      );
       message =
           '❌ Acceso denegado: No tienes permisos para esta acción. Verifica que hayas iniciado sesión correctamente.';
     } else if (error.response?.statusCode == 401) {
       print(
-          '🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)');
+        '🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)',
+      );
       message = '❌ Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
     } else if (error.type == DioExceptionType.connectionTimeout) {
       message = 'Timeout: No se puede conectar al servidor';
@@ -187,7 +212,8 @@ class ApiService {
 
       if (responseData != null && responseData is Map) {
         // Priorizar el campo 'message', luego 'error', luego el primer valor
-        message = responseData['message'] ??
+        message =
+            responseData['message'] ??
             responseData['error'] ??
             responseData['errors'] ??
             responseData['validations'] ??
