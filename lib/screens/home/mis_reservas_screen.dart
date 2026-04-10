@@ -86,9 +86,10 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
       final detalle = await _reservaService.getById(idReserva);
       if (!mounted) return;
 
-      final diasEstancia = detalle.fechaFin != null && detalle.fechaInicio != null
-          ? detalle.fechaFin!.difference(detalle.fechaInicio!).inDays
-          : '-';
+      final diasEstancia =
+          detalle.fechaFin != null && detalle.fechaInicio != null
+              ? detalle.fechaFin!.difference(detalle.fechaInicio!).inDays
+              : '-';
 
       if (!mounted) return;
       await showModalBottomSheet<void>(
@@ -192,37 +193,36 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        ...items
-            .map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (item.$1.isNotEmpty) ...[
-                        SizedBox(
-                          width: 110,
-                          child: Text(
-                            item.$1,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                      Expanded(
-                        child: Text(
-                          item.$2,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (item.$1.isNotEmpty) ...[
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        item.$1,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          fontSize: 12,
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                  Expanded(
+                    child: Text(
+                      item.$2,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
-                )),
+                ],
+              ),
+            )),
       ],
     );
   }
@@ -263,19 +263,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     if (!mounted) return;
 
     try {
-      final reservaCancelada = await _reservaService.cancelar(reserva.id);
+      await _reservaService.cancelar(reserva.id);
       if (!mounted) return;
-
-      if (reservaCancelada == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ No se pudo cancelar la reserva'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -497,26 +486,26 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                       )
                     : !provider.tieneReservas
                         ? ListView(
-                            children: [
-                              const SizedBox(height: 140),
+                            children: const [
+                              SizedBox(height: 140),
                               Center(
                                 child: Column(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.calendar_month_outlined,
                                       size: 56,
                                       color: Colors.grey,
                                     ),
-                                    const SizedBox(height: 16),
-                                    const Text(
+                                    SizedBox(height: 16),
+                                    Text(
                                       'Sin reservas registradas',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Text(
+                                    SizedBox(height: 8),
+                                    Text(
                                       'Haz una nueva reserva para verla aquí',
                                       style: TextStyle(
                                         color: Colors.grey,
@@ -557,8 +546,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                               _iconoEstado(reserva.estado);
 
                                           return Card(
-                                            margin:
-                                                const EdgeInsets.only(bottom: 12),
+                                            margin: const EdgeInsets.only(
+                                                bottom: 12),
                                             elevation: 2,
                                             child: InkWell(
                                               onTap: () =>
@@ -592,11 +581,13 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                                     width: 6),
                                                                 Text(
                                                                   'Reserva #${reserva.id}',
-                                                                  style: const TextStyle(
+                                                                  style:
+                                                                      const TextStyle(
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
-                                                                    fontSize: 15,
+                                                                    fontSize:
+                                                                        15,
                                                                   ),
                                                                 ),
                                                               ],
@@ -605,17 +596,19 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                                 height: 4),
                                                             Text(
                                                               '${_formatDate(reserva.fechaInicio)} - ${_formatDate(reserva.fechaFin)}',
-                                                              style: const TextStyle(
+                                                              style:
+                                                                  const TextStyle(
                                                                 fontSize: 12,
-                                                                color: Colors
-                                                                    .grey,
+                                                                color:
+                                                                    Colors.grey,
                                                               ),
                                                             ),
                                                           ],
                                                         ),
                                                         Container(
-                                                          padding: const EdgeInsets
-                                                              .symmetric(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
                                                             horizontal: 10,
                                                             vertical: 4,
                                                           ),
@@ -623,10 +616,12 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                               BoxDecoration(
                                                             color: colorEstado
                                                                 .withValues(
-                                                                    alpha: 0.15),
+                                                                    alpha:
+                                                                        0.15),
                                                             borderRadius:
                                                                 BorderRadius
-                                                                    .circular(6),
+                                                                    .circular(
+                                                                        6),
                                                           ),
                                                           child: Text(
                                                             (reserva.estado ??
@@ -636,7 +631,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                               color:
                                                                   colorEstado,
                                                               fontWeight:
-                                                                  FontWeight.w600,
+                                                                  FontWeight
+                                                                      .w600,
                                                               fontSize: 11,
                                                             ),
                                                           ),
@@ -656,7 +652,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                             width: 4),
                                                         Text(
                                                           '${reserva.cantidadPersonas ?? 0} persona(s)',
-                                                          style: const TextStyle(
+                                                          style:
+                                                              const TextStyle(
                                                             fontSize: 12,
                                                           ),
                                                         ),
@@ -686,13 +683,14 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                     Row(
                                                       children: [
                                                         Expanded(
-                                                          child:
-                                                              OutlinedButton.icon(
+                                                          child: OutlinedButton
+                                                              .icon(
                                                             onPressed: () =>
                                                                 _mostrarDetalle(
                                                                     reserva.id),
                                                             icon: const Icon(
-                                                                Icons.visibility),
+                                                                Icons
+                                                                    .visibility),
                                                             label: const Text(
                                                                 'Detalles'),
                                                           ),
@@ -700,8 +698,8 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                         const SizedBox(
                                                             width: 10),
                                                         Expanded(
-                                                          child:
-                                                              ElevatedButton.icon(
+                                                          child: ElevatedButton
+                                                              .icon(
                                                             onPressed: reserva
                                                                     .estaActiva
                                                                 ? () =>

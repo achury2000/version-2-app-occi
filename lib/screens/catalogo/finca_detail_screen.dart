@@ -40,9 +40,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
 
   Future<void> _loadFincaImages() async {
     final idFinca = _fincaId();
-    final urls = idFinca > 0
-        ? await _fincaService.getImagenes(idFinca)
-        : <String>[];
+    final urls =
+        idFinca > 0 ? await _fincaService.getImagenes(idFinca) : <String>[];
 
     if (!mounted) return;
 
@@ -70,13 +69,6 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  String _formatApiDate(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
   }
 
   String _formatUiDate(DateTime date) {
@@ -130,8 +122,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final noches =
-                (fechaInicio != null &&
+            final noches = (fechaInicio != null &&
                     fechaFin != null &&
                     fechaFin!.isAfter(fechaInicio!))
                 ? fechaFin!.difference(fechaInicio!).inDays
@@ -161,9 +152,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                             ),
                           ),
                           IconButton(
-                            onPressed: isSaving
-                                ? null
-                                : () => Navigator.pop(context),
+                            onPressed:
+                                isSaving ? null : () => Navigator.pop(context),
                             icon: const Icon(Icons.close),
                           ),
                         ],
@@ -504,8 +494,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                          Colors.white,
+                                        ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),

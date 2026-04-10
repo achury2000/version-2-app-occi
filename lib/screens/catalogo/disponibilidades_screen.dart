@@ -152,8 +152,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                     .map(
                       (estado) => FilterChip(
                         label: Text(estado),
-                        selected:
-                            (provider.filtros['estado'] ?? '') == estado,
+                        selected: (provider.filtros['estado'] ?? '') == estado,
                         onSelected: (selected) {
                           if (selected) {
                             provider.setFiltroEstado(estado);
@@ -219,27 +218,27 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
         }
 
         final programaciones = provider.programaciones;
-        
+
         if (!provider.tieneProgramaciones) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
+              children: const [
+                Icon(
                   Icons.calendar_month,
                   size: 48,
                   color: Colors.grey,
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: 16),
+                Text(
                   'No hay disponibilidades',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Intenta cambiar los filtros',
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -394,7 +393,8 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
               // Información de fecha y cupos
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const Icon(Icons.calendar_today,
+                      size: 16, color: Colors.grey),
                   const SizedBox(width: 8),
                   Text(
                     _formatDate(programacion.fechaSalida),
@@ -613,24 +613,24 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                             ),
                           ),
                           const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: estadoColor.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                (programacion.estado ?? 'N/A').toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: estadoColor,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: estadoColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              (programacion.estado ?? 'N/A').toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: estadoColor,
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -763,11 +763,11 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
     // Guardar la programación seleccionada en el provider
     context
         .read<ProgramacionProvider>()
-        .cargarDetalleProgramacion(programacion.id!);
+        .cargarDetalleProgramacion(programacion.id);
 
     // Inicializar la reserva con la programación seleccionada
     context.read<ReservaProvider>().iniciarReservaConProgramacion(
-          idProgramacion: programacion.id!,
+          idProgramacion: programacion.id,
           nombreRuta: programacion.nombreRuta,
           precio: programacion.precio,
         );

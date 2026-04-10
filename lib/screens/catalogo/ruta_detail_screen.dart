@@ -40,9 +40,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
 
   Future<void> _loadRutaImages() async {
     final idRuta = _rutaId();
-    final urls = idRuta > 0
-        ? await _rutaService.getImagenes(idRuta)
-        : <String>[];
+    final urls =
+        idRuta > 0 ? await _rutaService.getImagenes(idRuta) : <String>[];
 
     if (!mounted) return;
 
@@ -55,13 +54,6 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     if (principal.isNotEmpty && principal.startsWith('http')) {
       setState(() => _images = [principal]);
     }
-  }
-
-  String _formatApiDate(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
   }
 
   String _formatUiDate(DateTime date) {
@@ -469,8 +461,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                          Colors.white,
+                                        ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),

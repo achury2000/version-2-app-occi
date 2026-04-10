@@ -218,7 +218,6 @@ class _FincasScreenState extends State<FincasScreen> {
 
   Widget _buildFincaCard(dynamic finca) {
     // Extraer datos según el tipo
-    int id = 0;
     String nombre = '';
     String ubicacion = '';
     int capacidad = 0;
@@ -226,14 +225,12 @@ class _FincasScreenState extends State<FincasScreen> {
     String imagenPrincipal = '';
 
     if (finca is Map) {
-      id = finca['id'] ?? 0;
       nombre = finca['nombre'] ?? '';
       ubicacion = finca['ubicacion'] ?? '';
       capacidad = (finca['capacidad_personas'] ?? 0).toInt();
       precio = (finca['precio_por_noche'] ?? 0).toDouble();
       imagenPrincipal = (finca['imagen_principal'] ?? '').toString();
     } else {
-      id = finca.id ?? 0;
       nombre = finca.nombre ?? '';
       ubicacion = finca.ubicacion ?? '';
       capacidad = finca.capacidad ?? 0;
@@ -268,8 +265,7 @@ class _FincasScreenState extends State<FincasScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child:
-                      (imagenPrincipal.isNotEmpty &&
+                  child: (imagenPrincipal.isNotEmpty &&
                           imagenPrincipal.startsWith('http'))
                       ? Image.network(
                           imagenPrincipal,

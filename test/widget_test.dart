@@ -5,7 +5,7 @@ import 'package:occitours/models/reserva.dart';
 void main() {
   group('Occitours App - Smoke Tests', () {
     test('Programacion.fromJson() debería parsear JSON valido', () {
-      final json = {
+      const json = {
         'id': 1,
         'nombre_ruta': 'Test Ruta',
         'precio': 50.0,
@@ -20,7 +20,7 @@ void main() {
     });
 
     test('Reserva.fromJson() debería parsear JSON valido', () {
-      final json = {
+      const json = {
         'id': 101,
         'id_cliente': 1,
         'estado': 'Pendiente',
@@ -51,7 +51,7 @@ void main() {
     test('Cálculo de precio total: cantidad * precio unitario', () {
       const cantidad = 3;
       const precioUnitario = 50.0;
-      final precioTotal = cantidad * precioUnitario;
+      const precioTotal = cantidad * precioUnitario;
 
       expect(precioTotal, 150.0);
     });
@@ -64,7 +64,7 @@ void main() {
     });
 
     test('Formato de fecha - parsing DateTime', () {
-      final dateString = '2026-04-15';
+      const dateString = '2026-04-15';
       final date = DateTime.parse(dateString);
 
       expect(date.year, 2026);
@@ -119,4 +119,3 @@ void main() {
     });
   });
 }
-

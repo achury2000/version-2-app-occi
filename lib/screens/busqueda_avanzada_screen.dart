@@ -180,8 +180,7 @@ class _BusquedaAvanzadaScreenState extends State<BusquedaAvanzadaScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor:
-                                    AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.search),
@@ -216,11 +215,11 @@ class _BusquedaAvanzadaScreenState extends State<BusquedaAvanzadaScreen> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 32),
                         child: Column(
-                          children: [
-                            const Icon(Icons.search_off,
+                          children: const [
+                            Icon(Icons.search_off,
                                 size: 48, color: Colors.grey),
-                            const SizedBox(height: 12),
-                            const Text('No hay resultados'),
+                            SizedBox(height: 12),
+                            Text('No hay resultados'),
                           ],
                         ),
                       ),
@@ -259,7 +258,7 @@ class _BusquedaAvanzadaScreenState extends State<BusquedaAvanzadaScreen> {
 
   Widget _buildResultadoCard(Reserva reserva) {
     final dateFormat = DateFormat('dd/MM/yyyy');
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -283,7 +282,8 @@ class _BusquedaAvanzadaScreenState extends State<BusquedaAvanzadaScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getColorEstado(reserva.estado ?? '').withOpacity(0.2),
+                    color:
+                        _getColorEstado(reserva.estado ?? '').withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

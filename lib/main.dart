@@ -52,7 +52,7 @@ class _OccitourAppState extends State<OccitourApp> {
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFAF9F6),
+          scaffoldBackgroundColor: const Color(0xFFFAF9F6),
         ),
         themeMode: ThemeMode.light,
         routerConfig: appRouter,
