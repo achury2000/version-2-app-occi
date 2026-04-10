@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../services/reserva_service.dart';
@@ -40,8 +41,9 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
 
   Future<void> _loadFincaImages() async {
     final idFinca = _fincaId();
-    final urls =
-        idFinca > 0 ? await _fincaService.getImagenes(idFinca) : <String>[];
+    final urls = idFinca > 0
+        ? await _fincaService.getImagenes(idFinca)
+        : <String>[];
 
     if (!mounted) return;
 
@@ -122,12 +124,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final noches = (fechaInicio != null &&
+            final noches =
+                (fechaInicio != null &&
                     fechaFin != null &&
                     fechaFin!.isAfter(fechaInicio!))
                 ? fechaFin!.difference(fechaInicio!).inDays
                 : 0;
-            final total = precio * noches;
+            final total = precio * noches * cantidadPersonas;
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -152,8 +155,9 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                             ),
                           ),
                           IconButton(
-                            onPressed:
-                                isSaving ? null : () => Navigator.pop(context),
+                            onPressed: isSaving
+                                ? null
+                                : () => Navigator.pop(context),
                             icon: const Icon(Icons.close),
                           ),
                         ],
@@ -440,16 +444,31 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
 
                                       setModalState(() => isSaving = true);
                                       try {
-                                        // Usar el nuevo flujo: crear reserva para una programación
-                                        await _reservaService.crear(
-                                          idCliente: idCliente,
-                                          idProgramacion:
-                                              0, // TODO: Obtener de programación seleccionada
-                                          cantidadPersonas: cantidadPersonas,
-                                          metodoPago: 'transferencia',
-                                          observaciones:
-                                              'Finca: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
-                                        );
+                                        final fincaId = _fincaId();
+                                        if (fincaId <= 0) {
+                                          throw Exception(
+                                            'ID de finca inválido',
+                                          );
+                                        }
+
+                                        final reservaBase = await _reservaService
+                                            .crearBaseReserva(
+                                              idCliente: idCliente,
+                                              metodoPago: 'Transferencia',
+                                              observaciones:
+                                                  'Finca: $nombre | Personas: $cantidadPersonas${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
+                                            );
+
+                                        await _reservaService
+                                            .agregarFincaDetalle(
+                                              idReserva: reservaBase.id,
+                                              idFinca: fincaId,
+                                              fechaCheckin: fechaInicio!,
+                                              fechaCheckout: fechaFin!,
+                                              numeroNoches: noches,
+                                              precioPorNoche:
+                                                  precio * cantidadPersonas,
+                                            );
 
                                         if (!mounted || !modalContext.mounted) {
                                           return;
@@ -460,10 +479,17 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                              '✅ Reserva creada correctamente',
+                                              '✅ Reserva de finca creada correctamente',
                                             ),
                                             backgroundColor: Colors.green,
                                           ),
+                                        );
+
+                                        await context.pushNamed(
+                                          'reservaDetalle',
+                                          queryParameters: {
+                                            'id': reservaBase.id.toString(),
+                                          },
                                         );
                                       } catch (e) {
                                         if (!mounted) return;
@@ -494,8 +520,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),
@@ -523,6 +549,14 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
         title: const Text('Detalles de la Finca'),
         backgroundColor: const Color(0xFF0066CC),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

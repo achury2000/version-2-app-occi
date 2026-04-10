@@ -298,6 +298,51 @@ class ReservaService {
     await _api.postFormData('/pagos/$idPago/comprobante', formData);
   }
 
+  Future<Reserva> crearBaseReserva({
+    required int idCliente,
+    String? metodoPago,
+    String? observaciones,
+  }) async {
+    final body = <String, dynamic>{'id_cliente': idCliente};
+
+    if (metodoPago != null && metodoPago.trim().isNotEmpty) {
+      body['metodo_pago'] = metodoPago;
+    }
+    if (observaciones != null && observaciones.trim().isNotEmpty) {
+      body['notas'] = observaciones;
+    }
+
+    final response = await _api.post('/reservas', body);
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return Reserva.fromJson(data);
+      }
+      return Reserva.fromJson(response);
+    }
+
+    throw Exception('Error al crear reserva base');
+  }
+
+  Future<void> agregarFincaDetalle({
+    required int idReserva,
+    required int idFinca,
+    required DateTime fechaCheckin,
+    required DateTime fechaCheckout,
+    required int numeroNoches,
+    required double precioPorNoche,
+  }) async {
+    final body = <String, dynamic>{
+      'id_finca': idFinca,
+      'fecha_checkin': fechaCheckin.toIso8601String(),
+      'fecha_checkout': fechaCheckout.toIso8601String(),
+      'numero_noches': numeroNoches,
+      'precio_por_noche': precioPorNoche,
+    };
+
+    await _api.post('/reservas/$idReserva/finca', body);
+  }
+
   /// Cancelar una reserva existente con motivo/justificación.
   ///
   /// El cliente puede cancelar su propia reserva con un motivo.

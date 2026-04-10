@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/servicio.dart';
 import '../../providers/servicio_provider.dart';
@@ -61,9 +62,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
                 // Barra de búsqueda
                 _buildSearchBar(context, provider),
                 // Lista de servicios
-                Expanded(
-                  child: _buildServiciosList(context, provider),
-                ),
+                Expanded(child: _buildServiciosList(context, provider)),
                 // Footer con total y botón
                 _buildFooter(context, provider),
               ],
@@ -96,6 +95,12 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
       ),
       centerTitle: true,
       actions: [
+        IconButton(
+          icon: const Icon(Icons.home_outlined, color: Colors.white),
+          onPressed: () {
+            context.go('/home');
+          },
+        ),
         Consumer<ServicioProvider>(
           builder: (context, provider, _) {
             final cantidad = provider.serviciosSeleccionados.length;
@@ -129,10 +134,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
   }
 
   /// Barra de búsqueda y filtrado
-  Widget _buildSearchBar(
-    BuildContext context,
-    ServicioProvider provider,
-  ) {
+  Widget _buildSearchBar(BuildContext context, ServicioProvider provider) {
     return Container(
       color: Colors.grey.shade100,
       padding: const EdgeInsets.all(12),
@@ -167,10 +169,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
   }
 
   /// Lista de servicios con checkboxes
-  Widget _buildServiciosList(
-    BuildContext context,
-    ServicioProvider provider,
-  ) {
+  Widget _buildServiciosList(BuildContext context, ServicioProvider provider) {
     final servicios = provider.serviciosFiltrados;
 
     if (servicios.isEmpty) {
@@ -178,18 +177,11 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Colors.grey.shade300,
-            ),
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
               'No hay servicios disponibles',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
             ),
           ],
         ),
@@ -234,8 +226,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
               // Checkbox
               Checkbox(
                 value: isSelected,
-                onChanged: (_) =>
-                    provider.toggleSeleccionServicio(servicio.id),
+                onChanged: (_) => provider.toggleSeleccionServicio(servicio.id),
                 activeColor: const Color(0xFF2D5016),
               ),
               const SizedBox(width: 12),
@@ -267,10 +258,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
               const SizedBox(width: 12),
               // Precio
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2D5016),
                   borderRadius: BorderRadius.circular(4),
@@ -296,9 +284,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade300),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -323,10 +309,7 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
               children: [
                 Text(
                   'Subtotal servicios:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Consumer<ServicioProvider>(
@@ -350,17 +333,11 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
           ElevatedButton(
             onPressed: () {
               // Devolver servicios seleccionados al volver
-              Navigator.pop(
-                context,
-                provider.idsServiciosSeleccionados,
-              );
+              Navigator.pop(context, provider.idsServiciosSeleccionados);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2D5016),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -379,27 +356,17 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen> {
   }
 
   /// Widget para mostrar error
-  Widget _buildErrorWidget(
-    BuildContext context,
-    ServicioProvider provider,
-  ) {
+  Widget _buildErrorWidget(BuildContext context, ServicioProvider provider) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red.shade300,
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
             provider.error ?? 'Error desconocido',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.red.shade600,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.red.shade600, fontSize: 14),
           ),
           const SizedBox(height: 24),
           ElevatedButton(

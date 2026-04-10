@@ -174,6 +174,14 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         appBar: AppBar(
           title: const Text('Detalle de Reserva'),
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_outlined),
+              onPressed: () {
+                context.go('/home');
+              },
+            ),
+          ],
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -184,6 +192,14 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         appBar: AppBar(
           title: const Text('Detalle de Reserva'),
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_outlined),
+              onPressed: () {
+                context.go('/home');
+              },
+            ),
+          ],
         ),
         body: Center(
           child: Column(
@@ -211,6 +227,14 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         title: Text('Reserva #${reserva.id}'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

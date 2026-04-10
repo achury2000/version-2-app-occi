@@ -177,6 +177,14 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         title: const Text('Nueva Reserva'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+        ],
       ),
       body: Consumer<ProgramacionProvider>(
         builder: (context, progProvider, _) {
