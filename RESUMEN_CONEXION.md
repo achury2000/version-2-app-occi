@@ -66,7 +66,8 @@ Documentación completa con:
 cd occitours-backend-mvc
 npm install
 npm run dev
-```
+```  qr_flutter: ^4.1.0
+  permission_handler: ^11.4.0
 El servidor estará en `http://localhost:3000`
 
 ### **Paso 2: Ejecutar la App Flutter**

@@ -49,6 +49,14 @@ class Reserva {
   });
 
   factory Reserva.fromJson(Map<String, dynamic> json) {
+    double? parsePrice(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      if (value is num) return value.toDouble();
+      return null;
+    }
     return Reserva(
       id: json['id'] ?? json['id_reserva'] ?? 0,
       idCliente: json['id_cliente'],
@@ -65,8 +73,8 @@ class Reserva {
           ? DateTime.tryParse(json['fecha_fin'].toString())
           : null,
       cantidadPersonas: json['cantidad_personas'],
-      precioTotal: (json['precio_total'] as num?)?.toDouble(),
-      precioPorPersona: (json['precio_por_persona'] as num?)?.toDouble(),  // NUEVO
+      precioTotal: parsePrice(json['precio_total']),
+      precioPorPersona: parsePrice(json['precio_por_persona']),  // NUEVO
       estado: json['estado'],
       estadoPago: json['estado_pago'],  // NUEVO
       metodoPago: json['metodo_pago'],  // NUEVO

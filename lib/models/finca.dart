@@ -30,6 +30,14 @@ class Finca {
   });
 
   factory Finca.fromJson(Map<String, dynamic> json) {
+    double parsePrice(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      if (value is num) return value.toDouble();
+      return 0.0;
+    }
     return Finca(
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? 'Sin nombre',
@@ -38,7 +46,7 @@ class Finca {
       imagen: json['imagen'],
       latitud: (json['latitud'] as num?)?.toDouble() ?? 0.0,
       longitud: (json['longitud'] as num?)?.toDouble() ?? 0.0,
-      precioNoche: (json['precioNoche'] as num?)?.toDouble() ?? 0.0,
+      precioNoche: parsePrice(json['precioNoche']),
       capacidad: json['capacidad'] ?? 0,
       servicios: json['servicios'] != null
           ? List<String>.from(json['servicios'])

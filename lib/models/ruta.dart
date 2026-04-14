@@ -32,6 +32,14 @@ class Ruta {
   });
 
   factory Ruta.fromJson(Map<String, dynamic> json) {
+    double parsePrice(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      if (value is num) return value.toDouble();
+      return 0.0;
+    }
     return Ruta(
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? 'Sin nombre',
@@ -40,7 +48,7 @@ class Ruta {
       imagen: json['imagen'],
       duracion: (json['duracion'] as num?)?.toDouble() ?? 0.0,
       distancia: (json['distancia'] as num?)?.toDouble() ?? 0.0,
-      precio: (json['precio'] as num?)?.toDouble() ?? 0.0,
+      precio: parsePrice(json['precio']),
       capacidad: json['capacidad'] ?? 0,
       dificultad: json['dificultad'] ?? 'moderado',
       incluye: json['incluye'] != null ? List<String>.from(json['incluye']) : [],
