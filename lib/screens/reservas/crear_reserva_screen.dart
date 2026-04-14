@@ -6,6 +6,7 @@ import '../../providers/catalogo_provider.dart';
 import '../../providers/programacion_provider.dart';
 import '../../providers/reserva_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/cliente_provider.dart';
 import '../../providers/servicio_provider.dart';
 import '../../services/reserva_service.dart';
 
@@ -61,8 +62,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     if (widget.idProgramacion != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<ProgramacionProvider>().cargarDetalleProgramacion(
-          widget.idProgramacion!,
-        );
+              widget.idProgramacion!,
+            );
       });
     }
   }
@@ -90,12 +91,23 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     }
 
     final authProvider = context.read<AuthProvider>();
-    final idCliente = authProvider.usuario?.id;
+    final clienteProvider = context.read<ClienteProvider>();
+
+    int? idCliente = clienteProvider.cliente?.id;
+
+    if (idCliente == null) {
+      final idUsuario = authProvider.usuario?.id;
+      if (idUsuario != null) {
+        await clienteProvider.loadCliente(idUsuario);
+        idCliente = clienteProvider.cliente?.id;
+      }
+    }
 
     if (idCliente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No se encontró perfil de cliente'),
+          content:
+              Text('No se encontró el id de cliente para crear la reserva'),
           backgroundColor: Colors.red,
         ),
       );
@@ -109,9 +121,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     try {
       final nuevaReserva = await _reservaService.crear(
         idCliente: idCliente,
-        idProgramacion: _usarProgramacion
-            ? _programacionSeleccionada?.id
-            : null,
+        idProgramacion:
+            _usarProgramacion ? _programacionSeleccionada?.id : null,
         idRuta: _usarProgramacion ? null : _idRutaSeleccionada,
         cantidadPersonas: _cantidadPersonas,
         metodoPago: _metodoPago,
@@ -124,8 +135,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       if (mounted) {
         // ignore: use_build_context_synchronously
         await context.read<ReservaProvider>().cargarReservas(
-          idCliente: idCliente,
-        );
+              idCliente: idCliente,
+            );
       }
 
       if (!mounted) return;
@@ -302,8 +313,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     fontSize: 13,
                     color:
                         (_programacionSeleccionada?.cuposDisponibles ?? 0) > 0
-                        ? Colors.green
-                        : Colors.red,
+                            ? Colors.green
+                            : Colors.red,
                   ),
                 ),
               ],
@@ -568,8 +579,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     double precioUnitario = _programacionSeleccionada?.precio ?? 0;
     if (!_usarProgramacion && _idRutaSeleccionada != null) {
       final ruta = context.read<CatalogoProvider>().getRutaById(
-        _idRutaSeleccionada!,
-      );
+            _idRutaSeleccionada!,
+          );
       if (ruta is Map<String, dynamic>) {
         final raw = ruta['precio'] ?? 0;
         if (raw is num) {
@@ -699,8 +710,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed:
-                _cargando ||
+            onPressed: _cargando ||
                     (_usarProgramacion && _programacionSeleccionada == null) ||
                     (!_usarProgramacion && _idRutaSeleccionada == null)
                 ? null
@@ -767,9 +777,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                         : Colors.grey.shade300,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: cantidad > 0
-                      ? Colors.amber.shade50
-                      : Colors.grey.shade50,
+                  color:
+                      cantidad > 0 ? Colors.amber.shade50 : Colors.grey.shade50,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

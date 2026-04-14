@@ -6,8 +6,8 @@ import 'package:file_picker/file_picker.dart';
 /// Servicio para gestionar Reservas desde el backend Occitours.
 ///
 /// Endpoints usados (vista cliente):
-/// - GET  /api/reservas/cliente/:idCliente → Reservas del cliente (auth)
-/// - GET  /api/reservas/:id               → Detalle de reserva (auth)
+/// - GET  /api/reservas/mis-reservas      → Reservas del cliente autenticado
+/// - GET  /api/reservas/mis-reservas/:id  → Detalle de reserva del cliente
 /// - GET  /api/reservas/buscar            → Buscar reservas (auth)
 /// - POST /api/reservas                   → Crear reserva (auth, rol Cliente)
 /// - POST /api/reservas/:id/cancelar      → Cancelar reserva (auth, rol Cliente)
@@ -20,22 +20,107 @@ class ReservaService {
   factory ReservaService() => _instance;
   ReservaService._internal();
 
+  List<Reserva> _parseReservasResponse(dynamic response) {
+    if (response is List) {
+      return response.map((json) => Reserva.fromJson(json)).toList();
+    }
+
+    if (response is Map) {
+      for (final key in const ['data', 'reservas', 'result']) {
+        final candidate = response[key];
+        if (candidate is List) {
+          return candidate.map((json) => Reserva.fromJson(json)).toList();
+        }
+      }
+    }
+
+    return [];
+  }
+
+  Map<String, dynamic> _normalizarDetalleReserva(dynamic response) {
+    if (response is! Map<String, dynamic>) {
+      return <String, dynamic>{};
+    }
+
+    final data = response['data'];
+    if (data is! Map<String, dynamic>) {
+      return response;
+    }
+
+    final reserva = data['reserva'];
+    if (reserva is! Map<String, dynamic>) {
+      return data;
+    }
+
+    final normalizado = Map<String, dynamic>.from(reserva);
+    final programacion = data['programacion'];
+    final resumenPago = data['resumen_pago'];
+    final pagos = data['pagos'];
+
+    if (programacion is Map<String, dynamic>) {
+      normalizado['id_programacion'] = programacion['id_programacion'];
+      normalizado['fecha_inicio'] =
+          programacion['fecha_salida'] ?? normalizado['fecha_inicio'];
+      normalizado['fecha_fin'] =
+          programacion['fecha_regreso'] ?? normalizado['fecha_fin'];
+      normalizado['cantidad_personas'] =
+          programacion['cantidad_personas'] ?? normalizado['cantidad_personas'];
+      normalizado['precio_por_persona'] =
+          programacion['precio_unitario'] ?? normalizado['precio_por_persona'];
+
+      if (programacion['id_programacion'] != null) {
+        normalizado['programaciones'] = [programacion];
+      }
+    }
+
+    if (resumenPago is Map<String, dynamic>) {
+      normalizado['estado_pago'] = resumenPago['estado_pago'];
+      normalizado['precio_total'] =
+          normalizado['precio_total'] ??
+          normalizado['monto_total'] ??
+          resumenPago['monto_total'];
+    }
+
+    if (pagos is List &&
+        pagos.isNotEmpty &&
+        pagos.first is Map<String, dynamic>) {
+      final primerPago = pagos.first as Map<String, dynamic>;
+      normalizado['metodo_pago'] =
+          normalizado['metodo_pago'] ?? primerPago['metodo_pago'];
+      normalizado['comprobante_pago'] =
+          normalizado['comprobante_pago'] ?? primerPago['comprobante_url'];
+    }
+
+    normalizado['servicios'] = data['servicios'];
+    normalizado['acompanantes'] = data['acompanantes'] ?? data['acompañantes'];
+    normalizado['observaciones'] =
+        normalizado['observaciones'] ?? normalizado['notas'];
+
+    return normalizado;
+  }
+
   /// Obtener las reservas de un cliente específico.
   Future<List<Reserva>> getByCliente(int idCliente) async {
     try {
-      final response = await _api.get('/reservas/cliente/$idCliente');
-
-      if (response is List) {
-        return response.map((json) => Reserva.fromJson(json)).toList();
-      }
-
-      if (response is Map && response['data'] != null) {
-        final list = response['data'] as List;
-        return list.map((json) => Reserva.fromJson(json)).toList();
-      }
-
-      return [];
+      final response = await _api.get('/reservas/mis-reservas');
+      return _parseReservasResponse(response);
     } catch (e) {
+      // Compatibilidad con backends antiguos.
+      for (final endpoint in const [
+        '/reservas/cliente',
+        '/reservas/mias',
+        '/reservas/mis',
+      ]) {
+        try {
+          final response = endpoint == '/reservas/cliente'
+              ? await _api.get('/reservas/cliente/$idCliente')
+              : await _api.get(endpoint);
+          return _parseReservasResponse(response);
+        } catch (_) {
+          // Intentar siguiente endpoint para compatibilidad entre backends.
+        }
+      }
+
       rethrow;
     }
   }
@@ -43,17 +128,29 @@ class ReservaService {
   /// Obtener detalle de una reserva por ID.
   Future<Reserva> getById(int id) async {
     try {
-      final response = await _api.get('/reservas/$id');
+      final response = await _api.get('/reservas/mis-reservas/$id');
 
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('data')) {
-          return Reserva.fromJson(response['data']);
-        }
-        return Reserva.fromJson(response);
+      final normalizado = _normalizarDetalleReserva(response);
+      if (normalizado.isNotEmpty) {
+        return Reserva.fromJson(normalizado);
       }
 
       throw Exception('Reserva no encontrada');
     } catch (e) {
+      // Compatibilidad con backends que aún exponen detalle en /reservas/:id.
+      try {
+        final response = await _api.get('/reservas/$id');
+        final normalizado = _normalizarDetalleReserva(response);
+        if (normalizado.isNotEmpty) {
+          return Reserva.fromJson(normalizado);
+        }
+        if (response is Map<String, dynamic>) {
+          if (response.containsKey('data')) {
+            return Reserva.fromJson(response['data']);
+          }
+          return Reserva.fromJson(response);
+        }
+      } catch (_) {}
       rethrow;
     }
   }

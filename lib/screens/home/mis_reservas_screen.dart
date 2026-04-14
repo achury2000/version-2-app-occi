@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/reserva.dart';
 import '../../providers/cliente_provider.dart';
 import '../../providers/reserva_provider.dart';
 import '../../services/reserva_service.dart';
+import '../reservas/reserva_detalle_screen.dart';
 
 /// FASE 3: GESTIÓN DE RESERVAS DEL CLIENTE
 /// Funcionalidades:
@@ -80,79 +82,14 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     if (!mounted) return;
 
     try {
-      final detalle = await _reservaService.getById(idReserva);
-      if (!mounted) return;
-
-      final diasEstancia =
-          detalle.fechaFin != null && detalle.fechaInicio != null
-          ? detalle.fechaFin!.difference(detalle.fechaInicio!).inDays
-          : '-';
-
-      if (!mounted) return;
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ReservaDetalleScreen(idReserva: idReserva),
         ),
-        builder: (sheetContext) {
-          final estado = (detalle.estado ?? 'pendiente').toUpperCase();
-          final total = detalle.precioTotal?.toStringAsFixed(0) ?? 'N/D';
-
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '📋 Detalle de Reserva',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    _buildSection('INFORMACIÓN GENERAL', [
-                      ('Reserva #', detalle.id.toString()),
-                      ('Estado', estado),
-                      ('Fecha de reserva', _formatDate(detalle.fechaReserva)),
-                    ]),
-                    const SizedBox(height: 16),
-                    _buildSection('FECHAS DE ESTANCIA', [
-                      ('Entrada', _formatDate(detalle.fechaInicio)),
-                      ('Salida', _formatDate(detalle.fechaFin)),
-                      ('Duración', '$diasEstancia noche(s)'),
-                    ]),
-                    const SizedBox(height: 16),
-                    _buildSection('DETALLES', [
-                      ('Personas', '${detalle.cantidadPersonas ?? 0}'),
-                      ('Precio total', '\$$total'),
-                    ]),
-                    if ((detalle.observaciones ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _buildSection('NOTAS', [('', detalle.observaciones!)]),
-                    ],
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
       );
+
+      if (!mounted) return;
+      await _cargarReservas();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -229,6 +166,16 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ],
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop(false);
+              if (mounted) {
+                context.go('/home');
+              }
+            },
+            icon: const Icon(Icons.home_outlined),
+            label: const Text('Inicio'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('Mantener'),
@@ -443,6 +390,15 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
         title: const Text('📅 Mis Reservas'),
         backgroundColor: const Color(0xFF0066CC),
         elevation: 2,
+        actions: [
+          IconButton(
+            tooltip: 'Ir a inicio',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+        ],
       ),
       body: Consumer<ReservaProvider>(
         builder: (context, provider, _) {

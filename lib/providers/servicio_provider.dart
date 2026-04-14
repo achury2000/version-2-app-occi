@@ -17,9 +17,8 @@ class ServicioProvider extends ChangeNotifier {
   // Getters
   List<Servicio> get servicios => _servicios;
   List<Servicio> get serviciosFiltrados => _serviciosFiltrados;
-  List<Servicio> get serviciosSeleccionados => _servicios
-      .where((s) => _serviciosSeleccionados.contains(s.id))
-      .toList();
+  List<Servicio> get serviciosSeleccionados =>
+      _servicios.where((s) => _serviciosSeleccionados.contains(s.id)).toList();
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get usandoApiReal => _usandoApiReal;
@@ -87,9 +86,11 @@ class ServicioProvider extends ChangeNotifier {
     } else {
       final queryLower = query.toLowerCase();
       _serviciosFiltrados = _servicios
-          .where((s) =>
-              s.nombre.toLowerCase().contains(queryLower) ||
-              s.descripcion.toLowerCase().contains(queryLower))
+          .where(
+            (s) =>
+                s.nombre.toLowerCase().contains(queryLower) ||
+                s.descripcion.toLowerCase().contains(queryLower),
+          )
           .toList();
     }
     notifyListeners();
@@ -122,8 +123,7 @@ class ServicioProvider extends ChangeNotifier {
 
   /// Remover múltiples servicios
   void removerServicios(List<int> servicioIds) {
-    _serviciosSeleccionados
-        .removeWhere((id) => servicioIds.contains(id));
+    _serviciosSeleccionados.removeWhere((id) => servicioIds.contains(id));
     notifyListeners();
   }
 

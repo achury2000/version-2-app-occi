@@ -19,7 +19,9 @@ class ServicioService {
       } else if (response is Map && response['data'] is List) {
         jsonData = response['data'] as List<dynamic>;
       } else {
-        throw Exception('Formato de respuesta inválido en /servicios/disponibles');
+        throw Exception(
+          'Formato de respuesta inválido en /servicios/disponibles',
+        );
       }
 
       return jsonData
@@ -101,15 +103,12 @@ class ServicioService {
     String? imagenUrl,
   }) async {
     try {
-      final response = await _api.post(
-        '/servicios',
-        {
-          'nombre': nombre,
-          'descripcion': descripcion,
-          'precio': precio,
-          'imagen_url': imagenUrl,
-        },
-      );
+      final response = await _api.post('/servicios', {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'precio': precio,
+        'imagen_url': imagenUrl,
+      });
 
       if (response is Map<String, dynamic>) {
         return Servicio.fromJson(response);
@@ -132,16 +131,13 @@ class ServicioService {
     required bool estado,
   }) async {
     try {
-      final response = await _api.put(
-        '/servicios/$id',
-        {
-          'nombre': nombre,
-          'descripcion': descripcion,
-          'precio': precio,
-          'imagen_url': imagenUrl,
-          'estado': estado,
-        },
-      );
+      final response = await _api.put('/servicios/$id', {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'precio': precio,
+        'imagen_url': imagenUrl,
+        'estado': estado,
+      });
 
       if (response is Map<String, dynamic>) {
         return Servicio.fromJson(response);

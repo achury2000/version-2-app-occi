@@ -6,19 +6,19 @@ class Reserva {
   final int? idCliente;
   final String? nombreCliente;
   final String? apellidoCliente;
-  final int? idProgramacion;  // NUEVO - FK a programación
+  final int? idProgramacion; // NUEVO - FK a programación
   final DateTime? fechaReserva;
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
   final int? cantidadPersonas;
   final double? precioTotal;
-  final double? precioPorPersona;  // NUEVO - Precio unitario
-  final String? estado;  // pendiente, confirmada, completada, cancelada
-  final String? estadoPago;  // NUEVO - pendiente, pagada
-  final String? metodoPago;  // NUEVO - transferencia, tarjeta, efectivo
-  final String? comprobantePago;  // NUEVO - URL del comprobante
+  final double? precioPorPersona; // NUEVO - Precio unitario
+  final String? estado; // pendiente, confirmada, completada, cancelada
+  final String? estadoPago; // NUEVO - pendiente, pagada
+  final String? metodoPago; // NUEVO - transferencia, tarjeta, efectivo
+  final String? comprobantePago; // NUEVO - URL del comprobante
   final String? observaciones;
-  final String? motivoCancelacion;  // NUEVO - Motivo si se cancela
+  final String? motivoCancelacion; // NUEVO - Motivo si se cancela
   final List<dynamic>? programaciones;
   final List<dynamic>? fincas;
   final List<dynamic>? servicios;
@@ -57,30 +57,49 @@ class Reserva {
       if (value is num) return value.toDouble();
       return null;
     }
+
+    int? parseInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is num) return value.toInt();
+      return null;
+    }
+
     return Reserva(
-      id: json['id'] ?? json['id_reserva'] ?? 0,
-      idCliente: json['id_cliente'],
-      nombreCliente: json['nombre_cliente'] ?? json['nombre'],
-      apellidoCliente: json['apellido_cliente'] ?? json['apellido'],
-      idProgramacion: json['id_programacion'],  // NUEVO
+      id: parseInt(json['id'] ?? json['id_reserva']) ?? 0,
+      idCliente: parseInt(json['id_cliente']),
+      nombreCliente:
+          json['cliente_nombre'] ?? json['nombre_cliente'] ?? json['nombre'],
+      apellidoCliente:
+          json['cliente_apellido'] ??
+          json['apellido_cliente'] ??
+          json['apellido'],
+      idProgramacion: parseInt(json['id_programacion']),
       fechaReserva: json['fecha_reserva'] != null
           ? DateTime.tryParse(json['fecha_reserva'].toString())
           : null,
-      fechaInicio: json['fecha_inicio'] != null
-          ? DateTime.tryParse(json['fecha_inicio'].toString())
+      fechaInicio: (json['fecha_inicio'] ?? json['fecha_salida']) != null
+          ? DateTime.tryParse(
+              (json['fecha_inicio'] ?? json['fecha_salida']).toString(),
+            )
           : null,
-      fechaFin: json['fecha_fin'] != null
-          ? DateTime.tryParse(json['fecha_fin'].toString())
+      fechaFin: (json['fecha_fin'] ?? json['fecha_regreso']) != null
+          ? DateTime.tryParse(
+              (json['fecha_fin'] ?? json['fecha_regreso']).toString(),
+            )
           : null,
-      cantidadPersonas: json['cantidad_personas'],
-      precioTotal: parsePrice(json['precio_total']),
-      precioPorPersona: parsePrice(json['precio_por_persona']),  // NUEVO
+      cantidadPersonas: parseInt(json['cantidad_personas']),
+      precioTotal: parsePrice(json['precio_total'] ?? json['monto_total']),
+      precioPorPersona: parsePrice(
+        json['precio_por_persona'] ?? json['precio_unitario'],
+      ),
       estado: json['estado'],
-      estadoPago: json['estado_pago'],  // NUEVO
-      metodoPago: json['metodo_pago'],  // NUEVO
-      comprobantePago: json['comprobante_pago'],  // NUEVO
-      observaciones: json['observaciones'],
-      motivoCancelacion: json['motivo_cancelacion'],  // NUEVO
+      estadoPago: json['estado_pago'],
+      metodoPago: json['metodo_pago'],
+      comprobantePago: json['comprobante_pago'] ?? json['comprobante_url'],
+      observaciones: json['observaciones'] ?? json['notas'],
+      motivoCancelacion: json['motivo_cancelacion'], // NUEVO
       programaciones: json['programaciones'],
       fincas: json['fincas'],
       servicios: json['servicios'],
@@ -92,18 +111,18 @@ class Reserva {
     return {
       'id': id,
       'id_cliente': idCliente,
-      'id_programacion': idProgramacion,  // NUEVO
+      'id_programacion': idProgramacion, // NUEVO
       'fecha_inicio': fechaInicio?.toIso8601String(),
       'fecha_fin': fechaFin?.toIso8601String(),
       'cantidad_personas': cantidadPersonas,
       'precio_total': precioTotal,
-      'precio_por_persona': precioPorPersona,  // NUEVO
+      'precio_por_persona': precioPorPersona, // NUEVO
       'estado': estado,
-      'estado_pago': estadoPago,  // NUEVO
-      'metodo_pago': metodoPago,  // NUEVO
-      'comprobante_pago': comprobantePago,  // NUEVO
+      'estado_pago': estadoPago, // NUEVO
+      'metodo_pago': metodoPago, // NUEVO
+      'comprobante_pago': comprobantePago, // NUEVO
       'observaciones': observaciones,
-      'motivo_cancelacion': motivoCancelacion,  // NUEVO
+      'motivo_cancelacion': motivoCancelacion, // NUEVO
     };
   }
 
@@ -135,6 +154,15 @@ class Reserva {
 
   /// Obtiene el nombre de la ruta o finca (si está disponible)
   String get nombreExperiencia {
+    final rutaNombre = (programaciones != null && programaciones!.isNotEmpty)
+        ? (programaciones![0]['ruta_nombre'] ??
+              programaciones![0]['nombre_ruta'])
+        : null;
+
+    if (rutaNombre != null && rutaNombre.toString().trim().isNotEmpty) {
+      return rutaNombre.toString();
+    }
+
     if (programaciones != null && programaciones!.isNotEmpty) {
       return programaciones![0]['nombre_ruta'] ??
           programaciones![0]['nombre_finca'] ??
