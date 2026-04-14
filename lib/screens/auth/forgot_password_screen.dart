@@ -13,7 +13,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _emailSent = false;
+  final bool _emailSent = false;
   bool _isLoading = false;
 
   @override
@@ -34,7 +34,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isLoading = false);
 
     final email = Uri.encodeComponent(_emailController.text.trim());
-    context.push('/reset-password?email=$email');
+    await context.push('/reset-password?email=$email');
   }
 
   @override

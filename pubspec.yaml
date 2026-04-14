@@ -17,6 +17,7 @@ dependencies:
   
   # HTTP y Networking
   dio: ^5.3.0
+  http: ^1.2.2
   
   # Serialización y Modelos
   json_serializable: ^6.7.0
@@ -32,6 +33,7 @@ dependencies:
   flutter_form_builder: ^10.2.0
   form_builder_validators: ^11.2.0
   shared_preferences: ^2.5.4
+  file_picker: ^10.1.9
   
 dev_dependencies:
   flutter_test:
@@ -54,3 +56,17 @@ flutter:
     - assets/fincas/las_heliconias/
     - assets/fincas/las_palmas/
     - assets/fincas/la_ilusion/
+    - assets/rutas/
+    - assets/rutas/avistamiento_aves/
+    - assets/rutas/bote_paseo_san_nicolas/
+    - assets/rutas/city_tours_santa_fe/
+    - assets/rutas/city_tours_tierra_frutas/
+    - assets/rutas/experiencia_viña_tigre/
+    - assets/rutas/paseo_caballo_bosque/
+    - assets/rutas/ruta_uva_sopetran/
+    - assets/rutas/senderismo_ecologico/
+    - assets/rutas/tours_tres_cascadas/
+    - assets/rutas/tour_al_puente_occidente/
+    - assets/rutas/tour_cata_vinos/
+    - assets/rutas/tour_cuatrimotos/
+    - assets/rutas/tour_del_chocolate/

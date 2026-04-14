@@ -56,6 +56,12 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
               setState(() {
@@ -106,24 +112,15 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
             TabBar(
               controller: _tabController,
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.list),
-                  text: 'Lista',
-                ),
-                Tab(
-                  icon: Icon(Icons.grid_3x3),
-                  text: 'Grid',
-                ),
+                Tab(icon: Icon(Icons.list), text: 'Lista'),
+                Tab(icon: Icon(Icons.grid_3x3), text: 'Grid'),
               ],
             ),
             // Contenido con lista de programaciones
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _buildListView(context),
-                  _buildGridView(context),
-                ],
+                children: [_buildListView(context), _buildGridView(context)],
               ),
             ),
           ],
@@ -152,8 +149,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                     .map(
                       (estado) => FilterChip(
                         label: Text(estado),
-                        selected:
-                            (provider.filtros['estado'] ?? '') == estado,
+                        selected: (provider.filtros['estado'] ?? '') == estado,
                         onSelected: (selected) {
                           if (selected) {
                             provider.setFiltroEstado(estado);
@@ -187,9 +183,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
     return Consumer<ProgramacionProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (provider.error != null && provider.error!.isNotEmpty) {
@@ -197,11 +191,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: Colors.red,
-                ),
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 16),
                 Text(
                   'Error: ${provider.error}',
@@ -219,27 +209,20 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
         }
 
         final programaciones = provider.programaciones;
-        
+
         if (!provider.tieneProgramaciones) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.calendar_month,
-                  size: 48,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 16),
-                const Text(
+              children: const [
+                Icon(Icons.calendar_month, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
                   'No hay disponibilidades',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Intenta cambiar los filtros',
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -267,9 +250,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
     return Consumer<ProgramacionProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (provider.error != null && provider.error!.isNotEmpty) {
@@ -315,10 +296,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
           ),
           itemCount: programaciones.length,
           itemBuilder: (context, index) {
-            return _buildProgramacionGridItem(
-              context,
-              programaciones[index],
-            );
+            return _buildProgramacionGridItem(context, programaciones[index]);
           },
         );
       },
@@ -394,7 +372,11 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
               // Información de fecha y cupos
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     _formatDate(programacion.fechaSalida),
@@ -613,24 +595,24 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                             ),
                           ),
                           const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: estadoColor.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                (programacion.estado ?? 'N/A').toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: estadoColor,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: estadoColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              (programacion.estado ?? 'N/A').toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: estadoColor,
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -672,11 +654,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                 if (programacion.guia != null &&
                     programacion.guia!.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _buildDetalleRow(
-                    'Guía',
-                    programacion.guia,
-                    Icons.person,
-                  ),
+                  _buildDetalleRow('Guía', programacion.guia, Icons.person),
                 ],
                 if (programacion.observaciones != null &&
                     programacion.observaciones!.isNotEmpty) ...[
@@ -739,10 +717,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 4),
             Text(
@@ -761,16 +736,16 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
 
   void _iniciarReserva(BuildContext context, Programacion programacion) {
     // Guardar la programación seleccionada en el provider
-    context
-        .read<ProgramacionProvider>()
-        .cargarDetalleProgramacion(programacion.id!);
+    context.read<ProgramacionProvider>().cargarDetalleProgramacion(
+      programacion.id,
+    );
 
     // Inicializar la reserva con la programación seleccionada
     context.read<ReservaProvider>().iniciarReservaConProgramacion(
-          idProgramacion: programacion.id!,
-          nombreRuta: programacion.nombreRuta,
-          precio: programacion.precio,
-        );
+      idProgramacion: programacion.id,
+      nombreRuta: programacion.nombreRuta,
+      precio: programacion.precio,
+    );
 
     // Navegar a la pantalla de crear reserva
     Navigator.pop(context);
@@ -807,7 +782,7 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
         'septiembre',
         'octubre',
         'noviembre',
-        'diciembre'
+        'diciembre',
       ];
       return '${date.day} de ${monthNames[date.month - 1]} de ${date.year}';
     } catch (e) {

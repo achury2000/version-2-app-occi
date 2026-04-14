@@ -19,7 +19,7 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Comprobante de Reserva'),
@@ -61,11 +61,10 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
                   border: Border.all(color: Colors.green),
                 ),
                 child: Column(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 48),
-                    const SizedBox(height: 8),
-                    const Text(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green, size: 48),
+                    SizedBox(height: 8),
+                    Text(
                       'OCCITOURS',
                       style: TextStyle(
                         fontSize: 20,
@@ -73,8 +72,8 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
                         color: Colors.green,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       'Comprobante de Reserva',
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
@@ -197,8 +196,8 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
                   '\$${(widget.reserva.precioPorPersona ?? 0).toStringAsFixed(2)}'),
               _buildDetalle('Método de Pago',
                   widget.reserva.metodoPago ?? 'No especificado'),
-              _buildDetalle('Estado de Pago',
-                  widget.reserva.estadoPago ?? 'Pendiente'),
+              _buildDetalle(
+                  'Estado de Pago', widget.reserva.estadoPago ?? 'Pendiente'),
               if (widget.reserva.observaciones != null &&
                   widget.reserva.observaciones!.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -234,7 +233,8 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getColorEstado(widget.reserva.estado ?? '').withOpacity(0.1),
+                  color: _getColorEstado(widget.reserva.estado ?? '')
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _getColorEstado(widget.reserva.estado ?? ''),

@@ -3,6 +3,7 @@
 // Modelos principales
 export 'usuario.dart';
 export 'cliente.dart';
+export 'cliente_perfil_model.dart';
 export 'finca.dart';
 export 'ruta.dart';
 export 'reserva.dart';

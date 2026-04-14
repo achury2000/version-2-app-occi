@@ -27,8 +27,20 @@ class ServicioService {
       final response = await _dio.get('/disponibles');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = response.data;
-        return jsonData.map((s) => Servicio.fromJson(s as Map<String, dynamic>)).toList();
+        final dynamic raw = response.data;
+        List<dynamic> jsonData;
+
+        if (raw is List) {
+          jsonData = raw;
+        } else if (raw is Map && raw['data'] is List) {
+          jsonData = raw['data'] as List<dynamic>;
+        } else {
+          throw Exception('Formato de respuesta inválido en /servicios/disponibles');
+        }
+
+        return jsonData
+            .map((s) => Servicio.fromJson(s as Map<String, dynamic>))
+            .toList();
       } else {
         throw Exception(
           'Error ${response.statusCode}: ${response.statusMessage}',

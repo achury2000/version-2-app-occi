@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../services/reserva_service.dart';
+import '../../services/ruta_service.dart';
 
 class RutaDetailScreen extends StatefulWidget {
   final dynamic ruta;
@@ -16,12 +18,44 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
   int _selectedImageIndex = 0;
   late List<String> _images;
   final ReservaService _reservaService = ReservaService();
+  final RutaService _rutaService = RutaService();
 
-  String _formatApiDate(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+  int _rutaId() {
+    if (widget.ruta is Map) {
+      final id = widget.ruta['id'] ?? widget.ruta['id_ruta'];
+      if (id is int) return id;
+      return int.tryParse(id?.toString() ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  String _rutaImagePrincipal() {
+    if (widget.ruta is Map) {
+      return (widget.ruta['imagen_principal'] ??
+              widget.ruta['imagen_url'] ??
+              '')
+          .toString();
+    }
+    return '';
+  }
+
+  Future<void> _loadRutaImages() async {
+    final idRuta = _rutaId();
+    final urls = idRuta > 0
+        ? await _rutaService.getImagenes(idRuta)
+        : <String>[];
+
+    if (!mounted) return;
+
+    if (urls.isNotEmpty) {
+      setState(() => _images = urls);
+      return;
+    }
+
+    final principal = _rutaImagePrincipal();
+    if (principal.isNotEmpty && principal.startsWith('http')) {
+      setState(() => _images = [principal]);
+    }
   }
 
   String _formatUiDate(DateTime date) {
@@ -31,6 +65,35 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     return '$d/$m/$y';
   }
 
+  Future<void> _irACrearReservaRuta(ClienteProvider clienteProvider) async {
+    if (!clienteProvider.perfilCompleto) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Debes completar tu perfil antes de hacer reservas'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final idRuta = _rutaId();
+    if (idRuta <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No se pudo identificar la ruta seleccionada'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    await context.push('/crear-reserva?idRuta=$idRuta');
+  }
+
+  // ignore: unused_element
   Future<void> _openReservaForm(ClienteProvider clienteProvider) async {
     if (!clienteProvider.perfilCompleto) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,8 +229,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                     fechaInicio = picked;
                                     if (fechaFin != null &&
                                         !fechaFin!.isAfter(picked)) {
-                                      fechaFin =
-                                          picked.add(const Duration(days: 1));
+                                      fechaFin = picked.add(
+                                        const Duration(days: 1),
+                                      );
                                     }
                                   });
                                 }
@@ -241,8 +305,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                           IconButton(
                             onPressed: isSaving || cantidadPersonas <= 1
                                 ? null
-                                : () =>
-                                      setModalState(() => cantidadPersonas--),
+                                : () => setModalState(() => cantidadPersonas--),
                             icon: const Icon(Icons.remove_circle_outline),
                           ),
                           Expanded(
@@ -263,12 +326,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                             ),
                           ),
                           IconButton(
-                            onPressed:
-                                isSaving || cantidadPersonas >= capacidad
-                                    ? null
-                                    : () => setModalState(
-                                          () => cantidadPersonas++,
-                                        ),
+                            onPressed: isSaving || cantidadPersonas >= capacidad
+                                ? null
+                                : () => setModalState(() => cantidadPersonas++),
                             icon: const Icon(Icons.add_circle_outline),
                           ),
                         ],
@@ -349,8 +409,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                   : () async {
                                       if (fechaInicio == null ||
                                           fechaFin == null) {
-                                        ScaffoldMessenger.of(this.context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
                                               'Selecciona fecha de inicio y fin',
@@ -362,8 +423,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                       }
 
                                       if (!fechaFin!.isAfter(fechaInicio!)) {
-                                        ScaffoldMessenger.of(this.context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
                                               'La reserva debe ser de mínimo 1 día',
@@ -379,7 +441,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         // Usar el nuevo flujo: crear reserva para una programación
                                         await _reservaService.crear(
                                           idCliente: idCliente,
-                                          idProgramacion: 0, // TODO: Obtener de programación seleccionada
+                                          idProgramacion:
+                                              0, // TODO: Obtener de programación seleccionada
                                           cantidadPersonas: cantidadPersonas,
                                           observaciones:
                                               'Ruta: $nombre${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
@@ -389,8 +452,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                           return;
                                         }
                                         Navigator.of(modalContext).pop();
-                                        ScaffoldMessenger.of(this.context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
                                               '✅ Reserva de ruta creada correctamente',
@@ -400,8 +464,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         );
                                       } catch (e) {
                                         if (!mounted) return;
-                                        ScaffoldMessenger.of(this.context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               '❌ No se pudo crear la reserva: $e',
@@ -426,8 +491,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text('Confirmar Reserva'),
@@ -451,24 +516,9 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Construir lista de imágenes basada en la ruta
-    String nombreCarpeta = '';
-    if (widget.ruta is Map) {
-      final nombre = widget.ruta['nombre'] ?? '';
-      nombreCarpeta = nombre.toLowerCase().replaceAll(' - ', '_').replaceAll(' ', '_');
-    }
-    
+
     _images = [];
-    if (nombreCarpeta.isNotEmpty) {
-      _images.add('assets/rutas/$nombreCarpeta/principal.jpg');
-      _images.add('assets/rutas/$nombreCarpeta/foto2.jpg');
-      _images.add('assets/rutas/$nombreCarpeta/foto3.jpg');
-      _images.add('assets/rutas/$nombreCarpeta/foto4.jpg');
-      _images.add('assets/rutas/$nombreCarpeta/foto5.jpg');
-    } else {
-      _images.add('assets/rutas/sendero_condor/principal.jpg');
-    }
+    _loadRutaImages();
   }
 
   @override
@@ -516,19 +566,35 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Características principales
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildCharacteristic('⏱️', '${widget.ruta['duracion']?.toString() ?? '0'}h', 'Duración'),
-                      _buildCharacteristic('🗺️', '${widget.ruta['distancia']?.toString() ?? '0'} km', 'Distancia'),
-                      _buildCharacteristic('📈', widget.ruta['dificultad'] ?? 'Moderado', 'Dificultad'),
-                      _buildCharacteristic('👥', widget.ruta['capacidad']?.toString() ?? '0', 'Máx personas'),
+                      _buildCharacteristic(
+                        '⏱️',
+                        '${widget.ruta['duracion']?.toString() ?? '0'}h',
+                        'Duración',
+                      ),
+                      _buildCharacteristic(
+                        '🗺️',
+                        '${widget.ruta['distancia']?.toString() ?? '0'} km',
+                        'Distancia',
+                      ),
+                      _buildCharacteristic(
+                        '📈',
+                        widget.ruta['dificultad'] ?? 'Moderado',
+                        'Dificultad',
+                      ),
+                      _buildCharacteristic(
+                        '👥',
+                        widget.ruta['capacidad']?.toString() ?? '0',
+                        'Máx personas',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   Text(
                     '\$${widget.ruta['precio']?.toString() ?? '0'} por persona',
                     style: const TextStyle(
@@ -563,7 +629,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
             ],
 
             // Información adicional
-            if (widget.ruta.containsKey('mejor_epoca') || 
+            if (widget.ruta.containsKey('mejor_epoca') ||
                 widget.ruta.containsKey('requisitos') ||
                 widget.ruta.containsKey('restricciones')) ...[
               _buildSectionHeader('Información Importante'),
@@ -583,7 +649,10 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                     if (widget.ruta.containsKey('requisitos'))
                       _buildInfoRow('Requisitos:', widget.ruta['requisitos']),
                     if (widget.ruta.containsKey('restricciones'))
-                      _buildInfoRow('Restricciones:', widget.ruta['restricciones']),
+                      _buildInfoRow(
+                        'Restricciones:',
+                        widget.ruta['restricciones'],
+                      ),
                   ],
                 ),
               ),
@@ -597,7 +666,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                 builder: (context, clienteProvider, _) {
                   return ElevatedButton.icon(
                     onPressed: () {
-                      _openReservaForm(clienteProvider);
+                      _irACrearReservaRuta(clienteProvider);
                     },
                     icon: const Icon(Icons.calendar_today),
                     label: const Text('Reservar Ahora'),
@@ -623,38 +692,39 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     return Stack(
       children: [
         Container(
+          width: double.infinity,
           height: 300,
           color: Colors.grey[300],
           child: _images.isNotEmpty
-              ? Image.asset(
-                  _images[_selectedImageIndex],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_not_supported,
-                            size: 60,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Imagen no disponible',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+              ? SizedBox.expand(
+                  child: Image.network(
+                    _images[_selectedImageIndex],
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_not_supported,
+                              size: 60,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Imagen no disponible',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 )
               : Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
+                  child: Icon(Icons.image, size: 80, color: Colors.grey[400]),
                 ),
         ),
         Positioned(
@@ -697,19 +767,10 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }
@@ -722,10 +783,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
@@ -747,10 +805,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -760,32 +815,31 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: items
-            .map<Widget>((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(top: 8, right: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
+            .map<Widget>(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 8, right: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(3),
                       ),
-                      Expanded(
-                        child: Text(
-                          item.toString(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        item.toString(),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                       ),
-                    ],
-                  ),
-                ))
+                    ),
+                  ],
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -806,13 +860,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[700],
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
         ],
       ),
     );

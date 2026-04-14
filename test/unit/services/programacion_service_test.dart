@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:occitours/services/programacion_service.dart';
 import 'package:occitours/services/api_service.dart';
 import '../../fixtures/programacion_fixture.dart';
 
@@ -8,12 +7,10 @@ class MockApiServiceProgr extends Mock implements ApiService {}
 
 void main() {
   group('ProgramacionService Tests', () {
-    late ProgramacionService programacionService;
     late MockApiServiceProgr mockApiService;
 
     setUp(() {
       mockApiService = MockApiServiceProgr();
-      programacionService = ProgramacionService();
     });
 
     test('obtener() debería retornar lista de programaciones', () async {
@@ -55,9 +52,8 @@ void main() {
     });
 
     test('obtenerPorRuta() debería filtrar by ruta', () async {
-      final listJson = ProgramacionFixture.listaPrueba()
-          .map((p) => p.toJson())
-          .toList();
+      final listJson =
+          ProgramacionFixture.listaPrueba().map((p) => p.toJson()).toList();
 
       when(() => mockApiService.get(any())).thenAnswer((_) async => listJson);
 

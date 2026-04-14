@@ -1,24 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:occitours/services/reserva_service.dart';
 
 class MockApiService {}
 
 void main() {
   group('ReservaService Tests', () {
-    late ReservaService reservaService;
-
-    setUp(() {
-      // En un test real, inyectaríamos el mockApiService
-      reservaService = ReservaService();
-    });
-
     test('crear() debería hacer POST con parámetros correctos', () async {
-      final reservaJson = {
-        'id': 999,
-        'estado': 'Pendiente',
-        'valor_total': 100.0,
-      };
-
       // En test real:
       // final reserva = await reservaService.crear(
       //   idCliente: 1,
@@ -43,13 +29,15 @@ void main() {
       // expect(reserva.id, 101);
     });
 
-    test('listarPorCliente() debería hacer GET con idCliente como parámetro', () async {
+    test('listarPorCliente() debería hacer GET con idCliente como parámetro',
+        () async {
       // En test real:
       // final reservas = await reservaService.listarPorCliente(1);
       // expect(reservas.length, 2);
     });
 
-    test('cancelar() debería hacer DELETE o PUT con cambio de estado', () async {
+    test('cancelar() debería hacer DELETE o PUT con cambio de estado',
+        () async {
       // En test real:
       // final resultado = await reservaService.cancelar(101);
       // expect(resultado, true);

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/servicio.dart';
 import '../services/servicio_service.dart';
-import '../data/servicios_data.dart';
 
 /// Provider para manejar el estado de Servicios
 /// Maneja carga desde API, filtrado y selección de servicios
@@ -30,8 +29,8 @@ class ServicioProvider extends ChangeNotifier {
     return serviciosSeleccionados.fold(0, (sum, s) => sum + s.precio);
   }
 
-  /// Cargar servicios desde API real
-  /// Intenta conectar con backend, si falla usa datos locales
+  /// Cargar servicios desde API real.
+  /// No usa fallback local para evitar datos quemados en reservas.
   Future<void> cargarServicios() async {
     _isLoading = true;
     _error = null;
@@ -47,16 +46,9 @@ class ServicioProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      // Si falla, usar datos locales como fallback
-      debugPrint('Error al conectar con API: $e. Usando datos locales...');
-      try {
-        await Future.delayed(const Duration(milliseconds: 300));
-        _servicios = serviciosData;
-        _serviciosFiltrados = List.from(_servicios);
-        _usandoApiReal = false;
-      } catch (fallbackError) {
-        _error = 'Error al cargar servicios: $fallbackError';
-      }
+      _servicios = [];
+      _serviciosFiltrados = [];
+      _error = 'Error al cargar servicios desde API: $e';
 
       _isLoading = false;
       notifyListeners();

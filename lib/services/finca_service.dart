@@ -98,4 +98,31 @@ class FincaService {
       rethrow;
     }
   }
+
+  /// Obtener imágenes de una finca (endpoint público en backend).
+  Future<List<String>> getImagenes(int idFinca) async {
+    try {
+      final response = await _api.get('/fincas/$idFinca/imagenes');
+
+      if (response is List) {
+        return response
+            .whereType<Map>()
+            .map((item) => (item['url'] ?? '').toString())
+            .where((url) => url.isNotEmpty)
+            .toList();
+      }
+
+      if (response is Map && response['data'] is List) {
+        return (response['data'] as List)
+            .whereType<Map>()
+            .map((item) => (item['url'] ?? '').toString())
+            .where((url) => url.isNotEmpty)
+            .toList();
+      }
+
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }

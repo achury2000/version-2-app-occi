@@ -118,4 +118,31 @@ class RutaService {
       rethrow;
     }
   }
+
+  /// Obtener imágenes de una ruta (endpoint público en backend).
+  Future<List<String>> getImagenes(int idRuta) async {
+    try {
+      final response = await _api.get('/rutas/$idRuta/imagenes');
+
+      if (response is List) {
+        return response
+            .whereType<Map>()
+            .map((item) => (item['url'] ?? '').toString())
+            .where((url) => url.isNotEmpty)
+            .toList();
+      }
+
+      if (response is Map && response['data'] is List) {
+        return (response['data'] as List)
+            .whereType<Map>()
+            .map((item) => (item['url'] ?? '').toString())
+            .where((url) => url.isNotEmpty)
+            .toList();
+      }
+
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }

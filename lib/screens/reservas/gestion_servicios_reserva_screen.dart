@@ -192,19 +192,18 @@ class _GestionServiciosReservaScreenState
                             });
                           },
                           title: Text(
-                            servicio.nombre ?? 'Servicio',
+                            servicio.nombre,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (servicio.descripcion != null)
-                                Text(servicio.descripcion!),
+                              Text(servicio.descripcion),
                               if (servicio.precio > 0)
                                 Text(
                                   '\$${servicio.precio.toStringAsFixed(2)}',
-                                  style:
-                                      const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600),
                                 ),
                             ],
                           ),
@@ -244,7 +243,8 @@ class _GestionServiciosReservaScreenState
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton(
-                      onPressed: _guardando ? null : () => Navigator.pop(context),
+                      onPressed:
+                          _guardando ? null : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),

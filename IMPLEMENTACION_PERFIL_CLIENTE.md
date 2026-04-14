@@ -222,12 +222,16 @@ lib/
 
 ## 🚀 Instalación/Setup
 
-La implementación está lista para usar. No requiere cambios en backend ni migraciones.
+La implementación móvil está lista para usar del lado Flutter.
 
-**Solo necesita que el backend tenga implementados:**
+**Del lado backend debe existir y funcionar correctamente:**
 ✅ GET /api/clientes/usuario/:id_usuario
 ✅ POST /api/clientes
 ✅ PUT /api/clientes/:id
+✅ Relación clientes.id_usuario -> usuarios.id
+✅ Restricción para no duplicar cliente por usuario
+
+Si el backend actual todavía no soporta ese flujo de forma consistente, usa el documento PROMPT_BACKEND_PERFIL_CLIENTE.md como especificación para ajustarlo.
 
 ---
 
