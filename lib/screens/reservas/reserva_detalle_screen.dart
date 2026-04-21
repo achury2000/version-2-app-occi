@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../models/reserva.dart';
+import '../../providers/cliente_provider.dart';
 import '../../providers/reserva_provider.dart';
 import '../../services/reserva_service.dart';
 
@@ -10,7 +11,7 @@ class ReservaDetalleScreen extends StatefulWidget {
   final int idReserva;
 
   const ReservaDetalleScreen({Key? key, required this.idReserva})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<ReservaDetalleScreen> createState() => _ReservaDetalleScreenState();
@@ -134,9 +135,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
 
     try {
       await context.read<ReservaProvider>().cancelarReserva(
-        _reserva!.id,
-        motivo: motivo.isNotEmpty ? motivo : null,
-      );
+            _reserva!.id,
+            motivo: motivo.isNotEmpty ? motivo : null,
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -581,17 +582,17 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                         onPressed: _procesandoPago
                             ? null
                             : () async {
-                                final picked = await FilePicker.platform
-                                    .pickFiles(
-                                      type: FileType.custom,
-                                      withData: true,
-                                      allowedExtensions: const [
-                                        'jpg',
-                                        'jpeg',
-                                        'png',
-                                        'pdf',
-                                      ],
-                                    );
+                                final picked =
+                                    await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  withData: true,
+                                  allowedExtensions: const [
+                                    'jpg',
+                                    'jpeg',
+                                    'png',
+                                    'pdf',
+                                  ],
+                                );
                                 if (picked != null && picked.files.isNotEmpty) {
                                   setModalState(() {
                                     comprobante = picked.files.first;
@@ -614,9 +615,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                               : () async {
                                   final monto = double.tryParse(
                                     montoController.text.trim().replaceAll(
-                                      ',',
-                                      '.',
-                                    ),
+                                          ',',
+                                          '.',
+                                        ),
                                   );
 
                                   if (monto == null || monto <= 0) {
@@ -635,19 +636,33 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                                   try {
                                     final idPago = await _reservaService
                                         .registrarPagoReserva(
-                                          idReserva: reserva.id,
-                                          monto: monto,
-                                          metodoPago: metodoPago,
-                                          referencia: referenciaController.text
-                                              .trim(),
-                                        );
+                                      idReserva: reserva.id,
+                                      monto: monto,
+                                      metodoPago: metodoPago,
+                                      referencia:
+                                          referenciaController.text.trim(),
+                                    );
 
                                     if (idPago != null && comprobante != null) {
+                                      final idCliente = reserva.idCliente ??
+                                          context
+                                              .read<ClienteProvider>()
+                                              .cliente
+                                              ?.id;
+
+                                      if (idCliente == null) {
+                                        throw Exception(
+                                          'No se pudo determinar el cliente para guardar el comprobante',
+                                        );
+                                      }
+
                                       await _reservaService
                                           .subirComprobantePago(
-                                            idPago: idPago,
-                                            archivo: comprobante!,
-                                          );
+                                        idPago: idPago,
+                                        archivo: comprobante!,
+                                        idCliente: idCliente,
+                                        idReserva: reserva.id,
+                                      );
                                     }
 
                                     if (!mounted || !modalContext.mounted) {

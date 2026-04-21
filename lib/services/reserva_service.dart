@@ -75,8 +75,7 @@ class ReservaService {
 
     if (resumenPago is Map<String, dynamic>) {
       normalizado['estado_pago'] = resumenPago['estado_pago'];
-      normalizado['precio_total'] =
-          normalizado['precio_total'] ??
+      normalizado['precio_total'] = normalizado['precio_total'] ??
           normalizado['monto_total'] ??
           resumenPago['monto_total'];
     }
@@ -167,25 +166,23 @@ class ReservaService {
         final data = response['data'];
 
         if (data is Map<String, dynamic>) {
-          final url =
-              (data['url'] ??
-                      data['qr_url'] ??
-                      data['signed_url'] ??
-                      data['qr_signed_url'] ??
-                      '')
-                  .toString()
-                  .trim();
+          final url = (data['url'] ??
+                  data['qr_url'] ??
+                  data['signed_url'] ??
+                  data['qr_signed_url'] ??
+                  '')
+              .toString()
+              .trim();
           if (url.startsWith('http')) return url;
         }
 
-        final rootUrl =
-            (response['url'] ??
-                    response['qr_url'] ??
-                    response['signed_url'] ??
-                    response['qr_signed_url'] ??
-                    '')
-                .toString()
-                .trim();
+        final rootUrl = (response['url'] ??
+                response['qr_url'] ??
+                response['signed_url'] ??
+                response['qr_signed_url'] ??
+                '')
+            .toString()
+            .trim();
         if (rootUrl.startsWith('http')) return rootUrl;
       }
 
@@ -374,25 +371,51 @@ class ReservaService {
   Future<void> subirComprobantePago({
     required int idPago,
     required PlatformFile archivo,
+    required int idCliente,
+    int? idReserva,
   }) async {
     MultipartFile multipart;
+    final extension = (archivo.extension ??
+            (archivo.name.contains('.') ? archivo.name.split('.').last : 'bin'))
+        .toLowerCase();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final storageFileName = 'pago_${idPago}_$timestamp.$extension';
+    final carpetaCliente = idCliente.toString();
 
     if (archivo.bytes != null) {
       multipart = MultipartFile.fromBytes(
         archivo.bytes!,
-        filename: archivo.name,
+        filename: storageFileName,
       );
     } else if (archivo.path != null) {
       multipart = await MultipartFile.fromFile(
         archivo.path!,
-        filename: archivo.name,
+        filename: storageFileName,
       );
     } else {
       throw Exception('No se pudo leer el archivo seleccionado');
     }
 
-    final formData = FormData.fromMap({'archivo': multipart});
-    await _api.postFormData('/pagos/$idPago/comprobante', formData);
+    final formData = FormData.fromMap({
+      'archivo': multipart,
+      'bucket': 'comprobantes',
+      'bucket_name': 'comprobantes',
+      'id_cliente': idCliente,
+      'id_reserva': idReserva,
+      'folder': carpetaCliente,
+      'carpeta': carpetaCliente,
+      'path_prefix': carpetaCliente,
+    });
+
+    await _api.postFormData(
+      '/pagos/$idPago/comprobante',
+      formData,
+      queryParameters: {
+        'bucket': 'comprobantes',
+        'id_cliente': idCliente,
+        'carpeta': carpetaCliente,
+      },
+    );
   }
 
   Future<Reserva> crearBaseReserva({
