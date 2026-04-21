@@ -11,7 +11,7 @@ class ReservaDetalleScreen extends StatefulWidget {
   final int idReserva;
 
   const ReservaDetalleScreen({Key? key, required this.idReserva})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<ReservaDetalleScreen> createState() => _ReservaDetalleScreenState();
@@ -135,9 +135,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
 
     try {
       await context.read<ReservaProvider>().cancelarReserva(
-            _reserva!.id,
-            motivo: motivo.isNotEmpty ? motivo : null,
-          );
+        _reserva!.id,
+        motivo: motivo.isNotEmpty ? motivo : null,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -582,17 +582,17 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                         onPressed: _procesandoPago
                             ? null
                             : () async {
-                                final picked =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  withData: true,
-                                  allowedExtensions: const [
-                                    'jpg',
-                                    'jpeg',
-                                    'png',
-                                    'pdf',
-                                  ],
-                                );
+                                final picked = await FilePicker.platform
+                                    .pickFiles(
+                                      type: FileType.custom,
+                                      withData: true,
+                                      allowedExtensions: const [
+                                        'jpg',
+                                        'jpeg',
+                                        'png',
+                                        'pdf',
+                                      ],
+                                    );
                                 if (picked != null && picked.files.isNotEmpty) {
                                   setModalState(() {
                                     comprobante = picked.files.first;
@@ -615,9 +615,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                               : () async {
                                   final monto = double.tryParse(
                                     montoController.text.trim().replaceAll(
-                                          ',',
-                                          '.',
-                                        ),
+                                      ',',
+                                      '.',
+                                    ),
                                   );
 
                                   if (monto == null || monto <= 0) {
@@ -636,15 +636,16 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                                   try {
                                     final idPago = await _reservaService
                                         .registrarPagoReserva(
-                                      idReserva: reserva.id,
-                                      monto: monto,
-                                      metodoPago: metodoPago,
-                                      referencia:
-                                          referenciaController.text.trim(),
-                                    );
+                                          idReserva: reserva.id,
+                                          monto: monto,
+                                          metodoPago: metodoPago,
+                                          referencia: referenciaController.text
+                                              .trim(),
+                                        );
 
                                     if (idPago != null && comprobante != null) {
-                                      final idCliente = reserva.idCliente ??
+                                      final idCliente =
+                                          reserva.idCliente ??
                                           context
                                               .read<ClienteProvider>()
                                               .cliente
@@ -658,11 +659,11 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
 
                                       await _reservaService
                                           .subirComprobantePago(
-                                        idPago: idPago,
-                                        archivo: comprobante!,
-                                        idCliente: idCliente,
-                                        idReserva: reserva.id,
-                                      );
+                                            idPago: idPago,
+                                            archivo: comprobante!,
+                                            idCliente: idCliente,
+                                            idReserva: reserva.id,
+                                          );
                                     }
 
                                     if (!mounted || !modalContext.mounted) {
@@ -952,6 +953,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   Widget _buildBotonesAccion(Reserva reserva) {
     final puedeEditar = context.read<ReservaProvider>().puedeEditarse(reserva);
     final puedesCancelar = reserva.puedeSerCancelada;
+    final tieneComprobante = reserva.tieneComprobante;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1016,18 +1018,34 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        ElevatedButton.icon(
-          onPressed: () {
-            context.pushNamed('comprobanteReserva', extra: reserva);
-          },
-          icon: const Icon(Icons.receipt_long),
-          label: const Text('Ver Comprobante'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 12),
+        if (!tieneComprobante) ...[
+          ElevatedButton.icon(
+            onPressed: () {
+              _mostrarModalCompletarPago(reserva);
+            },
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Subir Comprobante'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
+        if (tieneComprobante) ...[
+          ElevatedButton.icon(
+            onPressed: () {
+              context.pushNamed('comprobanteReserva', extra: reserva);
+            },
+            icon: const Icon(Icons.receipt_long),
+            label: const Text('Ver Comprobante'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         OutlinedButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),
