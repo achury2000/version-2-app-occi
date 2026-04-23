@@ -590,6 +590,32 @@ class _HomeScreenState extends State<HomeScreen> {
     return filtradas;
   }
 
+  ({List<Programacion> programaciones, bool esSemanaActual})
+  _programacionesHome(List<Programacion> todas) {
+    final semanaActual = _programacionesSemana(todas);
+    if (semanaActual.isNotEmpty) {
+      return (programaciones: semanaActual, esSemanaActual: true);
+    }
+
+    final hoy = DateTime.now();
+    final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
+
+    final proximas = todas.where((programacion) {
+      final fecha = programacion.fechaSalida;
+      if (fecha == null) return false;
+      if (fecha.isBefore(hoySinHora)) return false;
+      return programacion.tieneCupos;
+    }).toList();
+
+    proximas.sort((a, b) {
+      final fechaA = a.fechaSalida ?? DateTime(2099);
+      final fechaB = b.fechaSalida ?? DateTime(2099);
+      return fechaA.compareTo(fechaB);
+    });
+
+    return (programaciones: proximas.take(6).toList(), esSemanaActual: false);
+  }
+
   String _mesCorto(int mes) {
     const meses = [
       'ene',
@@ -627,9 +653,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProgramacionSemanalSection() {
     return Consumer<ProgramacionProvider>(
       builder: (context, programacionProvider, _) {
-        final semana = _programacionesSemana(
-          programacionProvider.programaciones,
-        );
+        final bloque = _programacionesHome(programacionProvider.programaciones);
+        final semana = bloque.programaciones;
+        final esSemanaActual = bloque.esSemanaActual;
         final cuposTotales = semana.fold<int>(
           0,
           (total, prog) => total + (prog.cuposDisponibles ?? 0),
@@ -685,7 +711,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _rangoSemanaActual(),
+                          esSemanaActual
+                              ? _rangoSemanaActual()
+                              : 'Mostrando proximas salidas disponibles',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -737,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    'No hay salidas programadas para esta semana. Revisa disponibilidades para próximas fechas.',
+                    'No hay salidas programadas para esta semana ni proximas con cupos disponibles.',
                     style: TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 )
@@ -1113,11 +1141,12 @@ class _HomeScreenState extends State<HomeScreen> {
       rating = (ruta['rating'] ?? 4.8).toDouble();
       dificultad = (ruta['dificultad'] ?? '').toString();
       duracion = (ruta['duracion'] ?? 0).toDouble();
-      imagenUrl = (ruta['imagen_principal'] ??
-              ruta['imagen_url'] ??
-              ruta['imagen'] ??
-              '')
-          .toString();
+      imagenUrl =
+          (ruta['imagen_principal'] ??
+                  ruta['imagen_url'] ??
+                  ruta['imagen'] ??
+                  '')
+              .toString();
     } else {
       nombre = ruta.nombre ?? '';
       precio = ruta.precio ?? 0;
@@ -1362,8 +1391,8 @@ class _HomeScreenState extends State<HomeScreen> {
       precio = (finca['precio_por_noche'] ?? 0).toDouble();
       ubicacion = finca['ubicacion'] ?? '';
       capacidad = finca['capacidad_personas'] ?? 0;
-      imagenPrincipal =
-          (finca['imagen_principal'] ?? finca['imagen'] ?? '').toString();
+      imagenPrincipal = (finca['imagen_principal'] ?? finca['imagen'] ?? '')
+          .toString();
     } else {
       nombre = finca.nombre ?? '';
       precio = finca.precioNoche ?? 0;

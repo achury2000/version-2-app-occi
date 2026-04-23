@@ -398,6 +398,13 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
               context.go('/home');
             },
           ),
+          IconButton(
+            tooltip: 'Ir a perfil',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              context.go('/completar-perfil');
+            },
+          ),
         ],
       ),
       body: Consumer<ReservaProvider>(
