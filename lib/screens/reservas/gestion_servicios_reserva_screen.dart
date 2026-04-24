@@ -44,6 +44,75 @@ class _GestionServiciosReservaScreenState
     });
   }
 
+  /// Mostrar confirmación antes de deseleccionar un servicio
+  Future<bool?> _mostrarConfirmacionEliminarServicio(
+    String nombreServicio,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('⚠️ Eliminar Servicio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Servicio:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    nombreServicio,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Estás seguro de eliminar este servicio de la reserva?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'Sí, eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _guardarCambios() async {
     // Obtener servicios originales
     final serviciosOriginales = (widget.reserva.servicios ?? [])
@@ -104,10 +173,24 @@ class _GestionServiciosReservaScreenState
         setState(() {
           _guardando = false;
         });
+        
+        String mensajeError = 'Error al actualizar servicios';
+        if (e.toString().contains('no autorizado') ||
+            e.toString().contains('401') ||
+            e.toString().contains('unauthorized')) {
+          mensajeError = 'No tienes permiso para realizar esta acción';
+        } else if (e.toString().contains('no encontrado') ||
+            e.toString().contains('404')) {
+          mensajeError = 'La reserva o el servicio no fue encontrado';
+        } else if (e.toString().contains('red') || e.toString().contains('Network')) {
+          mensajeError = 'Error de conexión. Intenta nuevamente';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('❌ $mensajeError'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -182,14 +265,24 @@ class _GestionServiciosReservaScreenState
                         margin: const EdgeInsets.only(bottom: 8),
                         child: CheckboxListTile(
                           value: estaSeleccionado,
-                          onChanged: (value) {
-                            setState(() {
-                              if (value == true) {
+                          onChanged: (value) async {
+                            if (value == true) {
+                              // Agregar servicio sin confirmación
+                              setState(() {
                                 _serviciosActuales.add(servicio.id);
-                              } else {
-                                _serviciosActuales.remove(servicio.id);
+                              });
+                            } else {
+                              // Pedir confirmación antes de eliminar
+                              final confirmar =
+                                  await _mostrarConfirmacionEliminarServicio(
+                                servicio.nombre,
+                              );
+                              if (confirmar == true && mounted) {
+                                setState(() {
+                                  _serviciosActuales.remove(servicio.id);
+                                });
                               }
-                            });
+                            }
                           },
                           title: Text(
                             servicio.nombre,

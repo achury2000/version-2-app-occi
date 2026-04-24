@@ -125,4 +125,14 @@ class FincaService {
       return [];
     }
   }
+
+  /// Eliminar una finca por ID (solo admin)
+  /// DELETE /fincas/:id
+  Future<void> eliminar(int idFinca) async {
+    try {
+      await _api.delete('/fincas/$idFinca');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

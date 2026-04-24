@@ -157,33 +157,95 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('¿Deseas cancelar la reserva #${reserva.id}?'),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Reserva #',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    reserva.id.toString(),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_formatDate(reserva.fechaInicio)} → ${_formatDate(reserva.fechaFin)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Estás seguro de eliminar esta reserva de la finca?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 12),
-            Text(
-              '${_formatDate(reserva.fechaInicio)} a ${_formatDate(reserva.fechaFin)}',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No se hacen reembolsos después de estar abonado o pagado en su totalidad',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.of(ctx).pop(false);
-              if (mounted) {
-                context.go('/home');
-              }
-            },
-            icon: const Icon(Icons.home_outlined),
-            label: const Text('Inicio'),
-          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Mantener'),
+            child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Sí, cancelar'),
+            child: const Text(
+              'Sí, eliminar reserva',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -199,7 +261,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Reserva cancelada exitosamente'),
+          content: Text('✅ Reserva eliminada correctamente'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 2),
         ),

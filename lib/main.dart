@@ -9,6 +9,7 @@ import 'providers/reserva_provider.dart';
 import 'providers/programacion_personal_provider.dart';
 import 'providers/notificaciones_provider.dart';
 import 'providers/servicio_provider.dart';
+import 'providers/espacio_provider.dart';
 import 'widgets/notificaciones_widget.dart';
 
 void main() {
@@ -33,6 +34,7 @@ class _OccitourAppState extends State<OccitourApp> {
         ChangeNotifierProvider(create: (_) => ProgramacionProvider()),
         ChangeNotifierProvider(create: (_) => ReservaProvider()),
         ChangeNotifierProvider(create: (_) => ServicioProvider()),
+        ChangeNotifierProvider(create: (_) => EspacioProvider()),
         ChangeNotifierProvider(create: (_) => ProgramacionPersonalProvider()),
         ChangeNotifierProvider(create: (_) => NotificacionesProvider()),
       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cliente_provider.dart';
+import '../../providers/servicio_provider.dart';
 import '../../services/reserva_service.dart';
 import '../../services/finca_service.dart';
 
@@ -80,6 +81,158 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     return '$d/$m/$y';
   }
 
+  /// Mostrar confirmación antes de agregar un servicio (para uso en modal)
+  Future<bool?> _mostrarConfirmacionAgregarServicioEnModal(
+    String nombreServicio,
+    double precio,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('➕ Agregar Servicio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Servicio a agregar:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    nombreServicio,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Precio: \$${precio.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2D5016),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Estás seguro de agregar este servicio a tu reserva?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D5016),
+            ),
+            child: const Text(
+              'Sí, agregar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mostrar confirmación antes de quitar un servicio (para uso en modal)
+  Future<bool?> _mostrarConfirmacionQuitarServicioEnModal(
+    String nombreServicio,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('⚠️ Quitar Servicio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Servicio a quitar:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    nombreServicio,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Estás seguro de quitar este servicio de tu reserva?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text(
+              'Sí, quitar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openReservaForm(ClienteProvider clienteProvider) async {
     if (!clienteProvider.perfilCompleto) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,11 +261,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     final capacidad = (widget.finca['capacidad_personas'] ?? 1) as int;
     final precio = (widget.finca['precio_por_noche'] ?? 0).toDouble();
     final notasController = TextEditingController();
+    final personalizadosController = TextEditingController();
 
     DateTime? fechaInicio;
     DateTime? fechaFin;
     int cantidadPersonas = 1;
     bool isSaving = false;
+    final Set<int> serviciosSeleccionados = {};
 
     await showModalBottomSheet(
       context: context,
@@ -348,6 +503,209 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      // Sección de Servicios
+                      Consumer<ServicioProvider>(
+                        builder: (context, servicioProvider, _) {
+                          return ExpansionTile(
+                            title: const Text(
+                              'Servicios adicionales',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Text(
+                              serviciosSeleccionados.isEmpty
+                                  ? 'Ninguno seleccionado'
+                                  : '${serviciosSeleccionados.length} seleccionados',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            onExpansionChanged: (expanded) {
+                              if (expanded &&
+                                  servicioProvider.servicios.isEmpty) {
+                                servicioProvider.cargarServicios();
+                              }
+                            },
+                            children: [
+                              if (servicioProvider.isLoading)
+                                const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF2D5016),
+                                  ),
+                                )
+                              else if (servicioProvider.servicios.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text('No hay servicios disponibles'),
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    children: servicioProvider.servicios
+                                        .map((servicio) {
+                                      return CheckboxListTile(
+                                        value: serviciosSeleccionados
+                                            .contains(servicio.id),
+                                        onChanged: (value) async {
+                                          if (value == true) {
+                                            // Agregar: pedir confirmación
+                                            final confirmar = await _mostrarConfirmacionAgregarServicioEnModal(
+                                              servicio.nombre,
+                                              servicio.precio,
+                                            );
+                                            if (confirmar == true) {
+                                              setModalState(() {
+                                                serviciosSeleccionados
+                                                    .add(servicio.id);
+                                              });
+                                            }
+                                          } else {
+                                            // Quitar: pedir confirmación
+                                            final confirmar = await _mostrarConfirmacionQuitarServicioEnModal(
+                                              servicio.nombre,
+                                            );
+                                            if (confirmar == true) {
+                                              setModalState(() {
+                                                serviciosSeleccionados
+                                                    .remove(servicio.id);
+                                              });
+                                            }
+                                          }
+                                        },
+                                        title: Text(servicio.nombre),
+                                        subtitle: Text(
+                                          '\$${servicio.precio.toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                            color: Colors.teal,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        dense: true,
+                                        controlAffinity:
+                                            ListTileControlAffinity.leading,
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      // Sección de Espacios
+                      Builder(
+                        builder: (context) {
+                          // Extraer zonas_comunes de la finca
+                          final List<String> zonasComunes = [];
+                          if (widget.finca is Map) {
+                            final zonas = widget.finca['zonas_comunes'];
+                            if (zonas is List) {
+                              zonasComunes.addAll(
+                                zonas.map((z) => z.toString()),
+                              );
+                            }
+                          }
+
+                          return ExpansionTile(
+                            title: const Text(
+                              'Espacios',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Text(
+                              zonasComunes.isEmpty
+                                  ? 'Sin información'
+                                  : '${zonasComunes.length} disponibles',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            children: [
+                              if (zonasComunes.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text(
+                                    'No hay información de espacios disponibles',
+                                  ),
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: zonasComunes.map((zona) {
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    const Color(0xFF2D5016),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                zona,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      // Sección de Opciones Personalizadas
+                      ExpansionTile(
+                        title: const Text(
+                          'Opciones personalizadas',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          personalizadosController.text.isEmpty
+                              ? 'Sin opciones'
+                              : '${personalizadosController.text.split('\n').length} opciones',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: TextField(
+                              controller: personalizadosController,
+                              enabled: !isSaving,
+                              maxLines: 3,
+                              minLines: 2,
+                              decoration: InputDecoration(
+                                hintText: 'Ej: Decoración especial, música en vivo\n(Una por línea)',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 14),
                       Container(
                         width: double.infinity,
@@ -451,12 +809,34 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                           );
                                         }
 
+                                        // Construir observaciones con todos los datos
+                                        String observaciones =
+                                            'Finca: $nombre | Personas: $cantidadPersonas';
+
+                                        if (notasController.text
+                                            .trim()
+                                            .isNotEmpty) {
+                                          observaciones +=
+                                              ' | Notas: ${notasController.text.trim()}';
+                                        }
+
+                                        if (serviciosSeleccionados.isNotEmpty) {
+                                          observaciones +=
+                                              ' | Servicios: ${serviciosSeleccionados.join(',')}';
+                                        }
+
+                                        if (personalizadosController.text
+                                            .trim()
+                                            .isNotEmpty) {
+                                          observaciones +=
+                                              ' | Personalizadas: ${personalizadosController.text.replaceAll('\n', ' | ')}';
+                                        }
+
                                         final reservaBase = await _reservaService
                                             .crearBaseReserva(
                                               idCliente: idCliente,
                                               metodoPago: 'Transferencia',
-                                              observaciones:
-                                                  'Finca: $nombre | Personas: $cantidadPersonas${notasController.text.trim().isNotEmpty ? ' | ${notasController.text.trim()}' : ''}',
+                                              observaciones: observaciones,
                                             );
 
                                         await _reservaService
@@ -504,6 +884,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                           ),
                                         );
                                       } finally {
+                                        notasController.dispose();
+                                        personalizadosController.dispose();
                                         if (mounted) {
                                           setModalState(() => isSaving = false);
                                         }
