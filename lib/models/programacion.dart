@@ -38,6 +38,7 @@ class Programacion {
       if (value is num) return value.toDouble();
       return null;
     }
+
     return Programacion(
       id: json['id'] ?? json['id_programacion'] ?? 0,
       idRuta: json['id_ruta'],
@@ -74,5 +75,11 @@ class Programacion {
   bool get tieneCupos => cuposDisponibles != null && cuposDisponibles! > 0;
 
   /// Verifica si la programación está activa
-  bool get estaActiva => estado?.toLowerCase() == 'activo';
+  bool get estaActiva {
+    final value = (estado ?? '').toLowerCase();
+    return value == 'activa' || value == 'activada' || value == 'activo';
+  }
+
+  /// Verifica si la programación está desactivada
+  bool get estaDesactivada => (estado ?? '').toLowerCase() == 'desactivada';
 }

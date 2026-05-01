@@ -145,10 +145,10 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['disponible', 'completo', 'cancelado']
+                children: ['activa', 'desactivada']
                     .map(
                       (estado) => FilterChip(
-                        label: Text(estado),
+                        label: Text(_capitalizar(estado)),
                         selected: (provider.filtros['estado'] ?? '') == estado,
                         onSelected: (selected) {
                           if (selected) {
@@ -679,7 +679,8 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: (programacion.cuposDisponibles ?? 0) > 0
+                    onPressed:
+                        programacion.tieneCupos && !programacion.estaDesactivada
                         ? () => _iniciarReserva(context, programacion)
                         : null,
                     child: const Text('Reservar ahora'),
@@ -792,14 +793,18 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
 
   Color _getEstadoColor(String? estado) {
     switch ((estado ?? '').toLowerCase()) {
-      case 'disponible':
+      case 'activa':
+      case 'activo':
         return Colors.green;
-      case 'completo':
-        return Colors.orange;
-      case 'cancelado':
-        return Colors.red;
+      case 'desactivada':
+        return Colors.grey;
       default:
         return Colors.grey;
     }
+  }
+
+  String _capitalizar(String value) {
+    if (value.isEmpty) return value;
+    return '${value[0].toUpperCase()}${value.substring(1)}';
   }
 }

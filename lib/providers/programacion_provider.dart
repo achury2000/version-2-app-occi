@@ -20,14 +20,15 @@ class ProgramacionProvider extends ChangeNotifier {
   // Para búsqueda y filtros
   List<Programacion> _programacionesFiltradas = [];
   String _queryBusqueda = '';
-  String _filtroEstado = 'activa'; // Por defecto mostrar solo activas
+  String _filtroEstado = ''; // Sin filtro por defecto
   DateTime? _fechaDesde;
   DateTime? _fechaHasta;
   int? _filtroIdRuta;
 
   // Getters públicos
-  List<Programacion> get programaciones =>
-      _programacionesFiltradas.isEmpty ? _programaciones : _programacionesFiltradas;
+  List<Programacion> get programaciones => _programacionesFiltradas.isEmpty
+      ? _programaciones
+      : _programacionesFiltradas;
   Programacion? get programacionSeleccionada => _programacionSeleccionada;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -42,12 +43,12 @@ class ProgramacionProvider extends ChangeNotifier {
 
   /// Obtener mapa de filtros actuales
   Map<String, dynamic> get filtros => {
-        'estado': _filtroEstado,
-        'busqueda': _queryBusqueda,
-        'fechaDesde': _fechaDesde,
-        'fechaHasta': _fechaHasta,
-        'idRuta': _filtroIdRuta,
-      };
+    'estado': _filtroEstado,
+    'busqueda': _queryBusqueda,
+    'fechaDesde': _fechaDesde,
+    'fechaHasta': _fechaHasta,
+    'idRuta': _filtroIdRuta,
+  };
 
   /// Cargar todas las programaciones disponibles
   Future<void> cargarProgramaciones() async {
@@ -103,8 +104,9 @@ class ProgramacionProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      _programacionSeleccionada =
-          await _programacionService.getById(idProgramacion);
+      _programacionSeleccionada = await _programacionService.getById(
+        idProgramacion,
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -155,11 +157,6 @@ class ProgramacionProvider extends ChangeNotifier {
         return false;
       }
 
-      // Filtro: Solo mostrar con cupos disponibles
-      if (!prog.tieneCupos) {
-        return false;
-      }
-
       return true;
     }).toList();
 
@@ -188,7 +185,7 @@ class ProgramacionProvider extends ChangeNotifier {
   /// Limpiar todos los filtros
   void limpiarFiltros() {
     _queryBusqueda = '';
-    _filtroEstado = 'activa';
+    _filtroEstado = '';
     _fechaDesde = null;
     _fechaHasta = null;
     _filtroIdRuta = null;

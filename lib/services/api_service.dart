@@ -57,6 +57,14 @@ class ApiService {
           }
           return handler.next(options);
         },
+        onResponse: (response, handler) async {
+          final refreshedToken = response.headers.value('x-refresh-token');
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            await _tokenService.saveToken(refreshedToken);
+            print('🔄 [ApiService] Token renovado desde header');
+          }
+          return handler.next(response);
+        },
         onError: (error, handler) {
           // Si el servidor devuelve 401, el token expiró
           if (error.response?.statusCode == 401) {

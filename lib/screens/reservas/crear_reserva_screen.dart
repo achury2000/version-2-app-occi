@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/programacion.dart';
@@ -9,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../providers/servicio_provider.dart';
 import '../../services/reserva_service.dart';
+import '../../services/solicitud_service.dart';
 
 class CrearReservaScreen extends StatefulWidget {
   final int? idProgramacion;
@@ -28,44 +30,118 @@ class CrearReservaScreen extends StatefulWidget {
 
 class _CrearReservaScreenState extends State<CrearReservaScreen> {
   late ReservaService _reservaService;
+  late SolicitudService _solicitudService;
   int _cantidadPersonas = 1;
   String _metodoPago = 'transferencia';
   List<int> _serviciosSeleccionados = [];
+  List<Map<String, String>> _acompanantes = [];
+  int _numeroAcompanantes = 0;
+  final List<TextEditingController> _nombreAcompCtrls = [];
+  final List<TextEditingController> _cedulaAcompCtrls = [];
   final TextEditingController _observacionesController =
       TextEditingController();
   bool _cargando = false;
   Programacion? _programacionSeleccionada;
   int? _idRutaSeleccionada;
   bool _usarProgramacion = true;
+  bool _esPersonalizada = false;
+  bool _seleccionarFincaDirecta = false;
+  bool _onlyRutaMode =
+      false; // si true, ocultar cualquier opción relacionada con fincas
+  DateTime? _fechaPersonalizada;
+  TimeOfDay? _horaPersonalizada;
+
+  int _maxPersonas() {
+    if (_usarProgramacion) {
+      return _programacionSeleccionada?.cuposDisponibles ?? 1;
+    }
+    return 20;
+  }
+
+  int _maxAcompanantes() {
+    final max = _maxPersonas() - 1;
+    return max < 0 ? 0 : max;
+  }
+
+  void _syncCantidadPersonas() {
+    _cantidadPersonas = 1 + _numeroAcompanantes;
+  }
+
+  void _ajustarAcompanantesPorCupo() {
+    final maxAcompanantes = _maxAcompanantes();
+    if (_numeroAcompanantes > maxAcompanantes) {
+      _numeroAcompanantes = maxAcompanantes;
+      while (_nombreAcompCtrls.length > maxAcompanantes) {
+        _nombreAcompCtrls.removeLast().dispose();
+      }
+      while (_cedulaAcompCtrls.length > maxAcompanantes) {
+        _cedulaAcompCtrls.removeLast().dispose();
+      }
+    }
+    _syncCantidadPersonas();
+  }
 
   @override
   void initState() {
     super.initState();
     _reservaService = ReservaService();
+    _solicitudService = SolicitudService();
     _programacionSeleccionada = widget.programacion;
     _idRutaSeleccionada = widget.idRuta;
     _usarProgramacion =
         widget.idProgramacion != null || widget.programacion != null;
+    _onlyRutaMode =
+        widget.idRuta != null ||
+        widget.idProgramacion != null ||
+        widget.programacion != null;
+    if (_onlyRutaMode) {
+      _seleccionarFincaDirecta = false;
+      if (widget.idRuta != null &&
+          (_idRutaSeleccionada == null || _idRutaSeleccionada == 0)) {
+        _idRutaSeleccionada = widget.idRuta;
+      }
+    }
+
+    void _cargarProgramacion() {
+      if (widget.idProgramacion != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.read<ProgramacionProvider>().cargarDetalleProgramacion(
+            widget.idProgramacion!,
+          );
+        });
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarProgramacion();
       context.read<CatalogoProvider>().fetchRutas();
+      if (!_onlyRutaMode) {
+        context.read<CatalogoProvider>().fetchFincas();
+      }
+      try {
+        context.read<ProgramacionProvider>().cargarProgramaciones();
+      } catch (_) {}
     });
   }
 
-  @override
-  void dispose() {
-    _observacionesController.dispose();
-    super.dispose();
+  Future<void> _pickFechaPersonalizada() async {
+    final now = DateTime.now();
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365 * 2)),
+    );
+    if (fecha != null) setState(() => _fechaPersonalizada = fecha);
   }
 
-  void _cargarProgramacion() {
-    if (widget.idProgramacion != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<ProgramacionProvider>().cargarDetalleProgramacion(
-              widget.idProgramacion!,
-            );
-      });
-    }
+  Future<void> _pickHoraPersonalizada() async {
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (hora != null) setState(() => _horaPersonalizada = hora);
   }
 
   Future<void> _crearReserva() async {
@@ -79,11 +155,72 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       return;
     }
 
+    // Validación: si usamos una programación, verificar que hay cupos suficientes
+    if (_usarProgramacion) {
+      if (_programacionSeleccionada?.estaDesactivada ?? false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Esta programacion esta desactivada'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      _syncCantidadPersonas();
+      final cuposDisp = _programacionSeleccionada?.cuposDisponibles ?? 0;
+      if (_cantidadPersonas > cuposDisp) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No hay suficientes cupos: disponibles $cuposDisp'),
+          ),
+        );
+        return;
+      }
+    }
+
     if (!_usarProgramacion &&
         (_idRutaSeleccionada == null || _idRutaSeleccionada! <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Selecciona una ruta normal'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Si es personalizada, asegurarse de que se haya escogido la ruta/finca
+    if (_esPersonalizada &&
+        (_idRutaSeleccionada == null || _idRutaSeleccionada! <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selecciona una ruta o finca para la reserva personalizada',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_esPersonalizada && _seleccionarFincaDirecta) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La reserva personalizada solo aplica para rutas'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_esPersonalizada &&
+        (_fechaPersonalizada == null || _horaPersonalizada == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selecciona fecha y hora para la reserva personalizada',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -106,12 +243,43 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     if (idCliente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('No se encontró el id de cliente para crear la reserva'),
+          content: Text(
+            'No se encontró el id de cliente para crear la reserva',
+          ),
           backgroundColor: Colors.red,
         ),
       );
       return;
+    }
+
+    // Validar acompañantes: si se indicó número > 0, todos deben tener nombre y documento
+    for (var i = 0; i < _numeroAcompanantes; i++) {
+      final nombre = i < _nombreAcompCtrls.length
+          ? _nombreAcompCtrls[i].text.trim()
+          : '';
+      final cedula = i < _cedulaAcompCtrls.length
+          ? _cedulaAcompCtrls[i].text.trim()
+          : '';
+      if (nombre.isEmpty || cedula.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Completa nombre y cédula de todos los acompañantes'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (cedula.length < 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Ingresa un número de documento válido para los acompañantes',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -119,14 +287,102 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     });
 
     try {
+      // Construir string de acompañantes a partir de los controllers
+      final parts = <String>[];
+      for (var i = 0; i < _numeroAcompanantes; i++) {
+        final nombre = i < _nombreAcompCtrls.length
+            ? _nombreAcompCtrls[i].text.trim()
+            : '';
+        final cedula = i < _cedulaAcompCtrls.length
+            ? _cedulaAcompCtrls[i].text.trim()
+            : '';
+        if (nombre.isNotEmpty || cedula.isNotEmpty) {
+          parts.add(
+            '${nombre.isNotEmpty ? nombre : ''} ${cedula.isNotEmpty ? cedula : ''}'
+                .trim(),
+          );
+        }
+      }
+
+      final acompText = parts.join(' , ');
+
+      // Si es reserva personalizada, incluir fecha/hora en observaciones
+      String personalizadaText = '';
+      if (_esPersonalizada &&
+          _fechaPersonalizada != null &&
+          _horaPersonalizada != null) {
+        personalizadaText =
+            'Fecha deseada: ${_fechaPersonalizada!.toLocal().toString().split(' ')[0]} ${_horaPersonalizada!.format(context)}';
+      }
+
+      final observacionesBase = _observacionesController.text.trim();
+      final bufferParts = <String>[];
+      if (observacionesBase.isNotEmpty) bufferParts.add(observacionesBase);
+      if (personalizadaText.isNotEmpty) bufferParts.add(personalizadaText);
+      if (acompText.isNotEmpty) bufferParts.add('Acompañantes: $acompText');
+
+      final observacionesFinal = bufferParts.join('\n');
+
+      final acompanantesPayload =
+          List.generate(_numeroAcompanantes, (i) {
+                final nombre = i < _nombreAcompCtrls.length
+                    ? _nombreAcompCtrls[i].text.trim()
+                    : '';
+                final cedula = i < _cedulaAcompCtrls.length
+                    ? _cedulaAcompCtrls[i].text.trim()
+                    : '';
+                return {'nombre_completo': nombre, 'numero_documento': cedula};
+              })
+              .where(
+                (m) =>
+                    (m['nombre_completo']?.isNotEmpty ?? false) ||
+                    (m['numero_documento']?.isNotEmpty ?? false),
+              )
+              .toList();
+
+      if (_esPersonalizada) {
+        final payload = <String, dynamic>{
+          'id_cliente': idCliente,
+          'id_ruta': _idRutaSeleccionada,
+          'cantidad_personas': _cantidadPersonas,
+          'fecha_deseada': _fechaPersonalizada!
+              .toIso8601String()
+              .split('T')
+              .first,
+          'hora_deseada': _horaPersonalizada!.format(context),
+          'observaciones': observacionesFinal,
+          if (acompanantesPayload.isNotEmpty)
+            'acompanantes': acompanantesPayload,
+        };
+
+        final solicitudId = await _solicitudService.crear(payload);
+        if (!mounted) return;
+
+        if (solicitudId != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Solicitud #$solicitudId enviada'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          context.pop();
+          return;
+        }
+
+        throw Exception('No se pudo crear la solicitud personalizada');
+      }
+
       final nuevaReserva = await _reservaService.crear(
         idCliente: idCliente,
-        idProgramacion:
-            _usarProgramacion ? _programacionSeleccionada?.id : null,
+        idProgramacion: _usarProgramacion
+            ? _programacionSeleccionada?.id
+            : null,
         idRuta: _usarProgramacion ? null : _idRutaSeleccionada,
         cantidadPersonas: _cantidadPersonas,
         metodoPago: _metodoPago,
-        observaciones: _observacionesController.text,
+        observaciones: observacionesFinal,
+        acompanantes: acompanantesPayload,
       );
 
       if (!mounted) return;
@@ -135,8 +391,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       if (mounted) {
         // ignore: use_build_context_synchronously
         await context.read<ReservaProvider>().cargarReservas(
-              idCliente: idCliente,
-            );
+          idCliente: idCliente,
+        );
       }
 
       if (!mounted) return;
@@ -218,6 +474,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 _buildSeccionCantidad(),
                 const SizedBox(height: 24),
 
+                /// SECCIÓN 2.5: Acompañantes
+                _buildSeccionAcompanantes(),
+                const SizedBox(height: 24),
+
                 /// SECCIÓN 3: Método de Pago
                 _buildSeccionPago(),
                 const SizedBox(height: 24),
@@ -250,8 +510,22 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
   Widget _buildSeccionProgramacion(ProgramacionProvider provider) {
     if (!_usarProgramacion) {
+      if (_esPersonalizada) {
+        return _buildSeccionReservaPersonalizada();
+      }
       return _buildSeccionRutaNormal();
     }
+
+    final programacionesVisibles = provider.programaciones
+        .where(
+          (prog) =>
+              _idRutaSeleccionada == null || prog.idRuta == _idRutaSeleccionada,
+        )
+        .toList();
+
+    final tieneActivas = programacionesVisibles.any(
+      (prog) => prog.tieneCupos && !prog.estaDesactivada,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +535,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        if (_programacionSeleccionada == null)
+        if (provider.isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (programacionesVisibles.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -270,11 +546,58 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               color: Colors.grey.shade50,
             ),
             child: const Text(
-              'No hay programación seleccionada',
+              'No hay programaciones disponibles para esta ruta',
               style: TextStyle(color: Colors.grey),
             ),
           )
         else
+          DropdownButtonFormField<int>(
+            value: _programacionSeleccionada?.id,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: programacionesVisibles.map((prog) {
+              final fecha = _formatDate(prog.fechaSalida);
+              final hora = prog.horaSalida ?? 'N/A';
+              final cupos = prog.cuposDisponibles ?? 0;
+              final nombre = prog.nombreRuta ?? 'Ruta';
+              final habilitada = prog.tieneCupos && !prog.estaDesactivada;
+              final estadoTexto = prog.estaDesactivada
+                  ? 'Desactivada'
+                  : (prog.tieneCupos ? 'Activa' : 'Sin cupos');
+              return DropdownMenuItem<int>(
+                value: prog.id,
+                enabled: habilitada,
+                child: Text(
+                  '$nombre - $fecha $hora ($cupos cupos) - $estadoTexto',
+                ),
+              );
+            }).toList(),
+            onChanged: _cargando
+                ? null
+                : (value) {
+                    if (value == null) return;
+                    final seleccionada = programacionesVisibles.firstWhere(
+                      (p) => p.id == value,
+                      orElse: () => programacionesVisibles.first,
+                    );
+                    setState(() {
+                      _programacionSeleccionada = seleccionada;
+                      _ajustarAcompanantesPorCupo();
+                    });
+                  },
+          ),
+        if (!tieneActivas) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'No hay programaciones activas con cupos. Las desactivadas aparecen en gris.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+        if (_programacionSeleccionada != null) ...[
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -313,21 +636,91 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     fontSize: 13,
                     color:
                         (_programacionSeleccionada?.cuposDisponibles ?? 0) > 0
-                            ? Colors.green
-                            : Colors.red,
+                        ? Colors.green
+                        : Colors.red,
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSeccionReservaPersonalizada() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Reserva personalizada de ruta',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Se enviara una solicitud al administrador para aprobar la salida.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<int>(
+          value: _idRutaSeleccionada,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          items: context
+              .read<CatalogoProvider>()
+              .rutas
+              .map<DropdownMenuItem<int>>((map) {
+                final idRaw = map['id_ruta'] ?? map['id'];
+                final id = idRaw is int
+                    ? idRaw
+                    : int.tryParse(idRaw?.toString() ?? '') ?? 0;
+                final nombre = (map['nombre'] ?? 'Item').toString();
+                return DropdownMenuItem<int>(value: id, child: Text(nombre));
+              })
+              .toList(),
+          onChanged: _cargando
+              ? null
+              : (v) => setState(() => _idRutaSeleccionada = v),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _pickFechaPersonalizada,
+                icon: const Icon(Icons.calendar_today),
+                label: Text(
+                  _fechaPersonalizada == null
+                      ? 'Seleccionar fecha'
+                      : _fechaPersonalizada!.toLocal().toString().split(' ')[0],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _pickHoraPersonalizada,
+                icon: const Icon(Icons.schedule),
+                label: Text(
+                  _horaPersonalizada == null
+                      ? 'Seleccionar hora'
+                      : _horaPersonalizada!.format(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('Nota: esta reserva es directa y no pasa por programación.'),
       ],
     );
   }
 
   Widget _buildSeccionCantidad() {
-    final maxPersonas = _usarProgramacion
-        ? (_programacionSeleccionada?.cuposDisponibles ?? 1)
-        : 20;
+    final maxPersonas = _maxPersonas();
+    final maxAcompanantes = _maxAcompanantes();
+    _syncCantidadPersonas();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,55 +730,208 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            IconButton(
-              onPressed: _cargando || _cantidadPersonas <= 1
-                  ? null
-                  : () {
-                      setState(() {
-                        _cantidadPersonas--;
-                      });
-                    },
-              icon: const Icon(Icons.remove_circle_outline),
-              iconSize: 32,
-            ),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$_cantidadPersonas',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: _cargando || _cantidadPersonas >= maxPersonas
-                  ? null
-                  : () {
-                      setState(() {
-                        _cantidadPersonas++;
-                      });
-                    },
-              icon: const Icon(Icons.add_circle_outline),
-              iconSize: 32,
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$_cantidadPersonas',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Máximo disponible: $maxPersonas personas',
+          'Máximo disponible: $maxPersonas personas (acompañantes: $maxAcompanantes)',
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
+        const SizedBox(height: 6),
+        const Text(
+          'La cantidad se calcula automaticamente: titular + acompañantes.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
       ],
+    );
+  }
+
+  Widget _buildSeccionAcompanantes() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Acompañantes (se guardarán en Observaciones)',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Esta informacion es crucial para la obtencion de polizas de seguro.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Text('Número de acompañantes:'),
+            const SizedBox(width: 12),
+            IconButton(
+              onPressed: _cargando || _numeroAcompanantes <= 0
+                  ? null
+                  : () {
+                      setState(() {
+                        _numeroAcompanantes--;
+                        if (_nombreAcompCtrls.isNotEmpty)
+                          _nombreAcompCtrls.removeLast().dispose();
+                        if (_cedulaAcompCtrls.isNotEmpty)
+                          _cedulaAcompCtrls.removeLast().dispose();
+                        _syncCantidadPersonas();
+                      });
+                    },
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            Text('$_numeroAcompanantes'),
+            IconButton(
+              onPressed: _cargando
+                  ? null
+                  : () {
+                      final maxAcompanantes = _maxAcompanantes();
+                      if (_numeroAcompanantes >= maxAcompanantes) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Maximo de acompañantes: $maxAcompanantes',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      setState(() {
+                        _numeroAcompanantes++;
+                        _nombreAcompCtrls.add(TextEditingController());
+                        _cedulaAcompCtrls.add(TextEditingController());
+                        _syncCantidadPersonas();
+                      });
+                    },
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_numeroAcompanantes == 0)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text('No hay acompañantes definidos'),
+          )
+        else
+          Column(
+            children: List.generate(_numeroAcompanantes, (i) {
+              final nombreCtrl = _nombreAcompCtrls.length > i
+                  ? _nombreAcompCtrls[i]
+                  : TextEditingController();
+              final cedulaCtrl = _cedulaAcompCtrls.length > i
+                  ? _cedulaAcompCtrls[i]
+                  : TextEditingController();
+              if (_nombreAcompCtrls.length <= i)
+                _nombreAcompCtrls.add(nombreCtrl);
+              if (_cedulaAcompCtrls.length <= i)
+                _cedulaAcompCtrls.add(cedulaCtrl);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: nombreCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Nombre completo',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: cedulaCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          hintText: 'Cédula',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+      ],
+    );
+  }
+
+  void _showAgregarAcompananteDialog() {
+    final nombreCtrl = TextEditingController();
+    final cedulaCtrl = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nuevo acompañante'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nombreCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre completo'),
+            ),
+            TextField(
+              controller: cedulaCtrl,
+              decoration: const InputDecoration(labelText: 'Número documento'),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final nombre = nombreCtrl.text.trim();
+              final cedula = cedulaCtrl.text.trim();
+              if (nombre.isEmpty || cedula.isEmpty) return;
+              setState(() {
+                final maxAcompanantes = _maxAcompanantes();
+                if (_numeroAcompanantes >= maxAcompanantes) {
+                  return;
+                }
+                // Mantener lista histórica y sincronizar con los controllers mostrados
+                _acompanantes.add({'nombreCompleto': nombre, 'cedula': cedula});
+                _numeroAcompanantes++;
+                _nombreAcompCtrls.add(TextEditingController(text: nombre));
+                _cedulaAcompCtrls.add(TextEditingController(text: cedula));
+                _syncCantidadPersonas();
+              });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -470,24 +1016,45 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             children: [
               ChoiceChip(
                 label: const Text('Ruta programada'),
-                selected: _usarProgramacion,
+                selected: _usarProgramacion && !_esPersonalizada,
                 onSelected: _cargando
                     ? null
                     : (selected) {
                         if (!selected) return;
-                        setState(() => _usarProgramacion = true);
+                        setState(() {
+                          _usarProgramacion = true;
+                          _esPersonalizada = false;
+                        });
                       },
               ),
               ChoiceChip(
-                label: const Text('Ruta normal'),
-                selected: !_usarProgramacion,
+                label: const Text('Reserva personalizada'),
+                selected: !_usarProgramacion && _esPersonalizada,
                 onSelected: _cargando
                     ? null
                     : (selected) {
                         if (!selected) return;
-                        setState(() => _usarProgramacion = false);
+                        setState(() {
+                          _usarProgramacion = false;
+                          _esPersonalizada = true;
+                          _seleccionarFincaDirecta = false;
+                        });
                       },
               ),
+              if (!_onlyRutaMode)
+                ChoiceChip(
+                  label: const Text('Ruta/Finca directa'),
+                  selected: !_usarProgramacion && !_esPersonalizada,
+                  onSelected: _cargando
+                      ? null
+                      : (selected) {
+                          if (!selected) return;
+                          setState(() {
+                            _usarProgramacion = false;
+                            _esPersonalizada = false;
+                          });
+                        },
+                ),
             ],
           ),
         ],
@@ -510,36 +1077,70 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             const SizedBox(height: 12),
             if (catalogoProvider.isLoadingRutas)
               const Center(child: CircularProgressIndicator())
-            else if (rutas.isEmpty)
-              const Text('No hay rutas disponibles')
+            else if (rutas.isEmpty && catalogoProvider.fincas.isEmpty)
+              const Text('No hay rutas ni fincas disponibles')
             else
-              DropdownButtonFormField<int>(
-                value: _idRutaSeleccionada,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Column(
+                children: [
+                  if (!_onlyRutaMode)
+                    Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Ruta'),
+                          selected: !_seleccionarFincaDirecta,
+                          onSelected: (s) =>
+                              setState(() => _seleccionarFincaDirecta = !s),
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('Finca'),
+                          selected: _seleccionarFincaDirecta,
+                          onSelected: (s) =>
+                              setState(() => _seleccionarFincaDirecta = s),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    value: _idRutaSeleccionada,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items:
+                        (_onlyRutaMode
+                                ? rutas
+                                : (_seleccionarFincaDirecta
+                                      ? catalogoProvider.fincas
+                                      : rutas))
+                            .whereType<Map<String, dynamic>>()
+                            .map<DropdownMenuItem<int>>((map) {
+                              final idRaw =
+                                  (_onlyRutaMode || !_seleccionarFincaDirecta)
+                                  ? (map['id_ruta'] ?? map['id'])
+                                  : (map['id_finca'] ?? map['id']);
+                              final id = idRaw is int
+                                  ? idRaw
+                                  : int.tryParse(idRaw?.toString() ?? '') ?? 0;
+                              final nombre = (map['nombre'] ?? 'Item')
+                                  .toString();
+                              return DropdownMenuItem<int>(
+                                value: id,
+                                child: Text(nombre),
+                              );
+                            })
+                            .where(
+                              (item) => item.value != null && item.value! > 0,
+                            )
+                            .toList(),
+                    onChanged: _cargando
+                        ? null
+                        : (value) {
+                            setState(() => _idRutaSeleccionada = value);
+                          },
                   ),
-                ),
-                items: rutas
-                    .whereType<Map<String, dynamic>>()
-                    .map<DropdownMenuItem<int>>((map) {
-                      final idRaw = map['id_ruta'] ?? map['id'];
-                      final id = idRaw is int
-                          ? idRaw
-                          : int.tryParse(idRaw?.toString() ?? '') ?? 0;
-                      final nombre = (map['nombre'] ?? 'Ruta').toString();
-                      return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text(nombre),
-                      );
-                    })
-                    .where((item) => item.value != null && item.value! > 0)
-                    .toList(),
-                onChanged: _cargando
-                    ? null
-                    : (value) {
-                        setState(() => _idRutaSeleccionada = value);
-                      },
+                ],
               ),
             const SizedBox(height: 8),
             const Text(
@@ -579,8 +1180,8 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     double precioUnitario = _programacionSeleccionada?.precio ?? 0;
     if (!_usarProgramacion && _idRutaSeleccionada != null) {
       final ruta = context.read<CatalogoProvider>().getRutaById(
-            _idRutaSeleccionada!,
-          );
+        _idRutaSeleccionada!,
+      );
       if (ruta is Map<String, dynamic>) {
         final raw = ruta['precio'] ?? 0;
         if (raw is num) {
@@ -710,9 +1311,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _cargando ||
+            onPressed:
+                _cargando ||
                     (_usarProgramacion && _programacionSeleccionada == null) ||
-                    (!_usarProgramacion && _idRutaSeleccionada == null)
+                    (!_usarProgramacion && _idRutaSeleccionada == null) ||
+                    (_esPersonalizada &&
+                        (_fechaPersonalizada == null ||
+                            _horaPersonalizada == null))
                 ? null
                 : _crearReserva,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -725,7 +1330,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('Confirmar Reserva'),
+                : Text(
+                    _esPersonalizada ? 'Enviar solicitud' : 'Confirmar Reserva',
+                  ),
           ),
         ),
       ],
@@ -777,8 +1384,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                         : Colors.grey.shade300,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color:
-                      cantidad > 0 ? Colors.amber.shade50 : Colors.grey.shade50,
+                  color: cantidad > 0
+                      ? Colors.amber.shade50
+                      : Colors.grey.shade50,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -172,6 +172,29 @@ class _FincasScreenState extends State<FincasScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  if (catalogoProvider.error != null) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Error: ${catalogoProvider.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () => catalogoProvider.fetchFincas(),
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
                   List fincas = catalogoProvider.fincas;
 
                   // Buscar
@@ -199,13 +222,16 @@ class _FincasScreenState extends State<FincasScreen> {
                     );
                   }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: fincas.length,
-                    itemBuilder: (context, index) {
-                      final finca = fincas[index];
-                      return _buildFincaCard(finca);
-                    },
+                  return RefreshIndicator(
+                    onRefresh: () async => await catalogoProvider.fetchFincas(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: fincas.length,
+                      itemBuilder: (context, index) {
+                        final finca = fincas[index];
+                        return _buildFincaCard(finca);
+                      },
+                    ),
                   );
                 },
               ),
@@ -265,7 +291,8 @@ class _FincasScreenState extends State<FincasScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: (imagenPrincipal.isNotEmpty &&
+                  child:
+                      (imagenPrincipal.isNotEmpty &&
                           imagenPrincipal.startsWith('http'))
                       ? Image.network(
                           imagenPrincipal,

@@ -15,6 +15,7 @@ import '../screens/reservas/crear_reserva_screen.dart';
 import '../screens/reservas/reserva_detalle_screen.dart';
 import '../screens/reservas/editar_reserva_screen.dart';
 import '../screens/reservas/gestion_servicios_reserva_screen.dart';
+import '../screens/solicitud/crear_solicitud_screen.dart';
 import '../screens/servicios/servicios_seleccion_screen.dart';
 import '../screens/auditoria_screen.dart';
 import '../screens/comprobante_reserva_screen.dart';
@@ -270,6 +271,11 @@ final appRouter = GoRouter(
           idRuta: idRuta != null ? int.tryParse(idRuta) : null,
         );
       },
+    ),
+    GoRoute(
+      path: '/crear-solicitud',
+      name: 'crearSolicitud',
+      builder: (context, state) => const CrearSolicitudScreen(),
     ),
     GoRoute(
       path: '/reserva-detalle',

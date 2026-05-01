@@ -231,6 +231,8 @@ class ReservaService {
   /// Soporta dos modos:
   /// - Con programación: POST /reservas/crear-con-programacion
   /// - Ruta normal (sin programación): POST /reservas
+  /// Además puede enviar una lista de acompañantes en el payload:
+  /// `acompanantes: [{"nombre_completo":"...","numero_documento":"..."}, ...]`
   Future<Reserva> crear({
     required int idCliente,
     int? idProgramacion,
@@ -238,6 +240,7 @@ class ReservaService {
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
+    List<Map<String, dynamic>>? acompanantes,
   }) async {
     try {
       if ((idProgramacion == null || idProgramacion <= 0) &&
@@ -252,6 +255,7 @@ class ReservaService {
           cantidadPersonas: cantidadPersonas,
           metodoPago: metodoPago,
           observaciones: observaciones,
+          acompanantes: acompanantes,
         );
       }
 
@@ -273,6 +277,7 @@ class ReservaService {
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
+    List<Map<String, dynamic>>? acompanantes,
   }) async {
     final body = <String, dynamic>{
       'id_cliente': idCliente,
@@ -282,6 +287,9 @@ class ReservaService {
 
     if (observaciones != null && observaciones.trim().isNotEmpty) {
       body['notas'] = observaciones;
+    }
+    if (acompanantes != null && acompanantes.isNotEmpty) {
+      body['acompanantes'] = acompanantes;
     }
 
     final response = await _api.post('/reservas/crear-con-programacion', body);
@@ -317,6 +325,7 @@ class ReservaService {
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
+    List<Map<String, dynamic>>? acompanantes,
   }) async {
     final body = <String, dynamic>{
       'id_cliente': idCliente,
@@ -329,6 +338,9 @@ class ReservaService {
     }
     if (observaciones != null && observaciones.trim().isNotEmpty) {
       body['notas'] = observaciones;
+    }
+    if (acompanantes != null && acompanantes.isNotEmpty) {
+      body['acompanantes'] = acompanantes;
     }
 
     final response = await _api.post('/reservas', body);

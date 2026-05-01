@@ -159,7 +159,8 @@ class CatalogoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.get('/fincas');
+      // Usar endpoint público de fincas disponibles para clientes móviles
+      final response = await _apiService.get('/fincas/disponibles');
 
       if (response is List) {
         _fincas = response
@@ -173,6 +174,27 @@ class CatalogoProvider extends ChangeNotifier {
             .toList();
       } else {
         _fincas = [];
+      }
+
+      // Si no hay fincas en "disponibles", intentar obtener todas como fallback.
+      if (_fincas.isEmpty) {
+        try {
+          final respAll = await _apiService.get('/fincas');
+          if (respAll is List) {
+            _fincas = respAll
+                .whereType<Map<String, dynamic>>()
+                .map(_normalizeFinca)
+                .toList();
+          } else if (respAll is Map && respAll['data'] is List) {
+            _fincas = (respAll['data'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(_normalizeFinca)
+                .toList();
+          }
+        } catch (e) {
+          // No sobrescribimos el error principal aquí; solo registramos
+          _error = _error ?? 'No se encontraron fincas disponibles';
+        }
       }
 
       if (_fincas.isNotEmpty) {
@@ -199,7 +221,8 @@ class CatalogoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.get('/rutas');
+      // Usar endpoint público de rutas activas para clientes móviles
+      final response = await _apiService.get('/rutas/activas');
 
       if (response is List) {
         _rutas = response
