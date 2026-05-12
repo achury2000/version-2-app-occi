@@ -98,56 +98,6 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
     }
   }
 
-  Widget _buildSection(String title, List<(String, String)> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0066CC),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...items.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item.$1.isNotEmpty) ...[
-                  SizedBox(
-                    width: 110,
-                    child: Text(
-                      item.$1,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-                Expanded(
-                  child: Text(
-                    item.$2,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> _cancelarReserva(Reserva reserva) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -606,6 +556,17 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                                                               ),
                                                         ),
                                                       ],
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      reserva.nombreExperiencia,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors
+                                                            .teal.shade800,
+                                                      ),
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(

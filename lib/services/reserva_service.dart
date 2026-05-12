@@ -20,6 +20,15 @@ class ReservaService {
   factory ReservaService() => _instance;
   ReservaService._internal();
 
+  /// Subcarpeta por fecha de subida (DD-MM-YY), alineada con el backend (`pagoComprobantesService`).
+  String carpetaFechaComprobante([DateTime? when]) {
+    final n = when ?? DateTime.now();
+    final dd = n.day.toString().padLeft(2, '0');
+    final mm = n.month.toString().padLeft(2, '0');
+    final yy = (n.year % 100).toString().padLeft(2, '0');
+    return '$dd-$mm-$yy';
+  }
+
   List<Reserva> _parseReservasResponse(dynamic response) {
     if (response is List) {
       return response.map((json) => Reserva.fromJson(json)).toList();
@@ -53,6 +62,8 @@ class ReservaService {
     }
 
     final normalizado = Map<String, dynamic>.from(reserva);
+    normalizado['fecha_reserva'] =
+        normalizado['fecha_reserva'] ?? normalizado['fecha_creacion'];
     final programacion = data['programacion'];
     final resumenPago = data['resumen_pago'];
     final pagos = data['pagos'];
@@ -73,9 +84,20 @@ class ReservaService {
       }
     }
 
+    final fincaDetalle = data['finca'];
+    if (fincaDetalle is Map<String, dynamic> &&
+        fincaDetalle['id_finca'] != null) {
+      normalizado['fecha_inicio'] =
+          fincaDetalle['fecha_checkin'] ?? normalizado['fecha_inicio'];
+      normalizado['fecha_fin'] =
+          fincaDetalle['fecha_checkout'] ?? normalizado['fecha_fin'];
+      normalizado['fincas'] = [fincaDetalle];
+    }
+
     if (resumenPago is Map<String, dynamic>) {
       normalizado['estado_pago'] = resumenPago['estado_pago'];
-      normalizado['precio_total'] = normalizado['precio_total'] ??
+      normalizado['precio_total'] =
+          normalizado['precio_total'] ??
           normalizado['monto_total'] ??
           resumenPago['monto_total'];
     }
@@ -166,23 +188,25 @@ class ReservaService {
         final data = response['data'];
 
         if (data is Map<String, dynamic>) {
-          final url = (data['url'] ??
-                  data['qr_url'] ??
-                  data['signed_url'] ??
-                  data['qr_signed_url'] ??
-                  '')
-              .toString()
-              .trim();
+          final url =
+              (data['url'] ??
+                      data['qr_url'] ??
+                      data['signed_url'] ??
+                      data['qr_signed_url'] ??
+                      '')
+                  .toString()
+                  .trim();
           if (url.startsWith('http')) return url;
         }
 
-        final rootUrl = (response['url'] ??
-                response['qr_url'] ??
-                response['signed_url'] ??
-                response['qr_signed_url'] ??
-                '')
-            .toString()
-            .trim();
+        final rootUrl =
+            (response['url'] ??
+                    response['qr_url'] ??
+                    response['signed_url'] ??
+                    response['qr_signed_url'] ??
+                    '')
+                .toString()
+                .trim();
         if (rootUrl.startsWith('http')) return rootUrl;
       }
 
@@ -231,8 +255,7 @@ class ReservaService {
   /// Soporta dos modos:
   /// - Con programación: POST /reservas/crear-con-programacion
   /// - Ruta normal (sin programación): POST /reservas
-  /// Además puede enviar una lista de acompañantes en el payload:
-  /// `acompanantes: [{"nombre_completo":"...","numero_documento":"..."}, ...]`
+  /// Los acompañantes deben enviarse después con POST /reservas/:id/acompanante.
   Future<Reserva> crear({
     required int idCliente,
     int? idProgramacion,
@@ -288,6 +311,7 @@ class ReservaService {
     if (observaciones != null && observaciones.trim().isNotEmpty) {
       body['notas'] = observaciones;
     }
+
     if (acompanantes != null && acompanantes.isNotEmpty) {
       body['acompanantes'] = acompanantes;
     }
@@ -296,13 +320,23 @@ class ReservaService {
 
     if (response is Map<String, dynamic>) {
       final data = response['data'];
+      int? parseId(dynamic v) {
+        if (v == null) return null;
+        if (v is int) return v > 0 ? v : null;
+        final s = v.toString().trim();
+        if (s.isEmpty) return null;
+        return int.tryParse(s);
+      }
+
       final idReserva = data is Map<String, dynamic>
-          ? (data['id_reserva'] ?? data['id'])
+          ? parseId(
+              data['id_reserva'] ??
+                  data['out_id_reserva'] ??
+                  data['id'],
+            )
           : null;
 
-      final idReservaInt = idReserva is int
-          ? idReserva
-          : int.tryParse(idReserva?.toString() ?? '');
+      final idReservaInt = idReserva;
 
       if (idReservaInt != null && idReservaInt > 0) {
         if (metodoPago != null && metodoPago.trim().isNotEmpty) {
@@ -325,7 +359,6 @@ class ReservaService {
     required int cantidadPersonas,
     String? metodoPago,
     String? observaciones,
-    List<Map<String, dynamic>>? acompanantes,
   }) async {
     final body = <String, dynamic>{
       'id_cliente': idCliente,
@@ -338,9 +371,6 @@ class ReservaService {
     }
     if (observaciones != null && observaciones.trim().isNotEmpty) {
       body['notas'] = observaciones;
-    }
-    if (acompanantes != null && acompanantes.isNotEmpty) {
-      body['acompanantes'] = acompanantes;
     }
 
     final response = await _api.post('/reservas', body);
@@ -387,12 +417,15 @@ class ReservaService {
     int? idReserva,
   }) async {
     MultipartFile multipart;
-    final extension = (archivo.extension ??
-            (archivo.name.contains('.') ? archivo.name.split('.').last : 'bin'))
-        .toLowerCase();
+    final extension =
+        (archivo.extension ??
+                (archivo.name.contains('.')
+                    ? archivo.name.split('.').last
+                    : 'bin'))
+            .toLowerCase();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final storageFileName = 'pago_${idPago}_$timestamp.$extension';
-    final carpetaCliente = idCliente.toString();
+    final carpetaFecha = carpetaFechaComprobante();
 
     if (archivo.bytes != null) {
       multipart = MultipartFile.fromBytes(
@@ -413,10 +446,8 @@ class ReservaService {
       'bucket': 'comprobantes',
       'bucket_name': 'comprobantes',
       'id_cliente': idCliente,
-      'id_reserva': idReserva,
-      'folder': carpetaCliente,
-      'carpeta': carpetaCliente,
-      'path_prefix': carpetaCliente,
+      if (idReserva != null) 'id_reserva': idReserva,
+      'fecha_carpeta': carpetaFecha,
     });
 
     await _api.postFormData(
@@ -425,7 +456,8 @@ class ReservaService {
       queryParameters: {
         'bucket': 'comprobantes',
         'id_cliente': idCliente,
-        'carpeta': carpetaCliente,
+        'fecha_carpeta': carpetaFecha,
+        if (idReserva != null) 'id_reserva': idReserva,
       },
     );
   }
@@ -544,20 +576,30 @@ class ReservaService {
   Future<bool> agregarAcompanante({
     required int idReserva,
     required String nombre,
-    String? apellido,
+    required String apellido,
     String? tipoDocumento,
     String? numeroDocumento,
     String? telefono,
-    int? edad,
+    DateTime? fechaNacimiento,
+    int? idCliente,
   }) async {
     try {
-      final body = <String, dynamic>{'nombre': nombre};
+      final apellidoValue = apellido.trim().isEmpty ? '-' : apellido.trim();
+      final body = <String, dynamic>{
+        'nombre': nombre,
+        'apellido': apellidoValue,
+      };
 
-      if (apellido != null) body['apellido'] = apellido;
       if (tipoDocumento != null) body['tipo_documento'] = tipoDocumento;
       if (numeroDocumento != null) body['numero_documento'] = numeroDocumento;
       if (telefono != null) body['telefono'] = telefono;
-      if (edad != null) body['edad'] = edad;
+      if (fechaNacimiento != null) {
+        body['fecha_nacimiento'] = fechaNacimiento
+            .toIso8601String()
+            .split('T')
+            .first;
+      }
+      if (idCliente != null) body['id_cliente'] = idCliente;
 
       final response = await _api.post(
         '/reservas/$idReserva/acompanante',

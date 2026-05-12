@@ -126,6 +126,28 @@ class FincaService {
     }
   }
 
+  /// Obtener fechas ocupadas de una finca (YYYY-MM-DD).
+  Future<Set<String>> getFechasOcupadas(int idFinca) async {
+    try {
+      final response = await _api.get('/fincas/$idFinca/fechas-ocupadas');
+
+      List<dynamic> fechas = [];
+      if (response is List) {
+        fechas = response;
+      } else if (response is Map && response['data'] is List) {
+        fechas = response['data'] as List;
+      }
+
+      return fechas
+          .map((item) => item?.toString().trim())
+          .where((item) => item != null && item.isNotEmpty)
+          .cast<String>()
+          .toSet();
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
   /// Eliminar una finca por ID (solo admin)
   /// DELETE /fincas/:id
   Future<void> eliminar(int idFinca) async {

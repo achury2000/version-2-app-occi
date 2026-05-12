@@ -76,6 +76,30 @@ class ProgramacionService {
     }
   }
 
+  /// Obtener fechas ocupadas por ruta (YYYY-MM-DD).
+  Future<Set<String>> getFechasOcupadasPorRuta(int idRuta) async {
+    try {
+      final response = await _api.get(
+        '/programaciones/ruta/$idRuta/fechas-ocupadas',
+      );
+
+      List<dynamic> fechas = [];
+      if (response is List) {
+        fechas = response;
+      } else if (response is Map && response['data'] is List) {
+        fechas = response['data'] as List;
+      }
+
+      return fechas
+          .map((item) => item?.toString().trim())
+          .where((item) => item != null && item.isNotEmpty)
+          .cast<String>()
+          .toSet();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Obtener detalle de una programación por ID.
   Future<Programacion> getById(int id) async {
     try {

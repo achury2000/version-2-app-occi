@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../../models/programacion.dart';
 import '../../providers/catalogo_provider.dart';
 import '../../providers/programacion_provider.dart';
@@ -10,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cliente_provider.dart';
 import '../../providers/servicio_provider.dart';
 import '../../services/reserva_service.dart';
+import '../../services/programacion_service.dart';
 import '../../services/solicitud_service.dart';
 
 class CrearReservaScreen extends StatefulWidget {
@@ -31,13 +34,11 @@ class CrearReservaScreen extends StatefulWidget {
 class _CrearReservaScreenState extends State<CrearReservaScreen> {
   late ReservaService _reservaService;
   late SolicitudService _solicitudService;
+  late ProgramacionService _programacionService;
   int _cantidadPersonas = 1;
   String _metodoPago = 'transferencia';
   List<int> _serviciosSeleccionados = [];
-  List<Map<String, String>> _acompanantes = [];
-  int _numeroAcompanantes = 0;
-  final List<TextEditingController> _nombreAcompCtrls = [];
-  final List<TextEditingController> _cedulaAcompCtrls = [];
+  final List<Map<String, String>> _acompanantes = [];
   final TextEditingController _observacionesController =
       TextEditingController();
   bool _cargando = false;
@@ -50,6 +51,23 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       false; // si true, ocultar cualquier opción relacionada con fincas
   DateTime? _fechaPersonalizada;
   TimeOfDay? _horaPersonalizada;
+  Set<String> _fechasOcupadas = {};
+  bool _cargandoFechasOcupadas = false;
+  String? _errorFechasOcupadas;
+  DateTime _focusedCalendarDay = DateTime.now();
+
+  bool _proveedoresCapturados = false;
+  late ReservaProvider _reservaProvider;
+  late ServicioProvider _servicioProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_proveedoresCapturados) return;
+    _proveedoresCapturados = true;
+    _reservaProvider = context.read<ReservaProvider>();
+    _servicioProvider = context.read<ServicioProvider>();
+  }
 
   int _maxPersonas() {
     if (_usarProgramacion) {
@@ -64,21 +82,22 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   void _syncCantidadPersonas() {
-    _cantidadPersonas = 1 + _numeroAcompanantes;
+    _cantidadPersonas = 1 + _acompanantes.length;
   }
 
   void _ajustarAcompanantesPorCupo() {
     final maxAcompanantes = _maxAcompanantes();
-    if (_numeroAcompanantes > maxAcompanantes) {
-      _numeroAcompanantes = maxAcompanantes;
-      while (_nombreAcompCtrls.length > maxAcompanantes) {
-        _nombreAcompCtrls.removeLast().dispose();
-      }
-      while (_cedulaAcompCtrls.length > maxAcompanantes) {
-        _cedulaAcompCtrls.removeLast().dispose();
-      }
+    if (_acompanantes.length > maxAcompanantes) {
+      _acompanantes.removeRange(maxAcompanantes, _acompanantes.length);
     }
     _syncCantidadPersonas();
+  }
+
+  /// Formato HH:mm para el backend (no usa [BuildContext]; seguro tras `await`).
+  String _horaDeseadaApi(TimeOfDay t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   @override
@@ -86,6 +105,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     super.initState();
     _reservaService = ReservaService();
     _solicitudService = SolicitudService();
+    _programacionService = ProgramacionService();
     _programacionSeleccionada = widget.programacion;
     _idRutaSeleccionada = widget.idRuta;
     _usarProgramacion =
@@ -102,7 +122,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       }
     }
 
-    void _cargarProgramacion() {
+    void cargarProgramacion() {
       if (widget.idProgramacion != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -114,7 +134,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarProgramacion();
+      cargarProgramacion();
       context.read<CatalogoProvider>().fetchRutas();
       if (!_onlyRutaMode) {
         context.read<CatalogoProvider>().fetchFincas();
@@ -122,18 +142,11 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       try {
         context.read<ProgramacionProvider>().cargarProgramaciones();
       } catch (_) {}
-    });
-  }
 
-  Future<void> _pickFechaPersonalizada() async {
-    final now = DateTime.now();
-    final fecha = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now.subtract(const Duration(days: 365)),
-      lastDate: now.add(const Duration(days: 365 * 2)),
-    );
-    if (fecha != null) setState(() => _fechaPersonalizada = fecha);
+      if (_esPersonalizada && _idRutaSeleccionada != null) {
+        _cargarFechasOcupadas(_idRutaSeleccionada!);
+      }
+    });
   }
 
   Future<void> _pickHoraPersonalizada() async {
@@ -142,6 +155,185 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       initialTime: TimeOfDay.now(),
     );
     if (hora != null) setState(() => _horaPersonalizada = hora);
+  }
+
+  DateTime _normalizeDay(DateTime day) {
+    return DateTime(day.year, day.month, day.day);
+  }
+
+  String _dayKey(DateTime day) {
+    return DateFormat('yyyy-MM-dd').format(_normalizeDay(day));
+  }
+
+  int _duracionDiasRuta() {
+    if (_idRutaSeleccionada == null) return 1;
+    final ruta = context.read<CatalogoProvider>().getRutaById(
+      _idRutaSeleccionada!,
+    );
+    if (ruta is Map<String, dynamic>) {
+      final raw =
+          ruta['duracion'] ?? ruta['duracion_dias'] ?? ruta['duracionDias'];
+      final valor = raw is num
+          ? raw.toDouble()
+          : double.tryParse(raw?.toString() ?? '');
+      final dias = (valor ?? 1).ceil();
+      return dias < 1 ? 1 : dias;
+    }
+    return 1;
+  }
+
+  bool _esDiaPasado(DateTime day) {
+    final today = _normalizeDay(DateTime.now());
+    return _normalizeDay(day).isBefore(today);
+  }
+
+  bool _esDiaOcupado(DateTime day) {
+    return _fechasOcupadas.contains(_dayKey(day));
+  }
+
+  bool _esRangoBloqueado(DateTime start) {
+    final duracion = _duracionDiasRuta();
+    for (var offset = 0; offset < duracion; offset++) {
+      final day = _normalizeDay(start.add(Duration(days: offset)));
+      if (_fechasOcupadas.contains(_dayKey(day))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _esDiaDeshabilitado(DateTime day) {
+    return _esDiaPasado(day) || _esRangoBloqueado(day);
+  }
+
+  Future<void> _cargarFechasOcupadas(int idRuta) async {
+    setState(() {
+      _cargandoFechasOcupadas = true;
+      _errorFechasOcupadas = null;
+      _fechasOcupadas = {};
+    });
+
+    try {
+      final fechas = await _programacionService.getFechasOcupadasPorRuta(
+        idRuta,
+      );
+      if (!mounted) return;
+      setState(() {
+        _fechasOcupadas = fechas;
+        _cargandoFechasOcupadas = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargandoFechasOcupadas = false;
+        _errorFechasOcupadas = 'No se pudieron cargar las fechas ocupadas.';
+      });
+    }
+  }
+
+  void _onRutaSeleccionada(int? value) {
+    setState(() {
+      _idRutaSeleccionada = value;
+      _fechaPersonalizada = null;
+    });
+
+    if (_esPersonalizada && value != null && value > 0) {
+      _cargarFechasOcupadas(value);
+    }
+  }
+
+  Widget _buildLegendItem(
+    Color color,
+    String label, {
+    bool bordered = false,
+    bool strike = false,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+            border: bordered ? Border.all(color: Colors.grey.shade500) : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade700,
+            decoration: strike ? TextDecoration.lineThrough : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarDayCell(
+    DateTime day, {
+    bool isSelected = false,
+    bool isToday = false,
+    bool isOutside = false,
+  }) {
+    final isPast = _esDiaPasado(day);
+    final isReserved = _esDiaOcupado(day);
+    final isRangeBlocked = !isReserved && _esRangoBloqueado(day);
+    final theme = Theme.of(context);
+
+    Color background = Colors.transparent;
+    Color textColor = Colors.black87;
+    Border? border;
+    TextDecoration? decoration;
+    FontWeight fontWeight = FontWeight.normal;
+
+    if (isSelected) {
+      background = theme.colorScheme.primary;
+      textColor = Colors.white;
+      fontWeight = FontWeight.w600;
+    } else if (isReserved) {
+      background = Colors.grey.shade300;
+      textColor = Colors.grey.shade700;
+      border = Border.all(color: Colors.grey.shade500);
+      decoration = TextDecoration.lineThrough;
+    } else if (isPast) {
+      background = Colors.grey.shade200;
+      textColor = Colors.grey.shade500;
+      decoration = TextDecoration.lineThrough;
+    } else if (isRangeBlocked) {
+      background = Colors.grey.shade100;
+      textColor = Colors.grey.shade400;
+      border = Border.all(color: Colors.grey.shade300);
+    }
+
+    if (isOutside) {
+      textColor = textColor.withOpacity(0.4);
+    }
+
+    if (isToday && !isSelected && !isReserved) {
+      border ??= Border.all(color: theme.colorScheme.primary);
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(8),
+        border: border,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '${day.day}',
+        style: TextStyle(
+          color: textColor,
+          decoration: decoration,
+          fontWeight: fontWeight,
+        ),
+      ),
+    );
   }
 
   Future<void> _crearReserva() async {
@@ -236,9 +428,12 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       final idUsuario = authProvider.usuario?.id;
       if (idUsuario != null) {
         await clienteProvider.loadCliente(idUsuario);
+        if (!mounted) return;
         idCliente = clienteProvider.cliente?.id;
       }
     }
+
+    if (!mounted) return;
 
     if (idCliente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,18 +447,16 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       return;
     }
 
-    // Validar acompañantes: si se indicó número > 0, todos deben tener nombre y documento
-    for (var i = 0; i < _numeroAcompanantes; i++) {
-      final nombre = i < _nombreAcompCtrls.length
-          ? _nombreAcompCtrls[i].text.trim()
-          : '';
-      final cedula = i < _cedulaAcompCtrls.length
-          ? _cedulaAcompCtrls[i].text.trim()
-          : '';
+    // Validar acompañantes: todos deben tener nombre y documento
+    for (final acompanante in _acompanantes) {
+      final nombre = (acompanante['nombre'] ?? '').trim();
+      final cedula = (acompanante['numero_documento'] ?? '').trim();
       if (nombre.isEmpty || cedula.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Completa nombre y cédula de todos los acompañantes'),
+            content: Text(
+              'Completa nombre y documento de todos los acompañantes',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -287,58 +480,46 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     });
 
     try {
-      // Construir string de acompañantes a partir de los controllers
-      final parts = <String>[];
-      for (var i = 0; i < _numeroAcompanantes; i++) {
-        final nombre = i < _nombreAcompCtrls.length
-            ? _nombreAcompCtrls[i].text.trim()
-            : '';
-        final cedula = i < _cedulaAcompCtrls.length
-            ? _cedulaAcompCtrls[i].text.trim()
-            : '';
-        if (nombre.isNotEmpty || cedula.isNotEmpty) {
-          parts.add(
-            '${nombre.isNotEmpty ? nombre : ''} ${cedula.isNotEmpty ? cedula : ''}'
-                .trim(),
-          );
-        }
-      }
-
-      final acompText = parts.join(' , ');
-
       // Si es reserva personalizada, incluir fecha/hora en observaciones
       String personalizadaText = '';
       if (_esPersonalizada &&
           _fechaPersonalizada != null &&
           _horaPersonalizada != null) {
         personalizadaText =
-            'Fecha deseada: ${_fechaPersonalizada!.toLocal().toString().split(' ')[0]} ${_horaPersonalizada!.format(context)}';
+            'Fecha deseada: ${_fechaPersonalizada!.toLocal().toString().split(' ')[0]} ${_horaPersonalizada != null ? _horaDeseadaApi(_horaPersonalizada!) : ''}';
       }
 
       final observacionesBase = _observacionesController.text.trim();
       final bufferParts = <String>[];
       if (observacionesBase.isNotEmpty) bufferParts.add(observacionesBase);
       if (personalizadaText.isNotEmpty) bufferParts.add(personalizadaText);
-      if (acompText.isNotEmpty) bufferParts.add('Acompañantes: $acompText');
 
       final observacionesFinal = bufferParts.join('\n');
 
-      final acompanantesPayload =
-          List.generate(_numeroAcompanantes, (i) {
-                final nombre = i < _nombreAcompCtrls.length
-                    ? _nombreAcompCtrls[i].text.trim()
-                    : '';
-                final cedula = i < _cedulaAcompCtrls.length
-                    ? _cedulaAcompCtrls[i].text.trim()
-                    : '';
-                return {'nombre_completo': nombre, 'numero_documento': cedula};
-              })
-              .where(
-                (m) =>
-                    (m['nombre_completo']?.isNotEmpty ?? false) ||
-                    (m['numero_documento']?.isNotEmpty ?? false),
-              )
-              .toList();
+      final acompanantesPayload = _acompanantes.map((acompanante) {
+        final nombre = (acompanante['nombre'] ?? '').trim();
+        final apellido = (acompanante['apellido'] ?? '').trim();
+        final payload = <String, dynamic>{
+          'nombre': nombre,
+          'apellido': apellido.isEmpty ? '-' : apellido,
+        };
+
+        final tipoDocumento = (acompanante['tipo_documento'] ?? '').trim();
+        final numeroDocumento = (acompanante['numero_documento'] ?? '').trim();
+        final telefono = (acompanante['telefono'] ?? '').trim();
+        final fechaNacimiento = (acompanante['fecha_nacimiento'] ?? '').trim();
+
+        if (tipoDocumento.isNotEmpty) payload['tipo_documento'] = tipoDocumento;
+        if (numeroDocumento.isNotEmpty) {
+          payload['numero_documento'] = numeroDocumento;
+        }
+        if (telefono.isNotEmpty) payload['telefono'] = telefono;
+        if (fechaNacimiento.isNotEmpty) {
+          payload['fecha_nacimiento'] = fechaNacimiento;
+        }
+
+        return payload;
+      }).toList();
 
       if (_esPersonalizada) {
         final payload = <String, dynamic>{
@@ -349,7 +530,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               .toIso8601String()
               .split('T')
               .first,
-          'hora_deseada': _horaPersonalizada!.format(context),
+          'hora_deseada': _horaDeseadaApi(_horaPersonalizada!),
           'observaciones': observacionesFinal,
           if (acompanantesPayload.isNotEmpty)
             'acompanantes': acompanantesPayload,
@@ -382,15 +563,43 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         cantidadPersonas: _cantidadPersonas,
         metodoPago: _metodoPago,
         observaciones: observacionesFinal,
-        acompanantes: acompanantesPayload,
+        acompanantes:
+            acompanantesPayload.isNotEmpty ? acompanantesPayload : null,
       );
+
+      if (acompanantesPayload.isNotEmpty && !_usarProgramacion) {
+        var fallos = 0;
+        for (final acompanante in acompanantesPayload) {
+          try {
+            await _reservaService.agregarAcompanante(
+              idReserva: nuevaReserva.id,
+              nombre: (acompanante['nombre'] ?? '').toString(),
+              apellido: (acompanante['apellido'] ?? '-').toString(),
+              numeroDocumento: (acompanante['numero_documento'] ?? '')
+                  .toString(),
+            );
+          } catch (_) {
+            fallos += 1;
+          }
+        }
+
+        if (fallos > 0 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Reserva creada, pero $fallos acompañante(s) no se guardaron.',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
 
       if (!mounted) return;
 
       // Actualizar lista de reservas en el provider
       if (mounted) {
-        // ignore: use_build_context_synchronously
-        await context.read<ReservaProvider>().cargarReservas(
+        await _reservaProvider.cargarReservas(
           idCliente: idCliente,
         );
       }
@@ -409,7 +618,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       // Navegar a detalle de la nueva reserva
       if (mounted) {
         // Limpiar servicios seleccionados para próxima reserva
-        context.read<ServicioProvider>().limpiarSeleccion();
+        _servicioProvider.limpiarSeleccion();
 
         context.pop();
         // Esperar a que se cierre esta pantalla
@@ -455,7 +664,15 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       ),
       body: Consumer<ProgramacionProvider>(
         builder: (context, progProvider, _) {
-          _programacionSeleccionada ??= progProvider.programacionSeleccionada;
+          final syncProgramacion = progProvider.programacionSeleccionada;
+          if (_programacionSeleccionada == null && syncProgramacion != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              if (_programacionSeleccionada == null) {
+                setState(() => _programacionSeleccionada = syncProgramacion);
+              }
+            });
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -468,6 +685,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
                 /// SECCIÓN 1: Seleccionar Programación
                 _buildSeccionProgramacion(progProvider),
+                const SizedBox(height: 24),
+
+                /// SECCIÓN 1.5: Recomendaciones
+                _buildSeccionRecomendaciones(),
                 const SizedBox(height: 24),
 
                 /// SECCIÓN 2: Cantidad de Personas
@@ -679,41 +900,178 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 return DropdownMenuItem<int>(value: id, child: Text(nombre));
               })
               .toList(),
-          onChanged: _cargando
-              ? null
-              : (v) => setState(() => _idRutaSeleccionada = v),
+          onChanged: _cargando ? null : _onRutaSeleccionada,
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _pickFechaPersonalizada,
-                icon: const Icon(Icons.calendar_today),
-                label: Text(
-                  _fechaPersonalizada == null
-                      ? 'Seleccionar fecha'
-                      : _fechaPersonalizada!.toLocal().toString().split(' ')[0],
-                ),
+        if (_idRutaSeleccionada == null)
+          const Text(
+            'Selecciona una ruta para cargar el calendario de disponibilidad.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          )
+        else ...[
+          if (_cargandoFechasOcupadas)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: const [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('Cargando disponibilidad...'),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _pickHoraPersonalizada,
-                icon: const Icon(Icons.schedule),
-                label: Text(
-                  _horaPersonalizada == null
-                      ? 'Seleccionar hora'
-                      : _horaPersonalizada!.format(context),
-                ),
+          if (_errorFechasOcupadas != null)
+            Container(
+              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Text(
+                'No se pudieron cargar las reservas. Puedes elegir una fecha, pero confirma con soporte.',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
               ),
             ),
-          ],
-        ),
+          TableCalendar(
+            firstDay: DateTime.now().subtract(const Duration(days: 365)),
+            lastDay: DateTime.now().add(const Duration(days: 365 * 2)),
+            focusedDay: _focusedCalendarDay,
+            selectedDayPredicate: (day) =>
+                _fechaPersonalizada != null &&
+                isSameDay(_fechaPersonalizada, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              if (_esDiaDeshabilitado(selectedDay)) return;
+              setState(() {
+                _fechaPersonalizada = selectedDay;
+                _focusedCalendarDay = focusedDay;
+              });
+            },
+            enabledDayPredicate: (day) => !_esDiaDeshabilitado(day),
+            calendarFormat: CalendarFormat.month,
+            availableGestures: AvailableGestures.horizontalSwipe,
+            startingDayOfWeek: StartingDayOfWeek.monday,
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) =>
+                  _buildCalendarDayCell(day),
+              todayBuilder: (context, day, focusedDay) =>
+                  _buildCalendarDayCell(day, isToday: true),
+              selectedBuilder: (context, day, focusedDay) =>
+                  _buildCalendarDayCell(day, isSelected: true),
+              disabledBuilder: (context, day, focusedDay) =>
+                  _buildCalendarDayCell(day),
+              outsideBuilder: (context, day, focusedDay) =>
+                  _buildCalendarDayCell(day, isOutside: true),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _buildLegendItem(Colors.green.shade400, 'Disponible'),
+              _buildLegendItem(Colors.grey.shade200, 'Pasado', strike: true),
+              _buildLegendItem(
+                Colors.grey.shade300,
+                'Día reservado/ocupado',
+                bordered: true,
+                strike: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Nota: otros días pueden verse deshabilitados porque el viaje de ${_duracionDiasRuta()} día(s) chocaría con fechas ya ocupadas.',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _pickHoraPersonalizada,
+                  icon: const Icon(Icons.schedule),
+                  label: Text(
+                    _horaPersonalizada == null
+                        ? 'Seleccionar hora'
+                        : _horaPersonalizada!.format(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         const Text('Nota: esta reserva es directa y no pasa por programación.'),
       ],
+    );
+  }
+
+  Widget _buildSeccionRecomendaciones() {
+    if (_idRutaSeleccionada == null || _idRutaSeleccionada! <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final ruta = context.read<CatalogoProvider>().getRutaById(
+      _idRutaSeleccionada!,
+    );
+    if (ruta is! Map<String, dynamic>) {
+      return const SizedBox.shrink();
+    }
+
+    final recomendaciones =
+        (ruta['recomendaciones_participantes'] ??
+                ruta['recomendacionesParticipantes'] ??
+                '')
+            .toString()
+            .trim();
+
+    if (recomendaciones.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.orange.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.orange.shade50,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Recomendaciones para participantes',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            recomendaciones,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade800,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -757,45 +1115,29 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   Widget _buildSeccionAcompanantes() {
+    final maxAcompanantes = _maxAcompanantes();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Acompañantes (se guardarán en Observaciones)',
+          'Acompañantes',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Esta informacion es crucial para la obtencion de polizas de seguro.',
+          'Agrega los datos de cada acompañante para la póliza de seguro.',
           style: TextStyle(fontSize: 12, color: Colors.grey),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            const Text('Número de acompañantes:'),
-            const SizedBox(width: 12),
-            IconButton(
-              onPressed: _cargando || _numeroAcompanantes <= 0
-                  ? null
-                  : () {
-                      setState(() {
-                        _numeroAcompanantes--;
-                        if (_nombreAcompCtrls.isNotEmpty)
-                          _nombreAcompCtrls.removeLast().dispose();
-                        if (_cedulaAcompCtrls.isNotEmpty)
-                          _cedulaAcompCtrls.removeLast().dispose();
-                        _syncCantidadPersonas();
-                      });
-                    },
-              icon: const Icon(Icons.remove_circle_outline),
-            ),
-            Text('$_numeroAcompanantes'),
-            IconButton(
+            Text('Agregados: ${_acompanantes.length}/$maxAcompanantes'),
+            const Spacer(),
+            ElevatedButton.icon(
               onPressed: _cargando
                   ? null
                   : () {
-                      final maxAcompanantes = _maxAcompanantes();
-                      if (_numeroAcompanantes >= maxAcompanantes) {
+                      if (_acompanantes.length >= maxAcompanantes) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -805,19 +1147,15 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                         );
                         return;
                       }
-                      setState(() {
-                        _numeroAcompanantes++;
-                        _nombreAcompCtrls.add(TextEditingController());
-                        _cedulaAcompCtrls.add(TextEditingController());
-                        _syncCantidadPersonas();
-                      });
+                      _showAgregarAcompananteModal();
                     },
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Agregar'),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_numeroAcompanantes == 0)
+        if (_acompanantes.isEmpty)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -828,49 +1166,72 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           )
         else
           Column(
-            children: List.generate(_numeroAcompanantes, (i) {
-              final nombreCtrl = _nombreAcompCtrls.length > i
-                  ? _nombreAcompCtrls[i]
-                  : TextEditingController();
-              final cedulaCtrl = _cedulaAcompCtrls.length > i
-                  ? _cedulaAcompCtrls[i]
-                  : TextEditingController();
-              if (_nombreAcompCtrls.length <= i)
-                _nombreAcompCtrls.add(nombreCtrl);
-              if (_cedulaAcompCtrls.length <= i)
-                _cedulaAcompCtrls.add(cedulaCtrl);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+            children: List.generate(_acompanantes.length, (i) {
+              final acompanante = _acompanantes[i];
+              final nombre = (acompanante['nombre'] ?? '').trim();
+              final apellido = (acompanante['apellido'] ?? '').trim();
+              final documento = (acompanante['numero_documento'] ?? '').trim();
+              final tipoDocumento = (acompanante['tipo_documento'] ?? '')
+                  .trim();
+              final telefono = (acompanante['telefono'] ?? '').trim();
+
+              final titulo = apellido.isNotEmpty
+                  ? '$nombre $apellido'
+                  : nombre.isNotEmpty
+                  ? nombre
+                  : 'Acompañante sin nombre';
+
+              final subtitulo = [
+                if (tipoDocumento.isNotEmpty || documento.isNotEmpty)
+                  '${tipoDocumento.isNotEmpty ? '$tipoDocumento ' : ''}$documento'
+                      .trim(),
+                if (telefono.isNotEmpty) 'Tel: $telefono',
+              ].where((item) => item.trim().isNotEmpty).join(' • ');
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: nombreCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'Nombre completo',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titulo,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
+                          if (subtitulo.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                subtitulo,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: cedulaCtrl,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          hintText: 'Cédula',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
+                    IconButton(
+                      onPressed: _cargando
+                          ? null
+                          : () {
+                              setState(() {
+                                _acompanantes.removeAt(i);
+                                _syncCantidadPersonas();
+                              });
+                            },
+                      icon: const Icon(Icons.delete_outline),
                     ),
                   ],
                 ),
@@ -881,58 +1242,169 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     );
   }
 
-  void _showAgregarAcompananteDialog() {
+  void _showAgregarAcompananteModal() {
     final nombreCtrl = TextEditingController();
-    final cedulaCtrl = TextEditingController();
+    final apellidoCtrl = TextEditingController();
+    final documentoCtrl = TextEditingController();
+    final telefonoCtrl = TextEditingController();
+    DateTime? fechaNacimiento;
+    String? tipoDocumento;
 
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nuevo acompañante'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nombreCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre completo'),
-            ),
-            TextField(
-              controller: cedulaCtrl,
-              decoration: const InputDecoration(labelText: 'Número documento'),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final nombre = nombreCtrl.text.trim();
-              final cedula = cedulaCtrl.text.trim();
-              if (nombre.isEmpty || cedula.isEmpty) return;
-              setState(() {
-                final maxAcompanantes = _maxAcompanantes();
-                if (_numeroAcompanantes >= maxAcompanantes) {
-                  return;
-                }
-                // Mantener lista histórica y sincronizar con los controllers mostrados
-                _acompanantes.add({'nombreCompleto': nombre, 'cedula': cedula});
-                _numeroAcompanantes++;
-                _nombreAcompCtrls.add(TextEditingController(text: nombre));
-                _cedulaAcompCtrls.add(TextEditingController(text: cedula));
-                _syncCantidadPersonas();
-              });
-              Navigator.of(context).pop();
-            },
-            child: const Text('Agregar'),
-          ),
-        ],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-    );
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Agregar acompañante',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(modalContext).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nombreCtrl,
+                      decoration: const InputDecoration(labelText: 'Nombre *'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: apellidoCtrl,
+                      decoration: const InputDecoration(labelText: 'Apellido'),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: tipoDocumento,
+                      items: const [
+                        DropdownMenuItem(value: 'CC', child: Text('CC')),
+                        DropdownMenuItem(value: 'TI', child: Text('TI')),
+                        DropdownMenuItem(value: 'CE', child: Text('CE')),
+                        DropdownMenuItem(value: 'PP', child: Text('PP')),
+                        DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                      ],
+                      onChanged: (value) => setModalState(() {
+                        tipoDocumento = value;
+                      }),
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo documento',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: documentoCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'Numero documento *',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: telefonoCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'Telefono'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setModalState(() {
+                            fechaNacimiento = picked;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(
+                        fechaNacimiento == null
+                            ? 'Fecha de nacimiento'
+                            : '${fechaNacimiento!.year}-${fechaNacimiento!.month.toString().padLeft(2, '0')}-${fechaNacimiento!.day.toString().padLeft(2, '0')}',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final nombre = nombreCtrl.text.trim();
+                          final apellido = apellidoCtrl.text.trim();
+                          final numeroDocumento = documentoCtrl.text.trim();
+                          final telefono = telefonoCtrl.text.trim();
+
+                          if (nombre.isEmpty || numeroDocumento.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Nombre y documento son obligatorios',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setState(() {
+                            _acompanantes.add({
+                              'nombre': nombre,
+                              'apellido': apellido,
+                              'tipo_documento': tipoDocumento ?? '',
+                              'numero_documento': numeroDocumento,
+                              'telefono': telefono,
+                              'fecha_nacimiento': fechaNacimiento == null
+                                  ? ''
+                                  : '${fechaNacimiento!.year}-${fechaNacimiento!.month.toString().padLeft(2, '0')}-${fechaNacimiento!.day.toString().padLeft(2, '0')}',
+                            });
+                            _syncCantidadPersonas();
+                          });
+
+                          Navigator.of(modalContext).pop();
+                        },
+                        child: const Text('Guardar acompañante'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      nombreCtrl.dispose();
+      apellidoCtrl.dispose();
+      documentoCtrl.dispose();
+      telefonoCtrl.dispose();
+    });
   }
 
   Widget _buildSeccionPago() {
@@ -1039,6 +1511,9 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                           _esPersonalizada = true;
                           _seleccionarFincaDirecta = false;
                         });
+                        if (_idRutaSeleccionada != null) {
+                          _cargarFechasOcupadas(_idRutaSeleccionada!);
+                        }
                       },
               ),
               if (!_onlyRutaMode)

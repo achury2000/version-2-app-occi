@@ -28,6 +28,9 @@ dependencies:
   
   # Utilidades
   intl: ^0.20.2
+
+  # Calendario
+  table_calendar: ^3.1.2
   
   # Formularios
   flutter_form_builder: ^10.2.0

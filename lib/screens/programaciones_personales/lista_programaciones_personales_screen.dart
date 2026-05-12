@@ -22,7 +22,9 @@ class _ListaProgramacionesPersonalesScreenState
   @override
   void initState() {
     super.initState();
-    _cargarProgramaciones();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cargarProgramaciones();
+    });
   }
 
   Future<void> _cargarProgramaciones() async {

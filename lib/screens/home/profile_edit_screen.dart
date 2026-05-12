@@ -22,6 +22,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _fechaNacimientoController;
   late TextEditingController _generoController;
 
+  bool _controladoresInicializados = false;
+
   final List<String> _tiposDocumento = [
     'Cédula',
     'Pasaporte',
@@ -53,6 +55,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   void initState() {
     super.initState();
     print('🔍 [ProfileEditScreen] Pantalla abierta');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_controladoresInicializados) return;
+    _controladoresInicializados = true;
     _initializeControllers();
   }
 

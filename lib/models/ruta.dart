@@ -13,6 +13,8 @@ class Ruta {
   final double rating;
   final int resenas;
   final bool disponible;
+  final String? recomendacionesParticipantes;
+  final String? briefingOperativoEquipo;
 
   Ruta({
     required this.id,
@@ -29,6 +31,8 @@ class Ruta {
     required this.rating,
     required this.resenas,
     required this.disponible,
+    this.recomendacionesParticipantes,
+    this.briefingOperativoEquipo,
   });
 
   factory Ruta.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,7 @@ class Ruta {
       if (value is num) return value.toDouble();
       return 0.0;
     }
+
     return Ruta(
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? 'Sin nombre',
@@ -51,10 +56,17 @@ class Ruta {
       precio: parsePrice(json['precio']),
       capacidad: json['capacidad'] ?? 0,
       dificultad: json['dificultad'] ?? 'moderado',
-      incluye: json['incluye'] != null ? List<String>.from(json['incluye']) : [],
+      incluye: json['incluye'] != null
+          ? List<String>.from(json['incluye'])
+          : [],
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       resenas: json['resenas'] ?? 0,
       disponible: json['disponible'] ?? true,
+      recomendacionesParticipantes:
+          json['recomendaciones_participantes'] ??
+          json['recomendacionesParticipantes'],
+      briefingOperativoEquipo:
+          json['briefing_operativo_equipo'] ?? json['briefingOperativoEquipo'],
     );
   }
 
@@ -74,6 +86,8 @@ class Ruta {
       'rating': rating,
       'resenas': resenas,
       'disponible': disponible,
+      'recomendaciones_participantes': recomendacionesParticipantes,
+      'briefing_operativo_equipo': briefingOperativoEquipo,
     };
   }
 }

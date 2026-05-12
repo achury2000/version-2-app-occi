@@ -67,7 +67,9 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
   @override
   void initState() {
     super.initState();
-    _cargarPerfil();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cargarPerfil();
+    });
   }
 
   @override

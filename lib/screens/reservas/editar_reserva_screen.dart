@@ -22,6 +22,18 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
   late List<int> _serviciosSeleccionados;
   late TextEditingController _observacionesController;
   bool _cargando = false;
+  bool _proveedoresCapturados = false;
+  late ServicioProvider _servicioProvider;
+  late ReservaProvider _reservaProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_proveedoresCapturados) return;
+    _proveedoresCapturados = true;
+    _servicioProvider = context.read<ServicioProvider>();
+    _reservaProvider = context.read<ReservaProvider>();
+  }
 
   @override
   void initState() {
@@ -36,11 +48,10 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
 
     // Cargar servicios seleccionados en el provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context
-            .read<ServicioProvider>()
-            .cargarServiciosSeleccionados(_serviciosSeleccionados);
-      }
+      if (!mounted) return;
+      context
+          .read<ServicioProvider>()
+          .cargarServiciosSeleccionados(_serviciosSeleccionados);
     });
   }
 
@@ -79,12 +90,10 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       if (!mounted) return;
 
       // Limpiar servicios
-      context.read<ServicioProvider>().limpiarSeleccion();
+      _servicioProvider.limpiarSeleccion();
 
       // Actualizar provider
-      await context
-          .read<ReservaProvider>()
-          .obtenerDetalle(widget.reserva.id);
+      await _reservaProvider.obtenerDetalle(widget.reserva.id);
 
       if (!mounted) return;
 

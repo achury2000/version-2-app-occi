@@ -23,6 +23,10 @@ class Reserva {
   final List<dynamic>? fincas;
   final List<dynamic>? servicios;
   final List<dynamic>? acompanantes;
+  /// Nombre de ruta en listados planos del API (`mis-reservas`).
+  final String? rutaNombreListado;
+  /// Nombre de finca en listados planos del API (`mis-reservas`).
+  final String? fincaNombreListado;
 
   Reserva({
     required this.id,
@@ -46,6 +50,8 @@ class Reserva {
     this.fincas,
     this.servicios,
     this.acompanantes,
+    this.rutaNombreListado,
+    this.fincaNombreListado,
   });
 
   factory Reserva.fromJson(Map<String, dynamic> json) {
@@ -66,6 +72,21 @@ class Reserva {
       return null;
     }
 
+    String? nonEmptyStr(dynamic v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    final rawInicio =
+        json['fecha_inicio'] ??
+        json['fecha_salida'] ??
+        json['finca_fecha_checkin'];
+    final rawFin =
+        json['fecha_fin'] ??
+        json['fecha_regreso'] ??
+        json['finca_fecha_checkout'];
+
     return Reserva(
       id: parseInt(json['id'] ?? json['id_reserva']) ?? 0,
       idCliente: parseInt(json['id_cliente']),
@@ -76,18 +97,15 @@ class Reserva {
           json['apellido_cliente'] ??
           json['apellido'],
       idProgramacion: parseInt(json['id_programacion']),
-      fechaReserva: json['fecha_reserva'] != null
-          ? DateTime.tryParse(json['fecha_reserva'].toString())
+      fechaReserva: () {
+        final raw = json['fecha_reserva'] ?? json['fecha_creacion'];
+        return raw != null ? DateTime.tryParse(raw.toString()) : null;
+      }(),
+      fechaInicio: rawInicio != null
+          ? DateTime.tryParse(rawInicio.toString())
           : null,
-      fechaInicio: (json['fecha_inicio'] ?? json['fecha_salida']) != null
-          ? DateTime.tryParse(
-              (json['fecha_inicio'] ?? json['fecha_salida']).toString(),
-            )
-          : null,
-      fechaFin: (json['fecha_fin'] ?? json['fecha_regreso']) != null
-          ? DateTime.tryParse(
-              (json['fecha_fin'] ?? json['fecha_regreso']).toString(),
-            )
+      fechaFin: rawFin != null
+          ? DateTime.tryParse(rawFin.toString())
           : null,
       cantidadPersonas: parseInt(json['cantidad_personas']),
       precioTotal: parsePrice(json['precio_total'] ?? json['monto_total']),
@@ -104,6 +122,8 @@ class Reserva {
       fincas: json['fincas'],
       servicios: json['servicios'],
       acompanantes: json['acompanantes'],
+      rutaNombreListado: nonEmptyStr(json['ruta_nombre']),
+      fincaNombreListado: nonEmptyStr(json['finca_nombre']),
     );
   }
 
@@ -148,26 +168,115 @@ class Reserva {
   /// Verifica si el pago está hecho
   bool get pagoPagada => estadoPago?.toLowerCase() == 'pagada';
 
+  /// Alojamiento en finca (no salida programada de ruta).
+  bool get esReservaFinca {
+    if (fincas != null && fincas!.isNotEmpty) return true;
+    final o = (observaciones ?? '').toLowerCase();
+    return o.contains('finca:');
+  }
+
+  /// Personas: detalle programación, u orientativo desde notas ("Personas: N").
+  int? get cantidadPersonasEfectiva {
+    if (cantidadPersonas != null && cantidadPersonas! > 0) {
+      return cantidadPersonas;
+    }
+    final o = observaciones;
+    if (o == null || o.isEmpty) return null;
+    final m = RegExp(
+      r'Personas:\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(o);
+    if (m != null) return int.tryParse(m.group(1)!);
+    return null;
+  }
+
+  double? _numDesdeMap(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
+  }
+
+  /// Subtotal hospedaje desde API detalle finca.
+  double? get subtotalFinca {
+    if (fincas == null || fincas!.isEmpty) return null;
+    final f = fincas!.first;
+    if (f is! Map) return null;
+    return _numDesdeMap(f['subtotal']);
+  }
+
+  int? get nochesFinca {
+    if (fincas == null || fincas!.isEmpty) return null;
+    final f = fincas!.first;
+    if (f is! Map) return null;
+    final n = f['numero_noches'];
+    if (n is int) return n;
+    return int.tryParse(n?.toString() ?? '');
+  }
+
+  double? get precioPorNocheFinca {
+    if (fincas == null || fincas!.isEmpty) return null;
+    final f = fincas!.first;
+    if (f is! Map) return null;
+    return _numDesdeMap(f['precio_por_noche']);
+  }
+
   /// Verifica si tiene comprobante de pago
   bool get tieneComprobante =>
       comprobantePago != null && comprobantePago!.isNotEmpty;
 
   /// Obtiene el nombre de la ruta o finca (si está disponible)
   String get nombreExperiencia {
-    final rutaNombre = (programaciones != null && programaciones!.isNotEmpty)
-        ? (programaciones![0]['ruta_nombre'] ??
-              programaciones![0]['nombre_ruta'])
-        : null;
+    String? u(String? s) {
+      if (s == null) return null;
+      final t = s.trim();
+      return t.isEmpty ? null : t;
+    }
 
-    if (rutaNombre != null && rutaNombre.toString().trim().isNotEmpty) {
-      return rutaNombre.toString();
+    final obs = u(observaciones);
+    if (obs != null && obs.toLowerCase().contains('finca:')) {
+      final m = RegExp(
+        r'Finca:\s*([^|]+)',
+        caseSensitive: false,
+      ).firstMatch(obs);
+      if (m != null) {
+        final n = m.group(1)?.trim();
+        if (n != null && n.isNotEmpty) return n;
+      }
+    }
+
+    String? desdeMapa(dynamic item) {
+      if (item is! Map) return null;
+      final n = item['nombre'] ?? item['nombre_finca'] ?? item['finca_nombre'];
+      return n != null ? u(n.toString()) : null;
+    }
+
+    final planoRuta = u(rutaNombreListado);
+    if (planoRuta != null) return planoRuta;
+
+    final planoFinca = u(fincaNombreListado);
+    if (planoFinca != null) return planoFinca;
+
+    if (fincas != null && fincas!.isNotEmpty) {
+      final n = desdeMapa(fincas!.first);
+      if (n != null) return n;
     }
 
     if (programaciones != null && programaciones!.isNotEmpty) {
-      return programaciones![0]['nombre_ruta'] ??
-          programaciones![0]['nombre_finca'] ??
-          'Experiencia';
+      final p0 = programaciones!.first;
+      if (p0 is Map) {
+        for (final key in const [
+          'ruta_nombre',
+          'nombre_ruta',
+          'nombre_finca',
+        ]) {
+          final v = p0[key];
+          if (v != null && v.toString().trim().isNotEmpty) {
+            return v.toString();
+          }
+        }
+      }
     }
+
     return 'Experiencia';
   }
 

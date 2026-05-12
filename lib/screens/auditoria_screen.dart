@@ -21,7 +21,9 @@ class _AuditoriaScreenState extends State<AuditoriaScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarRegistros();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cargarRegistros();
+    });
   }
 
   Future<void> _cargarRegistros() async {

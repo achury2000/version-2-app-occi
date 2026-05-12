@@ -39,6 +39,18 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     return '';
   }
 
+  String _rutaStringValue(List<String> keys) {
+    if (widget.ruta is! Map) return '';
+    for (final key in keys) {
+      final value = widget.ruta[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) return text;
+      }
+    }
+    return '';
+  }
+
   Future<void> _loadRutaImages() async {
     final idRuta = _rutaId();
     final urls = idRuta > 0
@@ -523,6 +535,12 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final recomendacionesParticipantes = _rutaStringValue([
+      'recomendaciones_participantes',
+      'recomendacionesParticipantes',
+      'recomendaciones',
+    ]);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalles de la Ruta'),
@@ -609,6 +627,12 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
 
             // Descripción
             _buildSection('Descripción', widget.ruta['descripcion'] ?? ''),
+
+            if (recomendacionesParticipantes.isNotEmpty)
+              _buildSection(
+                'Recomendaciones para participantes',
+                recomendacionesParticipantes,
+              ),
 
             // Qué incluye
             if (widget.ruta.containsKey('incluye')) ...[

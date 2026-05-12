@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalogo_provider.dart';
+import '../../providers/cliente_provider.dart';
 import '../../services/solicitud_service.dart';
 
 class CrearSolicitudScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
   final TextEditingController _observacionesCtrl = TextEditingController();
-  List<Map<String, String>> _acompanantes = [];
+  final List<Map<String, String>> _acompanantes = [];
   bool _enviando = false;
 
   @override
@@ -49,9 +50,33 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
     if (hora != null) setState(() => _horaSeleccionada = hora);
   }
 
+  /// Misma convención que [CrearReservaScreen] / backend (`hora_deseada`).
+  String _horaDeseadaApi(TimeOfDay t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   Future<void> _submit() async {
     if (_idRutaSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona una ruta')));
+      return;
+    }
+    if (_fechaSeleccionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona la fecha deseada')),
+      );
+      return;
+    }
+
+    final idCliente = context.read<ClienteProvider>().cliente?.id;
+    if (idCliente == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontró el perfil de cliente. Completa tu perfil.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -62,7 +87,7 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
       final nombre = (a['nombreCompleto'] ?? '').trim();
       final ced = (a['cedula'] ?? '').trim();
       if (nombre.isEmpty && ced.isEmpty) return '';
-      return '${nombre} ${ced}'.trim();
+      return '$nombre $ced'.trim();
     }).where((s) => s.isNotEmpty).toList();
 
     final acompText = parts.join(' , ');
@@ -70,20 +95,29 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
         ? acompText
         : (_observacionesCtrl.text.trim() + (acompText.isNotEmpty ? '\nAcompañantes: $acompText' : ''));
 
+    /// POST /api/solicitudes exige `id_cliente`, `id_ruta`, `fecha_deseada` (ver `solicitudController`).
     final payload = <String, dynamic>{
+      'id_cliente': idCliente,
       'id_ruta': _idRutaSeleccionada,
-      if (_fechaSeleccionada != null) 'fecha_salida': _fechaSeleccionada!.toIso8601String().split('T').first,
-      if (_horaSeleccionada != null) 'hora_salida': _horaSeleccionada!.format(context),
+      'cantidad_personas': 1 + _acompanantes.length,
+      'fecha_deseada': _fechaSeleccionada!.toIso8601String().split('T').first,
+      if (_horaSeleccionada != null)
+        'hora_deseada': _horaDeseadaApi(_horaSeleccionada!),
       if (observacionesCombined.isNotEmpty) 'observaciones': observacionesCombined,
       if (_acompanantes.isNotEmpty)
-        'acompanantes': _acompanantes.map((a) => {
-              'nombre_completo': a['nombreCompleto'] ?? '',
-              'numero_documento': a['cedula'] ?? ''
-            }).toList(),
+        'acompanantes': _acompanantes
+            .map(
+              (a) => {
+                'nombre_completo': a['nombreCompleto'] ?? '',
+                'numero_documento': a['cedula'] ?? '',
+              },
+            )
+            .toList(),
     };
 
     try {
       final id = await _service.crear(payload);
+      if (!mounted) return;
       if (id != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solicitud creada: #$id'), backgroundColor: Colors.green));
         Navigator.of(context).pop();
@@ -91,9 +125,10 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
         throw Exception('ID no devuelto');
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
     } finally {
-      setState(() => _enviando = false);
+      if (mounted) setState(() => _enviando = false);
     }
   }
 

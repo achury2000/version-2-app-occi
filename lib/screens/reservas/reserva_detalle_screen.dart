@@ -11,7 +11,7 @@ class ReservaDetalleScreen extends StatefulWidget {
   final int idReserva;
 
   const ReservaDetalleScreen({Key? key, required this.idReserva})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<ReservaDetalleScreen> createState() => _ReservaDetalleScreenState();
@@ -25,33 +25,57 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   bool _cargandoQr = false;
   String? _qrUrl;
   bool _procesandoPago = false;
+  bool _puedeEditar = false;
+  bool _cargaIniciada = false;
+
+  // Providers capturados en didChangeDependencies — evitar context.read/
+  // Provider.of tras await (assertion _dependents.isEmpty en Provider).
+  late ReservaProvider _reservaProvider;
+  late ClienteProvider _clienteProvider;
 
   final ReservaService _reservaService = ReservaService();
 
+  /// Compatible con detalle abierto solo con GoRouter o encima de otras
+  /// pantallas imperativas (ej. Home → Finca → Detalle): evita mezclar
+  /// `go` con una pila `Navigator.push` en el mismo frame y asserts en framework.
+  void _irAlInicioSeguro() {
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.popUntil((route) => route.isFirst);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go('/home');
+    });
+  }
+
   @override
-  void initState() {
-    super.initState();
-    _cargarDetalle();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reservaProvider = Provider.of<ReservaProvider>(context, listen: false);
+    _clienteProvider = Provider.of<ClienteProvider>(context, listen: false);
+    if (!_cargaIniciada) {
+      _cargaIniciada = true;
+      _cargarDetalle();
+    }
   }
 
   void _cargarDetalle() async {
     try {
-      final provider = context.read<ReservaProvider>();
-      final reserva = await provider.obtenerDetalle(widget.idReserva);
-      if (mounted) {
-        setState(() {
-          _reserva = reserva;
-          _cargando = false;
-        });
-      }
+      final reserva = await _reservaProvider.obtenerDetalle(widget.idReserva);
+      if (!mounted) return;
+      setState(() {
+        _reserva = reserva;
+        _cargando = false;
+        _puedeEditar = _reservaProvider.puedeEditarse(reserva);
+      });
       await _cargarQr(reserva.id);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Error al cargar detalle: $e';
-          _cargando = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _error = 'Error al cargar detalle: $e';
+        _cargando = false;
+      });
     }
   }
 
@@ -63,12 +87,29 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     });
 
     final url = await _reservaService.getQrReserva(idReserva);
+    final safeUrl = _normalizeQrUrl(url);
 
     if (!mounted) return;
     setState(() {
-      _qrUrl = url;
+      _qrUrl = safeUrl;
       _cargandoQr = false;
     });
+  }
+
+  String? _normalizeQrUrl(String? url) {
+    if (url == null) return null;
+    // 1. Limpiamos cualquier salto de línea, espacios invisibles o retornos de carro
+    final cleanUrl = url.replaceAll('\n', '').replaceAll('\r', '').trim();
+    if (cleanUrl.isEmpty) return null;
+    if (!cleanUrl.startsWith('http')) return null;
+    if (cleanUrl.contains('/api/reservas/')) return null;
+    // 2. Codificamos la URL para que Flutter soporte nombres como "descarga (1).png"
+    try {
+      // Uri.parse arregla automáticamente la mayoría de los problemas de formato
+      return Uri.parse(cleanUrl).toString();
+    } catch (e) {
+      return cleanUrl;
+    }
   }
 
   void _mostrarConfirmacionCancelacion() {
@@ -134,7 +175,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
     });
 
     try {
-      await context.read<ReservaProvider>().cancelarReserva(
+      await _reservaProvider.cancelarReserva(
         _reserva!.id,
         motivo: motivo.isNotEmpty ? motivo : null,
       );
@@ -178,9 +219,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.home_outlined),
-              onPressed: () {
-                context.go('/home');
-              },
+              onPressed: _irAlInicioSeguro,
             ),
           ],
         ),
@@ -196,9 +235,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.home_outlined),
-              onPressed: () {
-                context.go('/home');
-              },
+              onPressed: _irAlInicioSeguro,
             ),
           ],
         ),
@@ -231,9 +268,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.home_outlined),
-            onPressed: () {
-              context.go('/home');
-            },
+            onPressed: _irAlInicioSeguro,
           ),
         ],
       ),
@@ -336,44 +371,90 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   }
 
   Widget _buildSeccionGeneral(Reserva reserva) {
+    final esFinca = reserva.esReservaFinca;
+    final filas = <Widget>[
+      const Text(
+        'Información General',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
+      ),
+      const SizedBox(height: 12),
+      _buildFilaDetalle(
+        'ID Reserva',
+        '#${reserva.id}',
+        Icons.confirmation_number,
+      ),
+      _buildFilaDetalle(
+        'Fecha de Reserva',
+        _formatDate(reserva.fechaReserva),
+        Icons.calendar_today,
+      ),
+    ];
+
+    if (esFinca) {
+      final nombreFinca = reserva.fincas != null && reserva.fincas!.isNotEmpty
+          ? (() {
+              final f = reserva.fincas!.first;
+              if (f is Map) {
+                final n = f['nombre_finca'] ?? f['nombre'];
+                if (n != null && n.toString().trim().isNotEmpty) {
+                  return n.toString().trim();
+                }
+              }
+              return null;
+            })()
+          : null;
+      if (nombreFinca != null) {
+        filas.add(
+          _buildFilaDetalle('Finca', nombreFinca, Icons.holiday_village),
+        );
+      }
+      filas.add(
+        _buildFilaDetalle(
+          'Tipo',
+          'Alojamiento (finca)',
+          Icons.night_shelter,
+        ),
+      );
+    } else {
+      if (reserva.idProgramacion != null && reserva.idProgramacion! > 0) {
+        filas.add(
+          _buildFilaDetalle(
+            'Programación ID',
+            '#${reserva.idProgramacion}',
+            Icons.schedule,
+          ),
+        );
+      }
+      filas.add(
+        _buildFilaDetalle(
+          'Tipo',
+          'Salida programada (ruta)',
+          Icons.hiking,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Información General',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildFilaDetalle(
-          'ID Reserva',
-          '#${reserva.id}',
-          Icons.confirmation_number,
-        ),
-        _buildFilaDetalle(
-          'Fecha de Reserva',
-          _formatDate(reserva.fechaReserva),
-          Icons.calendar_today,
-        ),
-        _buildFilaDetalle(
-          'Programación ID',
-          '#${reserva.idProgramacion}',
-          Icons.schedule,
-        ),
-      ],
+      children: filas,
     );
   }
 
   Widget _buildSeccionFechas(Reserva reserva) {
+    final titulo =
+        reserva.esReservaFinca ? 'Fechas de hospedaje' : 'Fechas de estadía';
+    final entradaLabel = reserva.esReservaFinca ? 'Check-in' : 'Entrada';
+    final salidaLabel = reserva.esReservaFinca ? 'Check-out' : 'Salida';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Fechas de Estadía',
-          style: TextStyle(
+        Text(
+          titulo,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.grey,
@@ -381,13 +462,13 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         ),
         const SizedBox(height: 12),
         _buildFilaDetalle(
-          'Entrada',
+          entradaLabel,
           _formatDate(reserva.fechaInicio),
           Icons.check_circle_outline,
           colors: Colors.green,
         ),
         _buildFilaDetalle(
-          'Salida',
+          salidaLabel,
           _formatDate(reserva.fechaFin),
           Icons.exit_to_app,
           colors: Colors.red,
@@ -417,10 +498,11 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         const SizedBox(height: 12),
         _buildFilaDetalle(
           'Personas',
-          '${reserva.cantidadPersonas}',
+          '${reserva.cantidadPersonasEfectiva ?? '—'}',
           Icons.people,
         ),
-        if (reserva.acompanantes != null &&
+        if (!reserva.esReservaFinca &&
+            reserva.acompanantes != null &&
             (reserva.acompanantes as List).isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -435,6 +517,95 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   }
 
   Widget _buildSeccionPrecio(Reserva reserva) {
+    if (reserva.esReservaFinca) {
+      final pn = reserva.precioPorNocheFinca;
+      final noches = reserva.nochesFinca;
+      final subt = reserva.subtotalFinca;
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (pn != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Precio por noche',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    '\$${pn.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            if (pn != null && noches != null) const SizedBox(height: 8),
+            if (noches != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Noches', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    '$noches',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            if ((pn != null || noches != null) &&
+                reserva.cantidadPersonasEfectiva != null)
+              const SizedBox(height: 8),
+            if (reserva.cantidadPersonasEfectiva != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Personas (estimado)',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    '${reserva.cantidadPersonasEfectiva}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            const Divider(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total hospedaje',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '\$${(subt ?? reserva.precioTotal ?? 0).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -466,7 +637,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             children: [
               const Text('Cantidad', style: TextStyle(color: Colors.grey)),
               Text(
-                '${reserva.cantidadPersonas}',
+                '${reserva.cantidadPersonasEfectiva ?? '—'}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -582,17 +753,17 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                         onPressed: _procesandoPago
                             ? null
                             : () async {
-                                final picked = await FilePicker.platform
-                                    .pickFiles(
-                                      type: FileType.custom,
-                                      withData: true,
-                                      allowedExtensions: const [
-                                        'jpg',
-                                        'jpeg',
-                                        'png',
-                                        'pdf',
-                                      ],
-                                    );
+                                final picked =
+                                    await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  withData: true,
+                                  allowedExtensions: const [
+                                    'jpg',
+                                    'jpeg',
+                                    'png',
+                                    'pdf',
+                                  ],
+                                );
                                 if (picked != null && picked.files.isNotEmpty) {
                                   setModalState(() {
                                     comprobante = picked.files.first;
@@ -615,9 +786,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                               : () async {
                                   final monto = double.tryParse(
                                     montoController.text.trim().replaceAll(
-                                      ',',
-                                      '.',
-                                    ),
+                                          ',',
+                                          '.',
+                                        ),
                                   );
 
                                   if (monto == null || monto <= 0) {
@@ -636,20 +807,16 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                                   try {
                                     final idPago = await _reservaService
                                         .registrarPagoReserva(
-                                          idReserva: reserva.id,
-                                          monto: monto,
-                                          metodoPago: metodoPago,
-                                          referencia: referenciaController.text
-                                              .trim(),
-                                        );
+                                      idReserva: reserva.id,
+                                      monto: monto,
+                                      metodoPago: metodoPago,
+                                      referencia:
+                                          referenciaController.text.trim(),
+                                    );
 
                                     if (idPago != null && comprobante != null) {
-                                      final idCliente =
-                                          reserva.idCliente ??
-                                          context
-                                              .read<ClienteProvider>()
-                                              .cliente
-                                              ?.id;
+                                      final idCliente = reserva.idCliente ??
+                                          _clienteProvider.cliente?.id;
 
                                       if (idCliente == null) {
                                         throw Exception(
@@ -659,11 +826,11 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
 
                                       await _reservaService
                                           .subirComprobantePago(
-                                            idPago: idPago,
-                                            archivo: comprobante!,
-                                            idCliente: idCliente,
-                                            idReserva: reserva.id,
-                                          );
+                                        idPago: idPago,
+                                        archivo: comprobante!,
+                                        idCliente: idCliente,
+                                        idReserva: reserva.id,
+                                      );
                                     }
 
                                     if (!mounted || !modalContext.mounted) {
@@ -951,7 +1118,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   }
 
   Widget _buildBotonesAccion(Reserva reserva) {
-    final puedeEditar = context.read<ReservaProvider>().puedeEditarse(reserva);
+    final puedeEditar = _puedeEditar;
     final puedesCancelar = reserva.puedeSerCancelada;
     final tieneComprobante = reserva.tieneComprobante;
 

@@ -53,6 +53,12 @@ class CatalogoProvider extends ChangeNotifier {
       'incluye': raw['incluye'] is List
           ? List<String>.from(raw['incluye'])
           : <String>[],
+      'recomendaciones_participantes':
+          (raw['recomendaciones_participantes'] ??
+                  raw['recomendacionesParticipantes'] ??
+                  raw['recomendaciones'] ??
+                  '')
+              .toString(),
       'disponible': raw['estado'] is bool ? raw['estado'] : true,
     };
   }

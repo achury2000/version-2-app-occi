@@ -30,6 +30,15 @@ class ApiService {
     return endpoint.startsWith('/') ? endpoint : '/$endpoint';
   }
 
+  /// Login/registro: 401 es credenciales incorrectas, no sesión expirada.
+  bool _esPeticionCredenciales(RequestOptions o) {
+    final p = o.uri.path.toLowerCase();
+    return p.contains('/auth/login') ||
+        p.contains('/auth/register') ||
+        p.contains('/auth/forgot-password') ||
+        p.contains('/auth/reset-password');
+  }
+
   /// Inicializa Dio con configuración predeterminada e interceptor JWT
   void _initializeDio() {
     _dio = Dio(
@@ -66,10 +75,11 @@ class ApiService {
           return handler.next(response);
         },
         onError: (error, handler) {
-          // Si el servidor devuelve 401, el token expiró
           if (error.response?.statusCode == 401) {
-            print('❌ [ApiService] Error 401: Token expirado o inválido');
-            _tokenService.clearSession();
+            if (!_esPeticionCredenciales(error.requestOptions)) {
+              print('❌ [ApiService] Error 401: Token expirado o inválido');
+              _tokenService.clearSession();
+            }
           }
           return handler.next(error);
         },
@@ -203,17 +213,32 @@ class ApiService {
       message =
           '❌ Acceso denegado: No tienes permisos para esta acción. Verifica que hayas iniciado sesión correctamente.';
     } else if (error.response?.statusCode == 401) {
-      print(
-        '🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)',
-      );
-      message = '❌ Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+      if (_esPeticionCredenciales(error.requestOptions)) {
+        final data = error.response?.data;
+        if (data is Map) {
+          message =
+              data['message']?.toString() ??
+              data['error']?.toString() ??
+              'Correo o contraseña incorrectos';
+        } else {
+          message = 'Correo o contraseña incorrectos';
+        }
+      } else {
+        print(
+          '🔐 [ApiService] Error 401 - No Autorizado (Token inválido/expirado)',
+        );
+        message =
+            '❌ Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+      }
     } else if (error.type == DioExceptionType.connectionTimeout) {
       message = 'Timeout: No se puede conectar al servidor';
     } else if (error.type == DioExceptionType.receiveTimeout) {
       message = 'Timeout: El servidor tardó demasiado en responder';
     } else if (error.type == DioExceptionType.connectionError) {
       message = 'Error de conexión: Verifica tu conexión a internet';
-    } else if (error.response != null) {
+    } else if (error.response != null &&
+        error.response?.statusCode != 401 &&
+        error.response?.statusCode != 403) {
       // Intentar extraer el mensaje del JSON de respuesta
       final responseData = error.response?.data;
       print('⚠️ [ApiService] Response data type: ${responseData.runtimeType}');

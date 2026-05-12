@@ -314,6 +314,8 @@ extension ReservaX on Reserva {
     List<dynamic>? fincas,
     List<dynamic>? servicios,
     List<dynamic>? acompanantes,
+    String? rutaNombreListado,
+    String? fincaNombreListado,
   }) {
     return Reserva(
       id: id ?? this.id,
@@ -337,6 +339,8 @@ extension ReservaX on Reserva {
       fincas: fincas ?? this.fincas,
       servicios: servicios ?? this.servicios,
       acompanantes: acompanantes ?? this.acompanantes,
+      rutaNombreListado: rutaNombreListado ?? this.rutaNombreListado,
+      fincaNombreListado: fincaNombreListado ?? this.fincaNombreListado,
     );
   }
 }

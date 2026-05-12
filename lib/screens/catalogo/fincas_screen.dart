@@ -223,7 +223,7 @@ class _FincasScreenState extends State<FincasScreen> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () async => await catalogoProvider.fetchFincas(),
+                    onRefresh: catalogoProvider.fetchFincas,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: fincas.length,

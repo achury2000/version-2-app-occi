@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../../providers/cliente_provider.dart';
-import '../../providers/servicio_provider.dart';
+import '../../models/servicio.dart';
+import '../../services/servicio_service.dart';
 import '../../services/reserva_service.dart';
 import '../../services/finca_service.dart';
+import '../reservas/reserva_detalle_screen.dart';
 
 class FincaDetailScreen extends StatefulWidget {
   final dynamic finca;
@@ -20,6 +23,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
   late final PageController _pageController;
   final ReservaService _reservaService = ReservaService();
   final FincaService _fincaService = FincaService();
+  final ServicioService _servicioService = ServicioService();
 
   late List<String> _images;
 
@@ -81,6 +85,33 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     return '$d/$m/$y';
   }
 
+  DateTime _normalizeDay(DateTime day) {
+    return DateTime(day.year, day.month, day.day);
+  }
+
+  String _dayKey(DateTime day) {
+    final normalized = _normalizeDay(day);
+    final y = normalized.year.toString().padLeft(4, '0');
+    final m = normalized.month.toString().padLeft(2, '0');
+    final d = normalized.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  bool _isPastDay(DateTime day) {
+    final today = _normalizeDay(DateTime.now());
+    return _normalizeDay(day).isBefore(today);
+  }
+
+  bool _rangeHasReserved(DateTime start, DateTime end, Set<String> reserved) {
+    var current = _normalizeDay(start);
+    final last = _normalizeDay(end);
+    while (!current.isAfter(last)) {
+      if (reserved.contains(_dayKey(current))) return true;
+      current = current.add(const Duration(days: 1));
+    }
+    return false;
+  }
+
   /// Mostrar confirmación antes de agregar un servicio (para uso en modal)
   Future<bool?> _mostrarConfirmacionAgregarServicioEnModal(
     String nombreServicio,
@@ -107,10 +138,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 children: [
                   const Text(
                     'Servicio a agregar:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -135,10 +163,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
             const SizedBox(height: 16),
             const Text(
               '¿Estás seguro de agregar este servicio a tu reserva?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -187,10 +212,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                 children: [
                   const Text(
                     'Servicio a quitar:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -206,10 +228,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
             const SizedBox(height: 16),
             const Text(
               '¿Estás seguro de quitar este servicio de tu reserva?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -220,9 +239,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text(
               'Sí, quitar',
               style: TextStyle(color: Colors.white),
@@ -262,12 +279,22 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     final precio = (widget.finca['precio_por_noche'] ?? 0).toDouble();
     final notasController = TextEditingController();
     final personalizadosController = TextEditingController();
+    final fincaId = _fincaId();
 
     DateTime? fechaInicio;
     DateTime? fechaFin;
     int cantidadPersonas = 1;
     bool isSaving = false;
     final Set<int> serviciosSeleccionados = {};
+    List<Servicio> serviciosDisponiblesModal = [];
+    bool serviciosModalLoading = false;
+    String? serviciosModalError;
+    final Set<String> fechasOcupadas = {};
+    bool isLoadingFechas = false;
+    String? errorFechas;
+    bool fechasInicializadas = false;
+    DateTime focusedDay = DateTime.now();
+    RangeSelectionMode rangeSelectionMode = RangeSelectionMode.toggledOn;
 
     await showModalBottomSheet(
       context: context,
@@ -279,13 +306,106 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            void safeSetModalState(VoidCallback fn) {
+              if (!context.mounted) return;
+              setModalState(fn);
+            }
+
+            if (!fechasInicializadas) {
+              fechasInicializadas = true;
+              Future.microtask(() async {
+                if (fincaId <= 0) {
+                  errorFechas = 'No se pudo determinar la finca.';
+                  safeSetModalState(() {});
+                  return;
+                }
+                safeSetModalState(() {
+                  isLoadingFechas = true;
+                  errorFechas = null;
+                });
+                try {
+                  final fechas = await _fincaService.getFechasOcupadas(fincaId);
+                  fechasOcupadas
+                    ..clear()
+                    ..addAll(fechas);
+                } catch (_) {
+                  errorFechas = 'No se pudieron cargar las fechas ocupadas.';
+                } finally {
+                  safeSetModalState(() {
+                    isLoadingFechas = false;
+                  });
+                }
+              });
+            }
             final noches =
                 (fechaInicio != null &&
                     fechaFin != null &&
                     fechaFin!.isAfter(fechaInicio!))
                 ? fechaFin!.difference(fechaInicio!).inDays
                 : 0;
-            final total = precio * noches * cantidadPersonas;
+            final total = precio * noches;
+            bool isReservedDay(DateTime day) =>
+                fechasOcupadas.contains(_dayKey(day));
+            bool isDisabledDay(DateTime day) =>
+                _isPastDay(day) || isReservedDay(day);
+            final theme = Theme.of(context);
+
+            Widget buildCalendarCell(
+              DateTime day, {
+              bool isSelected = false,
+              bool isToday = false,
+              bool isOutside = false,
+            }) {
+              final isPast = _isPastDay(day);
+              final isReserved = isReservedDay(day);
+              Color background = Colors.transparent;
+              Color textColor = Colors.black87;
+              Border? border;
+              TextDecoration? decoration;
+              FontWeight fontWeight = FontWeight.normal;
+
+              if (isSelected) {
+                background = theme.colorScheme.primary;
+                textColor = Colors.white;
+                fontWeight = FontWeight.w600;
+              } else if (isReserved) {
+                background = Colors.grey.shade300;
+                textColor = Colors.grey.shade700;
+                border = Border.all(color: Colors.grey.shade500);
+                decoration = TextDecoration.lineThrough;
+              } else if (isPast) {
+                background = Colors.grey.shade200;
+                textColor = Colors.grey.shade500;
+                decoration = TextDecoration.lineThrough;
+              }
+
+              if (isOutside) {
+                textColor = textColor.withOpacity(0.4);
+              }
+
+              if (isToday && !isSelected && !isReserved) {
+                border ??= Border.all(color: theme.colorScheme.primary);
+              }
+
+              return Container(
+                margin: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: background,
+                  borderRadius: BorderRadius.circular(8),
+                  border: border,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    color: textColor,
+                    decoration: decoration,
+                    fontWeight: fontWeight,
+                  ),
+                ),
+              );
+            }
+
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -351,94 +471,244 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Fecha de entrada *',
+                        'Fechas de estadía *',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
-                      InkWell(
-                        onTap: isSaving
-                            ? null
-                            : () async {
-                                final tomorrow = DateTime.now().add(
-                                  const Duration(days: 1),
-                                );
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: tomorrow,
-                                  firstDate: tomorrow,
-                                  lastDate: DateTime.now().add(
-                                    const Duration(days: 730),
-                                  ),
-                                );
-                                if (picked != null) {
-                                  setModalState(() {
-                                    fechaInicio = picked;
-                                    if (fechaFin != null &&
-                                        !fechaFin!.isAfter(picked)) {
-                                      fechaFin = picked.add(
-                                        const Duration(days: 1),
-                                      );
-                                    }
-                                  });
-                                }
-                              },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
-                          ),
+                      if (isLoadingFechas)
+                        Row(
+                          children: const [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 8),
+                            Text('Cargando disponibilidad...'),
+                          ],
+                        )
+                      else if (errorFechas != null)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.shade200),
                           ),
                           child: Text(
-                            fechaInicio != null
-                                ? _formatUiDate(fechaInicio!)
-                                : 'Seleccionar fecha de entrada',
+                            'No se pudieron cargar las reservas. Puedes elegir fechas, pero confirma con soporte.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Fecha de salida *',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      TableCalendar(
+                        key: ValueKey<String>('finca_reserva_cal_$fincaId'),
+                        firstDay: _normalizeDay(DateTime.now()),
+                        lastDay: _normalizeDay(
+                          DateTime.now(),
+                        ).add(const Duration(days: 730)),
+                        focusedDay: focusedDay,
+                        selectedDayPredicate: (day) =>
+                            fechaInicio != null && isSameDay(fechaInicio, day),
+                        rangeStartDay: fechaInicio,
+                        rangeEndDay: fechaFin,
+                        rangeSelectionMode: rangeSelectionMode,
+                        enabledDayPredicate: (day) => !isDisabledDay(day),
+                        onDaySelected: (selectedDay, focused) {
+                          if (isDisabledDay(selectedDay)) return;
+                          setModalState(() {
+                            fechaInicio = selectedDay;
+                            fechaFin = null;
+                            focusedDay = focused;
+                            rangeSelectionMode = RangeSelectionMode.toggledOn;
+                          });
+                        },
+                        onRangeSelected: (start, end, focused) {
+                          if (start == null) return;
+                          if (end == null) {
+                            setModalState(() {
+                              fechaInicio = start;
+                              fechaFin = null;
+                              focusedDay = focused;
+                              rangeSelectionMode = RangeSelectionMode.toggledOn;
+                            });
+                            return;
+                          }
+
+                          if (isDisabledDay(start) || isDisabledDay(end)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No se pueden seleccionar fechas pasadas o reservadas',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (_rangeHasReserved(start, end, fechasOcupadas)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'El rango seleccionado contiene fechas ocupadas',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setModalState(() {
+                            fechaInicio = start;
+                            fechaFin = end;
+                            focusedDay = focused;
+                            rangeSelectionMode = RangeSelectionMode.toggledOn;
+                          });
+                        },
+                        calendarFormat: CalendarFormat.month,
+                        availableGestures: AvailableGestures.horizontalSwipe,
+                        startingDayOfWeek: StartingDayOfWeek.monday,
+                        headerStyle: const HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
+                        ),
+                        calendarStyle: CalendarStyle(
+                          rangeHighlightColor: theme.colorScheme.primary
+                              .withOpacity(0.12),
+                          rangeStartDecoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          rangeEndDecoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          withinRangeTextStyle: const TextStyle(
+                            color: Colors.black87,
+                          ),
+                        ),
+                        calendarBuilders: CalendarBuilders(
+                          defaultBuilder: (context, day, focusedDay) =>
+                              buildCalendarCell(day),
+                          todayBuilder: (context, day, focusedDay) =>
+                              buildCalendarCell(day, isToday: true),
+                          selectedBuilder: (context, day, focusedDay) =>
+                              buildCalendarCell(day, isSelected: true),
+                          disabledBuilder: (context, day, focusedDay) =>
+                              buildCalendarCell(day),
+                          outsideBuilder: (context, day, focusedDay) =>
+                              buildCalendarCell(day, isOutside: true),
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      InkWell(
-                        onTap: isSaving
-                            ? null
-                            : () async {
-                                final minDate = (fechaInicio ?? DateTime.now())
-                                    .add(const Duration(days: 1));
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: minDate,
-                                  firstDate: minDate,
-                                  lastDate: DateTime.now().add(
-                                    const Duration(days: 730),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                fechaInicio != null
+                                    ? 'Entrada: ${_formatUiDate(fechaInicio!)}'
+                                    : 'Entrada: seleccionar',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                fechaFin != null
+                                    ? 'Salida: ${_formatUiDate(fechaFin!)}'
+                                    : 'Salida: seleccionar',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 6,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade400,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Disponible',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Pasado',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(3),
+                                  border: Border.all(
+                                    color: Colors.grey.shade500,
                                   ),
-                                );
-                                if (picked != null) {
-                                  setModalState(() => fechaFin = picked);
-                                }
-                              },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Ocupado',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
                           ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            fechaFin != null
-                                ? _formatUiDate(fechaFin!)
-                                : 'Seleccionar fecha de salida',
-                          ),
-                        ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -449,7 +719,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                       Row(
                         children: [
                           IconButton(
-                            onPressed: isSaving || cantidadPersonas <= 1
+                            onPressed:
+                                isSaving || cantidadPersonas <= 1
                                 ? null
                                 : () => setModalState(() => cantidadPersonas--),
                             icon: const Icon(Icons.remove_circle_outline),
@@ -504,95 +775,126 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Sección de Servicios
-                      Consumer<ServicioProvider>(
-                        builder: (context, servicioProvider, _) {
-                          return ExpansionTile(
-                            title: const Text(
-                              'Servicios adicionales',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                      // Servicios: carga local (evita Consumer + notifyListeners al cerrar el modal).
+                      ExpansionTile(
+                        title: const Text(
+                          'Servicios adicionales',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          serviciosSeleccionados.isEmpty
+                              ? 'Ninguno seleccionado'
+                              : '${serviciosSeleccionados.length} seleccionados',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        onExpansionChanged: (expanded) {
+                          if (!expanded ||
+                              serviciosModalLoading ||
+                              serviciosDisponiblesModal.isNotEmpty) {
+                            return;
+                          }
+                          Future.microtask(() async {
+                            safeSetModalState(() {
+                              serviciosModalLoading = true;
+                              serviciosModalError = null;
+                            });
+                            try {
+                              final lista = await _servicioService
+                                  .obtenerServiciosDisponibles();
+                              if (!context.mounted) return;
+                              safeSetModalState(() {
+                                serviciosDisponiblesModal = lista;
+                                serviciosModalLoading = false;
+                              });
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              safeSetModalState(() {
+                                serviciosModalError = e.toString();
+                                serviciosModalLoading = false;
+                              });
+                            }
+                          });
+                        },
+                        children: [
+                          if (serviciosModalLoading)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF2D5016),
+                              ),
+                            )
+                          else if (serviciosModalError != null)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                'No se pudieron cargar servicios',
+                                style: TextStyle(
+                                  color: Colors.orange.shade800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            )
+                          else if (serviciosDisponiblesModal.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text('No hay servicios disponibles'),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: serviciosDisponiblesModal.map((servicio) {
+                                  return CheckboxListTile(
+                                    value: serviciosSeleccionados.contains(
+                                      servicio.id,
+                                    ),
+                                    onChanged: (value) async {
+                                      if (value == true) {
+                                        final confirmar =
+                                            await _mostrarConfirmacionAgregarServicioEnModal(
+                                          servicio.nombre,
+                                          servicio.precio,
+                                        );
+                                        if (confirmar == true) {
+                                          setModalState(() {
+                                            serviciosSeleccionados.add(
+                                              servicio.id,
+                                            );
+                                          });
+                                        }
+                                      } else {
+                                        final confirmar =
+                                            await _mostrarConfirmacionQuitarServicioEnModal(
+                                          servicio.nombre,
+                                        );
+                                        if (confirmar == true) {
+                                          setModalState(() {
+                                            serviciosSeleccionados.remove(
+                                              servicio.id,
+                                            );
+                                          });
+                                        }
+                                      }
+                                    },
+                                    title: Text(servicio.nombre),
+                                    subtitle: Text(
+                                      '\$${servicio.precio.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        color: Colors.teal,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    dense: true,
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  );
+                                }).toList(),
                               ),
                             ),
-                            subtitle: Text(
-                              serviciosSeleccionados.isEmpty
-                                  ? 'Ninguno seleccionado'
-                                  : '${serviciosSeleccionados.length} seleccionados',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            onExpansionChanged: (expanded) {
-                              if (expanded &&
-                                  servicioProvider.servicios.isEmpty) {
-                                servicioProvider.cargarServicios();
-                              }
-                            },
-                            children: [
-                              if (servicioProvider.isLoading)
-                                const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFF2D5016),
-                                  ),
-                                )
-                              else if (servicioProvider.servicios.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Text('No hay servicios disponibles'),
-                                )
-                              else
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    children: servicioProvider.servicios
-                                        .map((servicio) {
-                                      return CheckboxListTile(
-                                        value: serviciosSeleccionados
-                                            .contains(servicio.id),
-                                        onChanged: (value) async {
-                                          if (value == true) {
-                                            // Agregar: pedir confirmación
-                                            final confirmar = await _mostrarConfirmacionAgregarServicioEnModal(
-                                              servicio.nombre,
-                                              servicio.precio,
-                                            );
-                                            if (confirmar == true) {
-                                              setModalState(() {
-                                                serviciosSeleccionados
-                                                    .add(servicio.id);
-                                              });
-                                            }
-                                          } else {
-                                            // Quitar: pedir confirmación
-                                            final confirmar = await _mostrarConfirmacionQuitarServicioEnModal(
-                                              servicio.nombre,
-                                            );
-                                            if (confirmar == true) {
-                                              setModalState(() {
-                                                serviciosSeleccionados
-                                                    .remove(servicio.id);
-                                              });
-                                            }
-                                          }
-                                        },
-                                        title: Text(servicio.nombre),
-                                        subtitle: Text(
-                                          '\$${servicio.precio.toStringAsFixed(0)}',
-                                          style: const TextStyle(
-                                            color: Colors.teal,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        dense: true,
-                                        controlAffinity:
-                                            ListTileControlAffinity.leading,
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
+                        ],
                       ),
                       // Sección de Espacios
                       Builder(
@@ -638,8 +940,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         CrossAxisAlignment.start,
                                     children: zonasComunes.map((zona) {
                                       return Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                           vertical: 8,
                                         ),
                                         child: Row(
@@ -648,8 +949,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                               width: 8,
                                               height: 8,
                                               decoration: BoxDecoration(
-                                                color:
-                                                    const Color(0xFF2D5016),
+                                                color: const Color(0xFF2D5016),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
@@ -697,7 +997,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                               maxLines: 3,
                               minLines: 2,
                               decoration: InputDecoration(
-                                hintText: 'Ej: Decoración especial, música en vivo\n(Una por línea)',
+                                hintText:
+                                    'Ej: Decoración especial, música en vivo\n(Una por línea)',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -772,6 +1073,39 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                         return;
                                       }
 
+                                      if (_isPastDay(fechaInicio!) ||
+                                          _isPastDay(fechaFin!)) {
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'No se pueden reservar fechas pasadas',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (_rangeHasReserved(
+                                        fechaInicio!,
+                                        fechaFin!,
+                                        fechasOcupadas,
+                                      )) {
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'El rango seleccionado tiene fechas ocupadas',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
                                       if (fechaFin!.isBefore(fechaInicio!)) {
                                         ScaffoldMessenger.of(
                                           this.context,
@@ -801,8 +1135,8 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                       }
 
                                       setModalState(() => isSaving = true);
+                                      var cierreModalPorExito = false;
                                       try {
-                                        final fincaId = _fincaId();
                                         if (fincaId <= 0) {
                                           throw Exception(
                                             'ID de finca inválido',
@@ -832,12 +1166,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                               ' | Personalizadas: ${personalizadosController.text.replaceAll('\n', ' | ')}';
                                         }
 
-                                        final reservaBase = await _reservaService
-                                            .crearBaseReserva(
-                                              idCliente: idCliente,
-                                              metodoPago: 'Transferencia',
-                                              observaciones: observaciones,
-                                            );
+                                        final reservaBase =
+                                            await _reservaService
+                                                .crearBaseReserva(
+                                                  idCliente: idCliente,
+                                                  metodoPago: 'Transferencia',
+                                                  observaciones: observaciones,
+                                                );
 
                                         await _reservaService
                                             .agregarFincaDetalle(
@@ -846,31 +1181,41 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                               fechaCheckin: fechaInicio!,
                                               fechaCheckout: fechaFin!,
                                               numeroNoches: noches,
-                                              precioPorNoche:
-                                                  precio * cantidadPersonas,
+                                              precioPorNoche: precio,
                                             );
 
                                         if (!mounted || !modalContext.mounted) {
                                           return;
                                         }
+                                        final idReservaOk = reservaBase.id;
                                         Navigator.of(modalContext).pop();
-                                        ScaffoldMessenger.of(
-                                          this.context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              '✅ Reserva de finca creada correctamente',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
+                                        cierreModalPorExito = true;
 
-                                        await context.pushNamed(
-                                          'reservaDetalle',
-                                          queryParameters: {
-                                            'id': reservaBase.id.toString(),
-                                          },
-                                        );
+                                        // Misma pila que abrió esta pantalla (Navigator.push desde Home).
+                                        // No mezclar con GoRouter aquí: evita assert _dependents.isEmpty al desmontar.
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (!mounted) return;
+                                          ScaffoldMessenger.of(
+                                            this.context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                '✅ Reserva de finca creada correctamente',
+                                              ),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                          if (!mounted) return;
+                                          Navigator.of(this.context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  ReservaDetalleScreen(
+                                                idReserva: idReservaOk,
+                                              ),
+                                            ),
+                                          );
+                                        });
                                       } catch (e) {
                                         if (!mounted) return;
                                         ScaffoldMessenger.of(
@@ -884,10 +1229,11 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                           ),
                                         );
                                       } finally {
-                                        notasController.dispose();
-                                        personalizadosController.dispose();
-                                        if (mounted) {
-                                          setModalState(() => isSaving = false);
+                                        if (!cierreModalPorExito &&
+                                            modalContext.mounted) {
+                                          setModalState(
+                                            () => isSaving = false,
+                                          );
                                         }
                                       }
                                     },
@@ -922,6 +1268,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
     );
 
     notasController.dispose();
+    personalizadosController.dispose();
   }
 
   @override
@@ -935,7 +1282,14 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
           IconButton(
             icon: const Icon(Icons.home_outlined),
             onPressed: () {
-              context.go('/home');
+              final router = GoRouter.of(context);
+              final nav = Navigator.of(context);
+              if (nav.canPop()) {
+                nav.popUntil((route) => route.isFirst);
+              }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                router.go('/home');
+              });
             },
           ),
         ],
@@ -1172,22 +1526,19 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
-                child: Consumer<ClienteProvider>(
-                  builder: (context, clienteProvider, _) {
-                    return ElevatedButton.icon(
-                      onPressed: () {
-                        _openReservaForm(clienteProvider);
-                      },
-                      icon: const Icon(Icons.calendar_today),
-                      label: const Text('Reservar Ahora'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0066CC),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    );
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final clienteProvider = context.read<ClienteProvider>();
+                    _openReservaForm(clienteProvider);
                   },
+                  icon: const Icon(Icons.calendar_today),
+                  label: const Text('Reservar Ahora'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0066CC),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
             ),
