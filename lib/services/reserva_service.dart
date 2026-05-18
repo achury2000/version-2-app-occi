@@ -1,5 +1,6 @@
 import 'api_service.dart';
 import '../models/reserva.dart';
+import 'token_service.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -14,6 +15,10 @@ import 'package:file_picker/file_picker.dart';
 /// - POST /api/reservas/:id/acompanante   → Agregar acompañante (auth, rol Cliente)
 class ReservaService {
   final ApiService _api = ApiService();
+  final TokenService _tokenService = TokenService();
+
+  /// Evita disparar decenas de GET a signed-url al pintar el listado (y 401 en cadena).
+  static final Map<int, Future<String?>> _signedUrlInflight = {};
 
   // Singleton
   static final ReservaService _instance = ReservaService._internal();
@@ -460,6 +465,32 @@ class ReservaService {
         if (idReserva != null) 'id_reserva': idReserva,
       },
     );
+  }
+
+  /// URL temporal para ver el comprobante si el bucket es privado.
+  Future<String?> obtenerUrlComprobanteFirmada(int idPago) async {
+    if (!await _tokenService.hasToken()) return null;
+    return _signedUrlInflight.putIfAbsent(
+      idPago,
+      () => _fetchSignedUrlOnce(idPago).whenComplete(() {
+        _signedUrlInflight.remove(idPago);
+      }),
+    );
+  }
+
+  Future<String?> _fetchSignedUrlOnce(int idPago) async {
+    try {
+      final response = await _api.get('/pagos/$idPago/comprobante/signed-url');
+      if (response is Map<String, dynamic>) {
+        final data = response['data'];
+        if (data is Map<String, dynamic>) {
+          final u = data['signedUrl'] ?? data['signed_url'];
+          final s = u?.toString().trim() ?? '';
+          if (s.startsWith('http')) return s;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<Reserva> crearBaseReserva({

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -31,17 +33,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     // Cargar catálogos y perfil cuando la pantalla se abre
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
       final authProvider = context.read<AuthProvider>();
       final clienteProvider = context.read<ClienteProvider>();
+      final catalogo = context.read<CatalogoProvider>();
 
-      context.read<CatalogoProvider>().fetchFincas();
-      context.read<CatalogoProvider>().fetchRutas();
-      context.read<ProgramacionProvider>().cargarProgramaciones();
+      // Programación y perfil en paralelo; catálogo en serie para no saturar el API.
+      unawaited(context.read<ProgramacionProvider>().cargarProgramaciones());
 
       if (authProvider.usuario?.id != null) {
-        clienteProvider.loadCliente(authProvider.usuario!.id);
+        unawaited(clienteProvider.loadCliente(authProvider.usuario!.id));
       }
+
+      await catalogo.fetchRutas();
+      if (!mounted) return;
+      await catalogo.fetchFincas();
     });
   }
 

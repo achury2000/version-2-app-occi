@@ -17,6 +17,8 @@ class Reserva {
   final String? estadoPago; // NUEVO - pendiente, pagada
   final String? metodoPago; // NUEVO - transferencia, tarjeta, efectivo
   final String? comprobantePago; // NUEVO - URL del comprobante
+  /// Último `id_pago` de la reserva (p. ej. para solicitar URL firmada del comprobante).
+  final int? idPagoReciente;
   final String? observaciones;
   final String? motivoCancelacion; // NUEVO - Motivo si se cancela
   final List<dynamic>? programaciones;
@@ -27,6 +29,9 @@ class Reserva {
   final String? rutaNombreListado;
   /// Nombre de finca en listados planos del API (`mis-reservas`).
   final String? fincaNombreListado;
+  /// Campos del listado `mis-reservas` (resumen de pagos).
+  final double? montoPagadoListado;
+  final double? montoPendienteListado;
 
   Reserva({
     required this.id,
@@ -44,6 +49,7 @@ class Reserva {
     this.estadoPago,
     this.metodoPago,
     this.comprobantePago,
+    this.idPagoReciente,
     this.observaciones,
     this.motivoCancelacion,
     this.programaciones,
@@ -52,6 +58,8 @@ class Reserva {
     this.acompanantes,
     this.rutaNombreListado,
     this.fincaNombreListado,
+    this.montoPagadoListado,
+    this.montoPendienteListado,
   });
 
   factory Reserva.fromJson(Map<String, dynamic> json) {
@@ -115,7 +123,10 @@ class Reserva {
       estado: json['estado'],
       estadoPago: json['estado_pago'],
       metodoPago: json['metodo_pago'],
-      comprobantePago: json['comprobante_pago'] ?? json['comprobante_url'],
+      comprobantePago: json['comprobante_pago'] ??
+          json['comprobante_url'] ??
+          json['ultimo_comprobante_url'],
+      idPagoReciente: parseInt(json['id_pago_reciente']),
       observaciones: json['observaciones'] ?? json['notas'],
       motivoCancelacion: json['motivo_cancelacion'], // NUEVO
       programaciones: json['programaciones'],
@@ -124,6 +135,8 @@ class Reserva {
       acompanantes: json['acompanantes'],
       rutaNombreListado: nonEmptyStr(json['ruta_nombre']),
       fincaNombreListado: nonEmptyStr(json['finca_nombre']),
+      montoPagadoListado: parsePrice(json['monto_pagado']),
+      montoPendienteListado: parsePrice(json['monto_pendiente']),
     );
   }
 
@@ -140,7 +153,8 @@ class Reserva {
       'estado': estado,
       'estado_pago': estadoPago, // NUEVO
       'metodo_pago': metodoPago, // NUEVO
-      'comprobante_pago': comprobantePago, // NUEVO
+      'comprobante_pago': comprobantePago,
+      'id_pago_reciente': idPagoReciente,
       'observaciones': observaciones,
       'motivo_cancelacion': motivoCancelacion, // NUEVO
     };
@@ -220,9 +234,10 @@ class Reserva {
     return _numDesdeMap(f['precio_por_noche']);
   }
 
-  /// Verifica si tiene comprobante de pago
+  /// Verifica si hay comprobante (URL en listado o pago reciente para URL firmada).
   bool get tieneComprobante =>
-      comprobantePago != null && comprobantePago!.isNotEmpty;
+      (comprobantePago != null && comprobantePago!.isNotEmpty) ||
+      idPagoReciente != null;
 
   /// Obtiene el nombre de la ruta o finca (si está disponible)
   String get nombreExperiencia {

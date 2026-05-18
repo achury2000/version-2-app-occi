@@ -2,8 +2,14 @@
 ///
 /// Esta clase permite cambiar entre diferentes entornos (desarrollo, testing, producción)
 /// y facilita la conexión con diferentes servidores backend
+///
+/// **Importante:** En Android nativo, `localhost` es el propio teléfono/emulador, no tu PC.
+/// - Emulador Android → por defecto `http://10.0.2.2:3000/api`
+/// - Teléfono físico → usa `flutter run --dart-define=BACKEND_BASE_URL=http://192.168.x.x:3000`
+/// - Web (Chrome) → `http://localhost:3000/api`
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class AppEnvironment {
   static const String development = 'development';
@@ -13,20 +19,49 @@ class AppEnvironment {
   // Entorno actual (cambiar según sea necesario)
   static const String currentEnvironment = development;
 
-  // URLs del backend para cada entorno
   static const Map<String, String> backendUrls = {
-    development: 'http://10.0.2.2:3000/api', // Emulador Android
-    testing: 'http://localhost:3000/api', // Testing local / Web
-    production: 'https://api.occitours.com/api', // Producción
+    development: 'http://10.0.2.2:3000/api',
+    testing: 'http://localhost:3000/api',
+    production: 'https://api.occitours.com/api',
   };
 
-  /// Obtiene la URL base según el entorno actual y la plataforma
+  /// Override: `flutter run --dart-define=BACKEND_BASE_URL=http://192.168.1.10:3000`
   static String getBackendUrl() {
-    // Si está en web, usar localhost en lugar de 10.0.2.2
-    if (kIsWeb && currentEnvironment == development) {
-      return 'http://localhost:3000/api';
+    const override = String.fromEnvironment('BACKEND_BASE_URL');
+    if (override.isNotEmpty) {
+      final o = override.trim().replaceAll(RegExp(r'/+$'), '');
+      return o.endsWith('/api') ? o : '$o/api';
     }
-    return backendUrls[currentEnvironment] ?? backendUrls[development]!;
+
+    if (kIsWeb) {
+      if (currentEnvironment == development ||
+          currentEnvironment == testing) {
+        return 'http://localhost:3000/api';
+      }
+      return backendUrls[currentEnvironment] ?? backendUrls[production]!;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      if (currentEnvironment == production) {
+        return backendUrls[production]!;
+      }
+      // `testing` apunta a localhost en el mapa; en Android eso no alcanza el backend del PC.
+      return 'http://10.0.2.2:3000/api';
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      if (currentEnvironment == production) {
+        return backendUrls[production]!;
+      }
+      return 'http://127.0.0.1:3000/api';
+    }
+
+    // Windows, Linux, macOS (Flutter desktop)
+    if (currentEnvironment == development ||
+        currentEnvironment == testing) {
+      return 'http://127.0.0.1:3000/api';
+    }
+    return backendUrls[currentEnvironment] ?? backendUrls[production]!;
   }
 
   /// Obtiene el endpoint completo

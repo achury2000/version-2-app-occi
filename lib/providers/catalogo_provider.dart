@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
+/// Cuántas peticiones de enriquecimiento (imágenes storage) van en paralelo.
+const int _kEnrichConcurrency = 4;
+
+/// Reintentos solo para timeouts / errores de conexión en el listado.
+const int _kListFetchMaxAttempts = 3;
+
 class CatalogoProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
@@ -158,6 +164,53 @@ class CatalogoProvider extends ChangeNotifier {
     }
   }
 
+  bool _esErrorConexion(Object e) {
+    final s = e.toString().toLowerCase();
+    return s.contains('timeout') ||
+        s.contains('connection') ||
+        s.contains('socketexception') ||
+        s.contains('failed host lookup');
+  }
+
+  Future<dynamic> _getWithRetry(String path) async {
+    Object? lastError;
+    for (var attempt = 1; attempt <= _kListFetchMaxAttempts; attempt++) {
+      try {
+        return await _apiService.get(path);
+      } catch (e) {
+        lastError = e;
+        if (attempt >= _kListFetchMaxAttempts || !_esErrorConexion(e)) {
+          rethrow;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
+    }
+    throw lastError ?? Exception('No se pudo obtener $path');
+  }
+
+  /// Enriquece imágenes en tandas para no saturar el servidor ni a Dio.
+  Future<void> _enrichInPlaceBatched(
+    List<dynamic> items,
+    Future<Map<String, dynamic>> Function(Map<String, dynamic>) enricher,
+  ) async {
+    for (var i = 0; i < items.length; i += _kEnrichConcurrency) {
+      final end = (i + _kEnrichConcurrency < items.length)
+          ? i + _kEnrichConcurrency
+          : items.length;
+      final futures = <Future<Map<String, dynamic>>>[];
+      for (var k = i; k < end; k++) {
+        final m = Map<String, dynamic>.from(items[k] as Map);
+        futures.add(enricher(m));
+      }
+      if (futures.isEmpty) continue;
+      final out = await Future.wait(futures);
+      for (var j = 0; j < out.length; j++) {
+        items[i + j] = out[j];
+      }
+      notifyListeners();
+    }
+  }
+
   /// Obtener lista de fincas
   Future<void> fetchFincas() async {
     _isLoadingFincas = true;
@@ -165,8 +218,7 @@ class CatalogoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Usar endpoint público de fincas disponibles para clientes móviles
-      final response = await _apiService.get('/fincas/disponibles');
+      final response = await _getWithRetry('/fincas/disponibles');
 
       if (response is List) {
         _fincas = response
@@ -182,10 +234,9 @@ class CatalogoProvider extends ChangeNotifier {
         _fincas = [];
       }
 
-      // Si no hay fincas en "disponibles", intentar obtener todas como fallback.
       if (_fincas.isEmpty) {
         try {
-          final respAll = await _apiService.get('/fincas');
+          final respAll = await _getWithRetry('/fincas');
           if (respAll is List) {
             _fincas = respAll
                 .whereType<Map<String, dynamic>>()
@@ -198,20 +249,17 @@ class CatalogoProvider extends ChangeNotifier {
                 .toList();
           }
         } catch (e) {
-          // No sobrescribimos el error principal aquí; solo registramos
           _error = _error ?? 'No se encontraron fincas disponibles';
         }
       }
 
-      if (_fincas.isNotEmpty) {
-        _fincas = await Future.wait(
-          _fincas.whereType<Map<String, dynamic>>().map(
-            _enrichFincaWithStorageImage,
-          ),
-        );
-      }
-
+      // Mostrar listado de inmediato; las fotos se cargan en segundo plano.
       _isLoadingFincas = false;
+      notifyListeners();
+
+      if (_fincas.isNotEmpty) {
+        await _enrichInPlaceBatched(_fincas, _enrichFincaWithStorageImage);
+      }
     } catch (e) {
       _error = e.toString();
       _isLoadingFincas = false;
@@ -227,8 +275,7 @@ class CatalogoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Usar endpoint público de rutas activas para clientes móviles
-      final response = await _apiService.get('/rutas/activas');
+      final response = await _getWithRetry('/rutas/activas');
 
       if (response is List) {
         _rutas = response
@@ -244,15 +291,12 @@ class CatalogoProvider extends ChangeNotifier {
         _rutas = [];
       }
 
-      if (_rutas.isNotEmpty) {
-        _rutas = await Future.wait(
-          _rutas.whereType<Map<String, dynamic>>().map(
-            _enrichRutaWithStorageImage,
-          ),
-        );
-      }
-
       _isLoadingRutas = false;
+      notifyListeners();
+
+      if (_rutas.isNotEmpty) {
+        await _enrichInPlaceBatched(_rutas, _enrichRutaWithStorageImage);
+      }
     } catch (e) {
       _error = e.toString();
       _isLoadingRutas = false;

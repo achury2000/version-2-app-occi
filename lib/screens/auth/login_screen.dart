@@ -127,7 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 60,
+                // En el primer frame la altura puede ser 0 → evita minHeight negativo.
+                minHeight: (MediaQuery.sizeOf(context).height - 60)
+                    .clamp(0.0, double.infinity),
               ),
               child: Column(
                 children: [

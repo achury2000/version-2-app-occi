@@ -1,4 +1,4 @@
-package com.occitours.temp_flutter_project
+package com.occitours.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -308,6 +308,7 @@ extension ReservaX on Reserva {
     String? estadoPago,
     String? metodoPago,
     String? comprobantePago,
+    int? idPagoReciente,
     String? observaciones,
     String? motivoCancelacion,
     List<dynamic>? programaciones,
@@ -316,6 +317,8 @@ extension ReservaX on Reserva {
     List<dynamic>? acompanantes,
     String? rutaNombreListado,
     String? fincaNombreListado,
+    double? montoPagadoListado,
+    double? montoPendienteListado,
   }) {
     return Reserva(
       id: id ?? this.id,
@@ -333,6 +336,7 @@ extension ReservaX on Reserva {
       estadoPago: estadoPago ?? this.estadoPago,
       metodoPago: metodoPago ?? this.metodoPago,
       comprobantePago: comprobantePago ?? this.comprobantePago,
+      idPagoReciente: idPagoReciente ?? this.idPagoReciente,
       observaciones: observaciones ?? this.observaciones,
       motivoCancelacion: motivoCancelacion ?? this.motivoCancelacion,
       programaciones: programaciones ?? this.programaciones,
@@ -341,6 +345,8 @@ extension ReservaX on Reserva {
       acompanantes: acompanantes ?? this.acompanantes,
       rutaNombreListado: rutaNombreListado ?? this.rutaNombreListado,
       fincaNombreListado: fincaNombreListado ?? this.fincaNombreListado,
+      montoPagadoListado: montoPagadoListado ?? this.montoPagadoListado,
+      montoPendienteListado: montoPendienteListado ?? this.montoPendienteListado,
     );
   }
 }
