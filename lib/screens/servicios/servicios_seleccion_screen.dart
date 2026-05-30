@@ -6,7 +6,10 @@ import '../../providers/espacio_provider.dart';
 
 /// Pantalla para seleccionar servicios, espacios y opciones personalizadas
 class ServiciosSeleccionScreen extends StatefulWidget {
-  const ServiciosSeleccionScreen({Key? key}) : super(key: key);
+  final String? tipoServicio;
+
+  const ServiciosSeleccionScreen({Key? key, this.tipoServicio})
+      : super(key: key);
 
   @override
   State<ServiciosSeleccionScreen> createState() =>
@@ -28,8 +31,13 @@ class _ServiciosSeleccionScreenState extends State<ServiciosSeleccionScreen>
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<ServicioProvider>().cargarServicios();
-        context.read<EspacioProvider>().cargarEspacios();
+        final servicioProvider = context.read<ServicioProvider>();
+        if (widget.tipoServicio != null && widget.tipoServicio!.isNotEmpty) {
+          servicioProvider.cargarServiciosPorTipo(widget.tipoServicio!);
+        } else {
+          servicioProvider.cargarServicios();
+        }
+        // context.read<EspacioProvider>().cargarEspacios();
       }
     });
   }

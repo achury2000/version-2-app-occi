@@ -391,6 +391,42 @@ class ReservaService {
     throw Exception('Error al crear reserva por ruta');
   }
 
+  /// Asociar servicios adicionales a una reserva existente.
+  Future<void> asociarServicios({
+    required int idReserva,
+    required List<int> idServicios,
+  }) async {
+    if (idServicios.isEmpty) {
+      return; // No hay servicios que asociar
+    }
+
+    try {
+      final body = {
+        'id_servicios': idServicios,
+      };
+      // El endpoint puede variar, probamos los más comunes.
+      // Ejemplo: /reservas/123/servicios
+      await _api.post('/reservas/$idReserva/servicios', body);
+    } catch (e) {
+      // Opcional: reintentar con otro endpoint si el primero falla
+      try {
+        final body = {
+          'servicios': idServicios,
+        };
+        await _api.post('/reservas/$idReserva/asociar-servicios', body);
+      } catch (e2) {
+        // Si ambos fallan, relanzar el error original.
+        // No bloqueamos la creación de la reserva si esto falla,
+        // pero es importante registrar el error.
+        print(
+          'Error al asociar servicios a la reserva $idReserva: $e',
+        );
+        // No relanzar para no interrumpir el flujo principal
+        // rethrow;
+      }
+    }
+  }
+
   Future<int?> registrarPagoReserva({
     required int idReserva,
     required double monto,

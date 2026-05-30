@@ -141,6 +141,14 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       }
       try {
         context.read<ProgramacionProvider>().cargarProgramaciones();
+        // Cargar servicios según el modo
+        final servicioProvider = context.read<ServicioProvider>();
+        if (_onlyRutaMode) {
+          servicioProvider.cargarServiciosPorTipo('ruta');
+        } else {
+          // Podrías querer un comportamiento por defecto o diferente aquí
+          servicioProvider.cargarServicios();
+        }
       } catch (_) {}
 
       if (_esPersonalizada && _idRutaSeleccionada != null) {
@@ -498,139 +506,82 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
       final acompanantesPayload = _acompanantes.map((acompanante) {
         final nombre = (acompanante['nombre'] ?? '').trim();
-        final apellido = (acompanante['apellido'] ?? '').trim();
-        final payload = <String, dynamic>{
-          'nombre': nombre,
-          'apellido': apellido.isEmpty ? '-' : apellido,
-        };
-
-        final tipoDocumento = (acompanante['tipo_documento'] ?? '').trim();
-        final numeroDocumento = (acompanante['numero_documento'] ?? '').trim();
-        final telefono = (acompanante['telefono'] ?? '').trim();
-        final fechaNacimiento = (acompanante['fecha_nacimiento'] ?? '').trim();
-
-        if (tipoDocumento.isNotEmpty) payload['tipo_documento'] = tipoDocumento;
-        if (numeroDocumento.isNotEmpty) {
-          payload['numero_documento'] = numeroDocumento;
-        }
-        if (telefono.isNotEmpty) payload['telefono'] = telefono;
-        if (fechaNacimiento.isNotEmpty) {
-          payload['fecha_nacimiento'] = fechaNacimiento;
-        }
-
-        return payload;
+        final cedula = (acompanante['numero_documento'] ?? '').trim();
+        return {'nombre_completo': nombre, 'numero_documento': cedula};
       }).toList();
 
       if (_esPersonalizada) {
-        final payload = <String, dynamic>{
-          'id_cliente': idCliente,
-          'id_ruta': _idRutaSeleccionada,
-          'cantidad_personas': _cantidadPersonas,
-          'fecha_deseada': _fechaPersonalizada!
-              .toIso8601String()
-              .split('T')
-              .first,
-          'hora_deseada': _horaDeseadaApi(_horaPersonalizada!),
-          'observaciones': observacionesFinal,
-          if (acompanantesPayload.isNotEmpty)
+        // Crear solicitud de reserva personalizada
+        await _solicitudService.crear(
+          {
+            'id_cliente': idCliente,
+            'id_ruta': _idRutaSeleccionada!,
+            'cantidad_personas': _cantidadPersonas,
+            'fecha_salida': _fechaPersonalizada!
+                .toIso8601String()
+                .split('T')
+                .first, // YYYY-MM-DD
+            'hora_salida': _horaDeseadaApi(_horaPersonalizada!), // HH:MM
+            'observaciones': observacionesFinal,
             'acompanantes': acompanantesPayload,
-        };
-
-        final solicitudId = await _solicitudService.crear(payload);
+          },
+        );
         if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Solicitud de reserva enviada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // Crear reserva normal
+        final reservaCreada = await _reservaService.crear(
+          idCliente: idCliente,
+          idProgramacion: _programacionSeleccionada?.id,
+          idRuta: _idRutaSeleccionada,
+          cantidadPersonas: _cantidadPersonas,
+          metodoPago: _metodoPago,
+          observaciones: observacionesFinal,
+          acompanantes: acompanantesPayload,
+        );
 
-        if (solicitudId != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Solicitud #$solicitudId enviada'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          context.pop();
-          return;
-        }
-
-        throw Exception('No se pudo crear la solicitud personalizada');
-      }
-
-      final nuevaReserva = await _reservaService.crear(
-        idCliente: idCliente,
-        idProgramacion: _usarProgramacion
-            ? _programacionSeleccionada?.id
-            : null,
-        idRuta: _usarProgramacion ? null : _idRutaSeleccionada,
-        cantidadPersonas: _cantidadPersonas,
-        metodoPago: _metodoPago,
-        observaciones: observacionesFinal,
-        acompanantes:
-            acompanantesPayload.isNotEmpty ? acompanantesPayload : null,
-      );
-
-      if (acompanantesPayload.isNotEmpty && !_usarProgramacion) {
-        var fallos = 0;
-        for (final acompanante in acompanantesPayload) {
+        // **FASE 2: Asociar servicios después de crear la reserva**
+        if (reservaCreada.id > 0 && _serviciosSeleccionados.isNotEmpty) {
           try {
-            await _reservaService.agregarAcompanante(
-              idReserva: nuevaReserva.id,
-              nombre: (acompanante['nombre'] ?? '').toString(),
-              apellido: (acompanante['apellido'] ?? '-').toString(),
-              numeroDocumento: (acompanante['numero_documento'] ?? '')
-                  .toString(),
+            await _reservaService.asociarServicios(
+              idReserva: reservaCreada.id,
+              idServicios: _serviciosSeleccionados,
             );
-          } catch (_) {
-            fallos += 1;
+            // Opcional: mostrar un mensaje si la asociación es exitosa
+          } catch (e) {
+            // La reserva base se creó, pero falló la asociación de servicios.
+            // Se podría mostrar un mensaje no bloqueante.
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Reserva creada, pero no se pudieron añadir los servicios: $e',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
           }
         }
 
-        if (fallos > 0 && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Reserva creada, pero $fallos acompañante(s) no se guardaron.',
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-
-      if (!mounted) return;
-
-      // Actualizar lista de reservas en el provider
-      if (mounted) {
-        await _reservaProvider.cargarReservas(
-          idCliente: idCliente,
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Reserva creada correctamente'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
 
       if (!mounted) return;
-
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Reserva #${nuevaReserva.id} creada exitosamente'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // Navegar a detalle de la nueva reserva
-      if (mounted) {
-        // Limpiar servicios seleccionados para próxima reserva
-        _servicioProvider.limpiarSeleccion();
-
-        context.pop();
-        // Esperar a que se cierre esta pantalla
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            context.pushNamed(
-              'reservaDetalle',
-              queryParameters: {'id': nuevaReserva.id.toString()},
-            );
-          }
-        });
+      final clienteId = context.read<ClienteProvider>().cliente?.id;
+      if (clienteId != null) {
+        _reservaProvider.cargarReservas(idCliente: clienteId);
       }
+      context.go('/home');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

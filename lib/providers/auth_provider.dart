@@ -58,6 +58,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      print('❌ ERROR DE LOGIN (auth_provider.dart): $e');
       _error = _parseError(e);
       _isLoading = false;
       notifyListeners();
