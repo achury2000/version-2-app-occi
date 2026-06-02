@@ -512,20 +512,18 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
 
       if (_esPersonalizada) {
         // Crear solicitud de reserva personalizada
-        await _solicitudService.crear(
-          {
-            'id_cliente': idCliente,
-            'id_ruta': _idRutaSeleccionada!,
-            'cantidad_personas': _cantidadPersonas,
-            'fecha_salida': _fechaPersonalizada!
-                .toIso8601String()
-                .split('T')
-                .first, // YYYY-MM-DD
-            'hora_salida': _horaDeseadaApi(_horaPersonalizada!), // HH:MM
-            'observaciones': observacionesFinal,
-            'acompanantes': acompanantesPayload,
-          },
-        );
+        await _solicitudService.crear({
+          'id_cliente': idCliente,
+          'id_ruta': _idRutaSeleccionada!,
+          'cantidad_personas': _cantidadPersonas,
+          'fecha_salida': _fechaPersonalizada!
+              .toIso8601String()
+              .split('T')
+              .first, // YYYY-MM-DD
+          'hora_salida': _horaDeseadaApi(_horaPersonalizada!), // HH:MM
+          'observaciones': observacionesFinal,
+          'acompanantes': acompanantesPayload,
+        });
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1359,7 +1357,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   Widget _buildSeccionPago() {
-    const metodos = ['transferencia', 'tarjeta', 'efectivo'];
+    const metodos = ['transferencia', 'efectivo'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

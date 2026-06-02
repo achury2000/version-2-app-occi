@@ -11,7 +11,7 @@ class ReservaDetalleScreen extends StatefulWidget {
   final int idReserva;
 
   const ReservaDetalleScreen({Key? key, required this.idReserva})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<ReservaDetalleScreen> createState() => _ReservaDetalleScreenState();
@@ -413,11 +413,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         );
       }
       filas.add(
-        _buildFilaDetalle(
-          'Tipo',
-          'Alojamiento (finca)',
-          Icons.night_shelter,
-        ),
+        _buildFilaDetalle('Tipo', 'Alojamiento (finca)', Icons.night_shelter),
       );
     } else {
       if (reserva.idProgramacion != null && reserva.idProgramacion! > 0) {
@@ -430,11 +426,7 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
         );
       }
       filas.add(
-        _buildFilaDetalle(
-          'Tipo',
-          'Salida programada (ruta)',
-          Icons.hiking,
-        ),
+        _buildFilaDetalle('Tipo', 'Salida programada (ruta)', Icons.hiking),
       );
     }
 
@@ -445,8 +437,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
   }
 
   Widget _buildSeccionFechas(Reserva reserva) {
-    final titulo =
-        reserva.esReservaFinca ? 'Fechas de hospedaje' : 'Fechas de estadía';
+    final titulo = reserva.esReservaFinca
+        ? 'Fechas de hospedaje'
+        : 'Fechas de estadía';
     final entradaLabel = reserva.esReservaFinca ? 'Check-in' : 'Entrada';
     final salidaLabel = reserva.esReservaFinca ? 'Check-out' : 'Salida';
     return Column(
@@ -724,7 +717,6 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                           border: OutlineInputBorder(),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'QR', child: Text('QR')),
                           DropdownMenuItem(
                             value: 'Transferencia',
                             child: Text('Transferencia'),
@@ -753,17 +745,17 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                         onPressed: _procesandoPago
                             ? null
                             : () async {
-                                final picked =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  withData: true,
-                                  allowedExtensions: const [
-                                    'jpg',
-                                    'jpeg',
-                                    'png',
-                                    'pdf',
-                                  ],
-                                );
+                                final picked = await FilePicker.platform
+                                    .pickFiles(
+                                      type: FileType.custom,
+                                      withData: true,
+                                      allowedExtensions: const [
+                                        'jpg',
+                                        'jpeg',
+                                        'png',
+                                        'pdf',
+                                      ],
+                                    );
                                 if (picked != null && picked.files.isNotEmpty) {
                                   setModalState(() {
                                     comprobante = picked.files.first;
@@ -786,9 +778,9 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                               : () async {
                                   final monto = double.tryParse(
                                     montoController.text.trim().replaceAll(
-                                          ',',
-                                          '.',
-                                        ),
+                                      ',',
+                                      '.',
+                                    ),
                                   );
 
                                   if (monto == null || monto <= 0) {
@@ -807,15 +799,16 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
                                   try {
                                     final idPago = await _reservaService
                                         .registrarPagoReserva(
-                                      idReserva: reserva.id,
-                                      monto: monto,
-                                      metodoPago: metodoPago,
-                                      referencia:
-                                          referenciaController.text.trim(),
-                                    );
+                                          idReserva: reserva.id,
+                                          monto: monto,
+                                          metodoPago: metodoPago,
+                                          referencia: referenciaController.text
+                                              .trim(),
+                                        );
 
                                     if (idPago != null && comprobante != null) {
-                                      final idCliente = reserva.idCliente ??
+                                      final idCliente =
+                                          reserva.idCliente ??
                                           _clienteProvider.cliente?.id;
 
                                       if (idCliente == null) {
@@ -826,11 +819,11 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
 
                                       await _reservaService
                                           .subirComprobantePago(
-                                        idPago: idPago,
-                                        archivo: comprobante!,
-                                        idCliente: idCliente,
-                                        idReserva: reserva.id,
-                                      );
+                                            idPago: idPago,
+                                            archivo: comprobante!,
+                                            idCliente: idCliente,
+                                            idReserva: reserva.id,
+                                          );
                                     }
 
                                     if (!mounted || !modalContext.mounted) {
@@ -941,34 +934,107 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          if (_cargandoQr)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(12),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (_qrUrl != null && _qrUrl!.isNotEmpty)
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  _qrUrl!,
-                  width: 210,
-                  height: 210,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text('No fue posible cargar el QR.'),
+          Builder(
+            builder: (context) {
+              final Widget qrWidget;
+              if (_cargandoQr) {
+                qrWidget = const SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else if (_qrUrl != null && _qrUrl!.isNotEmpty) {
+                qrWidget = ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    _qrUrl!,
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 160,
+                      height: 160,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: const Text(
+                        'QR no disponible',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
-          else
-            const Text(
-              'El QR de pago no esta disponible aun para esta reserva.',
-              style: TextStyle(fontSize: 13, color: Colors.black87),
-            ),
+                );
+              } else {
+                qrWidget = Container(
+                  width: 160,
+                  height: 160,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: const Text(
+                    'QR no disponible',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12),
+                  ),
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  qrWidget,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Transferencia bancaria',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF7A3E00),
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Banco: Bancolombia Ahorros',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            'Cuenta: 24015712755',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            'Titular: Yeison Uribe Vega',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            'CC: 1.001.845.593',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

@@ -9,7 +9,8 @@ import '../../services/reserva_service.dart';
 class EditarReservaScreen extends StatefulWidget {
   final Reserva reserva;
 
-  const EditarReservaScreen({Key? key, required this.reserva}) : super(key: key);
+  const EditarReservaScreen({Key? key, required this.reserva})
+    : super(key: key);
 
   @override
   State<EditarReservaScreen> createState() => _EditarReservaScreenState();
@@ -49,16 +50,18 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
     // Cargar servicios seleccionados en el provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context
-          .read<ServicioProvider>()
-          .cargarServiciosSeleccionados(_serviciosSeleccionados);
+      context.read<ServicioProvider>().cargarServiciosSeleccionados(
+        _serviciosSeleccionados,
+      );
     });
   }
 
   List<int> _extraerIdsServicios() {
     if (widget.reserva.servicios == null) return [];
     final lista = (widget.reserva.servicios as List)
-        .map((s) => (s is Map ? (s['id'] ?? s['id_servicio'] as int) : s as int))
+        .map(
+          (s) => (s is Map ? (s['id'] ?? s['id_servicio'] as int) : s as int),
+        )
         .toList();
     return lista.cast<int>();
   }
@@ -84,7 +87,9 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
         idReserva: widget.reserva.id,
         cantidadPersonas: _cantidadPersonas,
         observaciones: _observacionesController.text,
-        servicios: _serviciosSeleccionados.isNotEmpty ? _serviciosSeleccionados : null,
+        servicios: _serviciosSeleccionados.isNotEmpty
+            ? _serviciosSeleccionados
+            : null,
       );
 
       if (!mounted) return;
@@ -109,10 +114,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -126,7 +128,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const metodos = ['transferencia', 'tarjeta', 'efectivo'];
+    const metodos = ['transferencia', 'efectivo'];
 
     return Scaffold(
       appBar: AppBar(
@@ -184,18 +186,12 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
         children: [
           Text(
             'Reserva #${widget.reserva.id}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             widget.reserva.nombreExperiencia,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
       ),
@@ -208,10 +204,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       children: [
         const Text(
           'Cantidad de Personas',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
@@ -255,10 +248,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       children: [
         const Text(
           'Método de Pago',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Column(
@@ -289,10 +279,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       children: [
         const Text(
           'Servicios Adicionales',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Consumer<ServicioProvider>(
@@ -305,17 +292,23 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                   setState(() {
                     _serviciosSeleccionados = resultado;
                   });
-                  servicioProvider.cargarServiciosSeleccionados(_serviciosSeleccionados);
+                  servicioProvider.cargarServiciosSeleccionados(
+                    _serviciosSeleccionados,
+                  );
                 }
               },
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: cantidad > 0 ? Colors.amber.shade300 : Colors.grey.shade300,
+                    color: cantidad > 0
+                        ? Colors.amber.shade300
+                        : Colors.grey.shade300,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: cantidad > 0 ? Colors.amber.shade50 : Colors.grey.shade50,
+                  color: cantidad > 0
+                      ? Colors.amber.shade50
+                      : Colors.grey.shade50,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -330,7 +323,9 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: cantidad > 0 ? Colors.amber.shade900 : Colors.grey,
+                            color: cantidad > 0
+                                ? Colors.amber.shade900
+                                : Colors.grey,
                           ),
                         ),
                         if (cantidad > 0)
@@ -366,10 +361,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       children: [
         const Text(
           'Observaciones',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -377,9 +369,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
           maxLines: 4,
           decoration: InputDecoration(
             hintText: 'Agrega observaciones adicionales...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.grey.shade50,
           ),
@@ -416,10 +406,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Cantidad:'),
-                  Text('$_cantidadPersonas'),
-                ],
+                children: [const Text('Cantidad:'), Text('$_cantidadPersonas')],
               ),
               const SizedBox(height: 8),
               Row(
@@ -480,9 +467,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: _cargando ? null : _actualizarReserva,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
             child: _cargando
                 ? const SizedBox(
                     height: 20,
