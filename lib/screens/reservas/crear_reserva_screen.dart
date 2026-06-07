@@ -108,8 +108,14 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     _programacionService = ProgramacionService();
     _programacionSeleccionada = widget.programacion;
     _idRutaSeleccionada = widget.idRuta;
-    _usarProgramacion =
+
+    // FIX 2: Si se abrió con una ruta pero sin programación, auto-seleccionar
+    // el tab "Reserva personalizada" para evitar mostrar un tab vacío.
+    final tieneProgFija =
         widget.idProgramacion != null || widget.programacion != null;
+    _usarProgramacion = tieneProgFija;
+    _esPersonalizada = !tieneProgFija && widget.idRuta != null;
+
     _onlyRutaMode =
         widget.idRuta != null ||
         widget.idProgramacion != null ||
@@ -582,8 +588,49 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       context.go('/home');
     } catch (e) {
       if (mounted) {
+        // FIX 3: Extraer mensaje legible del error del backend
+        String mensajeError = 'Ocurrió un error al enviar la solicitud. Intenta de nuevo.';
+        final eStr = e.toString();
+
+        // Intentar parsear DioException con respuesta JSON del backend
+        try {
+          final dioMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(eStr);
+          if (dioMatch != null) {
+            // Si el toString del error embebe JSON, intentar leerlo
+            final jsonStr = dioMatch.group(0)!;
+            // Buscar campo message o error en el string
+            final msgMatch = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(jsonStr);
+            final errMatch = RegExp(r'"error"\s*:\s*"([^"]+)"').firstMatch(jsonStr);
+            if (msgMatch != null) {
+              mensajeError = msgMatch.group(1)!;
+            } else if (errMatch != null) {
+              mensajeError = errMatch.group(1)!;
+            }
+          } else if (eStr.contains('Campos incompletos')) {
+            mensajeError = 'Por favor selecciona una fecha y ruta para la reserva personalizada.';
+          } else if (eStr.contains('SocketException') || eStr.contains('Connection refused')) {
+            mensajeError = 'No se pudo conectar al servidor. Verifica tu conexión.';
+          } else if (eStr.isNotEmpty) {
+            // Limpiar el prefijo "Exception: " del mensaje
+            mensajeError = eStr.replaceAll('Exception: ', '');
+          }
+        } catch (_) {
+          // Si el parseo falla, usar mensaje genérico
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(mensajeError)),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -1435,10 +1482,17 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           Wrap(
             spacing: 8,
             children: [
+              // FIX 2: Deshabilitar tab "Ruta programada" si se entró con ruta
+              // directa sin programación (solo aplica en _onlyRutaMode sin prog fija)
               ChoiceChip(
                 label: const Text('Ruta programada'),
                 selected: _usarProgramacion && !_esPersonalizada,
-                onSelected: _cargando
+                // Deshabilitar si la pantalla fue abierta con una ruta sin prog fija
+                onSelected: (_onlyRutaMode &&
+                        widget.idProgramacion == null &&
+                        widget.programacion == null)
+                    ? null
+                    : _cargando
                     ? null
                     : (selected) {
                         if (!selected) return;

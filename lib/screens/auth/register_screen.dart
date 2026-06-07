@@ -18,26 +18,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  bool _showPasswordHints = false; // Mostrar indicadores cuando el campo tiene foco
+
+  // Getters de validación de contraseña en tiempo real
+  String get _password => _passwordController.text;
+  bool get _hasMinLength => _password.length >= 8;
+  bool get _hasUppercase => RegExp(r'[A-Z]').hasMatch(_password);
+  bool get _hasNumber => RegExp(r'[0-9]').hasMatch(_password);
+  bool get _hasSpecialChar => RegExp(r'[^A-Za-z0-9]').hasMatch(_password);
+  bool get _passwordIsStrong => _hasMinLength && _hasUppercase && _hasNumber && _hasSpecialChar;
+
+  @override
+  void initState() {
+    super.initState();
+    // Escuchar cambios en la contraseña para actualizar indicadores en tiempo real
+    _passwordController.addListener(() => setState(() {}));
+  }
 
   String? _validateStrongPassword(String? value) {
-    if (value?.isEmpty ?? true) {
-      return 'La contraseña es requerida';
+    if (value == null || value.isEmpty) {
+      return null; // No molestar si aún no ha escrito
     }
-
-    final password = value!;
-    if (password.length < 8) {
-      return 'Debe tener al menos 8 caracteres';
+    if (!_passwordIsStrong) {
+      return '⚠️ La contraseña no cumple todos los requisitos';
     }
-    if (!RegExp(r'[A-Z]').hasMatch(password)) {
-      return 'Debe incluir al menos una letra mayúscula';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(password)) {
-      return 'Debe incluir al menos un número';
-    }
-    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
-      return 'Debe incluir al menos un carácter especial';
-    }
-
     return null;
   }
 
@@ -48,6 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
@@ -137,6 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
               children: [
                 // Email
@@ -162,11 +168,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El email es requerido';
+                    if (value == null || value.isEmpty) {
+                      return null; // No molestar si aún no ha escrito
                     }
-                    if (!value!.contains('@')) {
-                      return 'Email inválido';
+                    if (!value.contains('@')) {
+                      return '💡 Recuerda: el correo debe contener @';
+                    }
+                    if (!value.contains('.')) {
+                      return '💡 El correo debe tener un dominio válido (ej: @gmail.com)';
                     }
                     return null;
                   },
@@ -174,54 +183,91 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
 
                 // Contraseña
-                TextFormField(
-                  controller: _passwordController,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Contraseña',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
+                Focus(
+                  onFocusChange: (hasFocus) {
+                    setState(() => _showPasswordHints = hasFocus || _password.isNotEmpty);
+                  },
+                  child: TextFormField(
+                    controller: _passwordController,
+                    style: const TextStyle(
+                      color: Colors.black,
                       fontSize: 16,
                     ),
-                    prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.grey.shade700,
+                    decoration: InputDecoration(
+                      hintText: 'Contraseña',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 16,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                      prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.grey.shade700,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                  validator: _validateStrongPassword,
-                ),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Debe tener 8+ caracteres, 1 mayúscula, 1 número y 1 carácter especial.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    obscureText: _obscurePassword,
+                    validator: _validateStrongPassword,
                   ),
                 ),
+
+                // Indicadores visuales de contraseña (en tiempo real)
+                if (_showPasswordHints || _password.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Requisitos de contraseña:',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        _PasswordHintRow(
+                          label: 'Al menos 8 caracteres',
+                          isMet: _hasMinLength,
+                        ),
+                        _PasswordHintRow(
+                          label: 'Una letra mayúscula (A-Z)',
+                          isMet: _hasUppercase,
+                        ),
+                        _PasswordHintRow(
+                          label: 'Un número (0-9)',
+                          isMet: _hasNumber,
+                        ),
+                        _PasswordHintRow(
+                          label: 'Un carácter especial (!@#\$...)',
+                          isMet: _hasSpecialChar,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
+
 
                 // Confirmar Contraseña
                 TextFormField(
@@ -259,8 +305,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   obscureText: _obscureConfirmPassword,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'Confirma tu contraseña';
+                    if (value == null || value.isEmpty) {
+                      return null; // No molestar si aún no ha escrito
+                    }
+                    if (value != _passwordController.text) {
+                      return '⚠️ Las contraseñas no coinciden';
                     }
                     return null;
                   },
@@ -328,6 +377,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Widget que muestra un indicador de requisito de contraseña en tiempo real
+class _PasswordHintRow extends StatelessWidget {
+  final String label;
+  final bool isMet;
+
+  const _PasswordHintRow({
+    required this.label,
+    required this.isMet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              isMet ? Icons.check_circle : Icons.cancel,
+              key: ValueKey(isMet),
+              size: 16,
+              color: isMet ? Colors.greenAccent : Colors.red.shade300,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isMet ? Colors.greenAccent : Colors.white70,
+              fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }

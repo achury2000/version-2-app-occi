@@ -170,6 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Formulario
                   Form(
                     key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       children: [
                         // Email
@@ -196,11 +197,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value?.isEmpty ?? true) {
-                              return 'El email es requerido';
+                            if (value == null || value.isEmpty) {
+                              return null; // No molestar si aún no ha escrito
                             }
-                            if (!value!.contains('@')) {
-                              return 'Email inválido';
+                            if (!value.contains('@')) {
+                              return '💡 Recuerda: el correo debe contener @';
+                            }
+                            if (!value.contains('.')) {
+                              return '💡 El correo debe tener un dominio válido (ej: @gmail.com)';
                             }
                             return null;
                           },
@@ -244,11 +248,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           obscureText: _obscurePassword,
                           validator: (value) {
-                            if (value?.isEmpty ?? true) {
-                              return 'La contraseña es requerida';
+                            if (value == null || value.isEmpty) {
+                              return null; // No molestar si aún no ha escrito
                             }
-                            if (value!.length < 6) {
-                              return 'Mínimo 6 caracteres';
+                            if (value.length < 6) {
+                              return '💡 La contraseña debe tener al menos 6 caracteres';
                             }
                             return null;
                           },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cliente_provider.dart';
@@ -23,6 +24,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _generoController;
 
   bool _controladoresInicializados = false;
+
+  // Tipo de documento seleccionado actualmente (para adaptar el campo de número)
+  String _tipoDocumentoSeleccionado = '';
+
+  bool get _esPasaporte => _tipoDocumentoSeleccionado == 'Pasaporte';
+  bool get _esExtranjero => _esPasaporte || _tipoDocumentoSeleccionado == 'Otro';
 
   final List<String> _tiposDocumento = [
     'Cédula',
@@ -66,9 +73,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   void _initializeControllers() {
-    final clienteProvider =
-        context.read<ClienteProvider>();
+    final clienteProvider = context.read<ClienteProvider>();
     final cliente = clienteProvider.cliente;
+
+    _tipoDocumentoSeleccionado = cliente?.tipoDocumento ?? '';
 
     _tipoDocumentoController =
         TextEditingController(text: cliente?.tipoDocumento ?? '');
@@ -123,11 +131,47 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       return false;
     }
 
-    if (_numeroDocumentoController.text.isEmpty) {
+    final numDoc = _numeroDocumentoController.text.trim();
+    if (numDoc.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('❌ Número de documento requerido')),
       );
       return false;
+    }
+
+    // Validar formato según tipo de documento
+    if (_esPasaporte) {
+      // Pasaporte: letras y números, entre 6 y 20 caracteres
+      if (!RegExp(r'^[A-Za-z0-9]{6,20}$').hasMatch(numDoc)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Pasaporte: entre 6 y 20 caracteres alfanuméricos'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return false;
+      }
+    } else {
+      // CC, Cédula, etc.: solo dígitos, entre 6 y 15
+      if (!RegExp(r'^[0-9]{6,15}$').hasMatch(numDoc)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Número de documento: entre 6 y 15 dígitos'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return false;
+      }
+    }
+
+    if (_telefonoController.text.trim().isNotEmpty) {
+      final tel = _telefonoController.text.trim();
+      if (!RegExp(r'^[0-9+\-\s]{7,15}$').hasMatch(tel)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Teléfono inválido (7-15 dígitos)')),
+        );
+        return false;
+      }
     }
 
     if (_direccionController.text.isEmpty) {
@@ -297,16 +341,43 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       controller: _tipoDocumentoController,
                       items: _tiposDocumento,
                       icon: Icons.credit_card,
+                      onChanged: (value) {
+                        setState(() {
+                          _tipoDocumentoSeleccionado = value ?? '';
+                          _tipoDocumentoController.text = value ?? '';
+                          // Limpiar número al cambiar tipo
+                          _numeroDocumentoController.clear();
+                        });
+                      },
                     ),
                     const SizedBox(height: 18),
 
-                    // Número de documento
-                    _buildTextField(
-                      label: 'Número de Documento *',
-                      controller: _numeroDocumentoController,
-                      keyboardType: TextInputType.number,
-                      icon: Icons.numbers,
-                    ),
+                    // Número de documento (cambia según tipo)
+                    if (_esPasaporte) ...[  
+                      _buildTextField(
+                        label: 'Número de Pasaporte *',
+                        controller: _numeroDocumentoController,
+                        keyboardType: TextInputType.text,
+                        icon: Icons.flight_takeoff,
+                        maxLength: 20,
+                        helperText: 'Ej: AB123456 (6-20 caracteres alfanuméricos)',
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                        ],
+                      ),
+                    ] else ...[
+                      _buildTextField(
+                        label: 'Número de Documento *',
+                        controller: _numeroDocumentoController,
+                        keyboardType: TextInputType.number,
+                        icon: Icons.numbers,
+                        maxLength: 15,
+                        helperText: '6-15 dígitos',
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 18),
 
                     // Teléfono
@@ -315,6 +386,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       controller: _telefonoController,
                       keyboardType: TextInputType.phone,
                       icon: Icons.phone,
+                      maxLength: 15,
+                      helperText: 'Ej: 3001234567',
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+                      ],
                     ),
                     const SizedBox(height: 18),
 
@@ -324,6 +400,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       controller: _direccionController,
                       icon: Icons.location_on,
                       maxLines: 2,
+                      maxLength: 150,
                     ),
                     const SizedBox(height: 18),
 
@@ -332,6 +409,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       label: 'Ciudad *',
                       controller: _ciudadController,
                       icon: Icons.location_city,
+                      maxLength: 60,
                     ),
                     const SizedBox(height: 18),
 
@@ -349,6 +427,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       label: 'Código Postal',
                       controller: _codigoPostalController,
                       icon: Icons.markunread_mailbox,
+                      maxLength: 10,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
+                      ],
                     ),
                     const SizedBox(height: 18),
 
@@ -428,14 +510,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     TextInputType keyboardType = TextInputType.text,
     IconData? icon,
     int maxLines = 1,
+    int? maxLength,
+    String? helperText,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
+        helperText: helperText,
         prefixIcon: icon != null ? Icon(icon) : null,
+        counterStyle: const TextStyle(fontSize: 11, color: Colors.grey),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -456,6 +545,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     required TextEditingController controller,
     required List<String> items,
     IconData? icon,
+    ValueChanged<String?>? onChanged,
   }) {
     return DropdownButtonFormField<String>(
       value: controller.text.isEmpty ? null : controller.text,
@@ -463,7 +553,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           .map((item) => DropdownMenuItem(value: item, child: Text(item)))
           .toList(),
       onChanged: (value) {
-        if (value != null) {
+        if (onChanged != null) {
+          onChanged(value);
+        } else if (value != null) {
           controller.text = value;
         }
       },

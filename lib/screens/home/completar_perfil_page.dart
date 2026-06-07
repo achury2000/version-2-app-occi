@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -59,6 +60,9 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
 
   static const List<String> _tiposDocumento = ['CC', 'CE', 'Pasaporte'];
   static const List<String> _generos = ['Masculino', 'Femenino', 'Otro'];
+
+  String _tipoDocSeleccionado = '';
+  bool get _esPasaporte => _tipoDocSeleccionado == 'Pasaporte';
 
   bool get _isLoading =>
       _state == CompletarPerfilViewState.loading ||
@@ -149,6 +153,7 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
     _nombreController.text = perfil.nombre;
     _apellidoController.text = perfil.apellido;
     _tipoDocumentoController.text = perfil.tipoDocumento;
+    _tipoDocSeleccionado = perfil.tipoDocumento;
     _numeroDocumentoController.text = perfil.numeroDocumento;
     _telefonoController.text = perfil.telefono;
     _direccionController.text = perfil.direccion;
@@ -276,10 +281,14 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
 
     if (nombre.isEmpty) {
       errors['nombre'] = 'Este campo es obligatorio';
+    } else if (nombre.length > 80) {
+      errors['nombre'] = 'Máximo 80 caracteres';
     }
 
     if (apellido.isEmpty) {
       errors['apellido'] = 'Este campo es obligatorio';
+    } else if (apellido.length > 80) {
+      errors['apellido'] = 'Máximo 80 caracteres';
     }
 
     if (tipoDocumento.isEmpty) {
@@ -288,23 +297,34 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
 
     if (numeroDocumento.isEmpty) {
       errors['numero_documento'] = 'Este campo es obligatorio';
+    } else if (_esPasaporte) {
+      // Pasaporte: alfanumérico 6-20 caracteres
+      if (!RegExp(r'^[A-Za-z0-9]{6,20}$').hasMatch(numeroDocumento)) {
+        errors['numero_documento'] = 'Pasaporte: 6-20 caracteres alfanuméricos (ej: AB123456)';
+      }
     } else {
-      final regex = RegExp(r'^[A-Za-z0-9\-\.\s]{3,}$');
-      if (!regex.hasMatch(numeroDocumento)) {
-        errors['numero_documento'] = 'Documento con formato inválido';
+      // CC / CE: solo dígitos 6-15
+      if (!RegExp(r'^[0-9]{6,15}$').hasMatch(numeroDocumento)) {
+        errors['numero_documento'] = 'Documento: entre 6 y 15 dígitos numéricos';
       }
     }
 
     if (telefono.isEmpty) {
       errors['telefono'] = 'Este campo es obligatorio';
+    } else if (!RegExp(r'^[0-9+\-\s]{7,15}$').hasMatch(telefono)) {
+      errors['telefono'] = 'Teléfono inválido (7-15 dígitos)';
     }
 
     if (direccion.isEmpty) {
       errors['direccion'] = 'Este campo es obligatorio';
+    } else if (direccion.length > 150) {
+      errors['direccion'] = 'Máximo 150 caracteres';
     }
 
     if (ciudad.isEmpty) {
       errors['ciudad'] = 'Este campo es obligatorio';
+    } else if (ciudad.length > 60) {
+      errors['ciudad'] = 'Máximo 60 caracteres';
     }
 
     if (pais.isEmpty) {
@@ -445,45 +465,81 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
               onChanged: (value) {
                 setState(() {
                   _tipoDocumentoController.text = value ?? '';
+                  _tipoDocSeleccionado = value ?? '';
+                  _numeroDocumentoController.clear(); // limpiar al cambiar tipo
                 });
               },
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _nombreController,
+              maxLength: 80,
               decoration: InputDecoration(
                 labelText: 'Nombre',
                 errorText: _errors['nombre'],
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _apellidoController,
+              maxLength: 80,
               decoration: InputDecoration(
                 labelText: 'Apellido',
                 errorText: _errors['apellido'],
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _numeroDocumentoController,
-              decoration: InputDecoration(
-                labelText: 'Número de documento',
-                errorText: _errors['numero_documento'],
+            if (_esPasaporte) ...[
+              TextField(
+                controller: _numeroDocumentoController,
+                maxLength: 20,
+                keyboardType: TextInputType.text,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Número de Pasaporte',
+                  errorText: _errors['numero_documento'],
+                  prefixIcon: const Icon(Icons.flight_takeoff),
+                  helperText: 'Ej: AB123456 (6-20 caracteres alfanuméricos)',
+                ),
               ),
-            ),
+            ] else ...[
+              TextField(
+                controller: _numeroDocumentoController,
+                maxLength: 15,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Número de documento',
+                  errorText: _errors['numero_documento'],
+                  helperText: '6-15 dígitos',
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _telefonoController,
               keyboardType: TextInputType.phone,
+              maxLength: 15,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+              ],
               decoration: InputDecoration(
                 labelText: 'Teléfono',
                 errorText: _errors['telefono'],
+                helperText: 'Ej: 3001234567',
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _direccionController,
+              maxLength: 150,
               decoration: InputDecoration(
                 labelText: 'Dirección',
                 errorText: _errors['direccion'],
@@ -492,24 +548,33 @@ class _CompletarPerfilPageState extends State<CompletarPerfilPage> {
             const SizedBox(height: 12),
             TextField(
               controller: _ciudadController,
+              maxLength: 60,
               decoration: InputDecoration(
                 labelText: 'Ciudad',
                 errorText: _errors['ciudad'],
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _paisController,
+              maxLength: 60,
               decoration: InputDecoration(
                 labelText: 'País',
                 errorText: _errors['pais'],
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _codigoPostalController,
+              maxLength: 10,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Código postal (opcional)',
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
