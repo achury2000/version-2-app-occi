@@ -19,14 +19,13 @@ class AppEnvironment {
   // ⚠️ PRODUCCIÓN: cambia a 'development' para desarrollo local
   static const String currentEnvironment = production;
 
-  // 🔗 URL del backend desplegado en Railway
-  // Reemplaza esta URL con la que Railway te asigne después del despliegue
-  static const String railwayUrl = 'https://occitours-backend-movil.up.railway.app';
+  // 🔗 URL del backend desplegado en Vercel
+  static const String vercelUrl = 'https://backocci-s.vercel.app';
 
   static const Map<String, String> backendUrls = {
     development: 'http://10.0.2.2:3000/api',
     testing: 'http://localhost:3000/api',
-    production: '$railwayUrl/api',
+    production: '$vercelUrl/api',
   };
 
   /// Override: `flutter run --dart-define=BACKEND_BASE_URL=http://192.168.1.10:3000`
