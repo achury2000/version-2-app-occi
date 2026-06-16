@@ -403,6 +403,51 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      // Banner de política de reserva
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8E1),
+                          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.info_outline, color: Color(0xFFB45309), size: 18),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Información importante',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: Color(0xFF92400E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Al confirmar tu reserva, aseguras tu cupo en la experiencia. Los pagos no aplican para reembolso en caso de cancelación o no asistencia.',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF4B5563), height: 1.5),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: const [
+                                Icon(Icons.phone, color: Color(0xFF92400E), size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  '+57 304 3898018',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -447,6 +492,48 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                         );
                                         return;
                                       }
+
+                                      // Diálogo de política antes de confirmar
+                                      final aceptado = await showDialog<bool>(
+                                        context: this.context,
+                                        barrierDismissible: false,
+                                        builder: (ctx) => AlertDialog(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          title: Row(
+                                            children: const [
+                                              Icon(Icons.info_outline, color: Color(0xFFB45309)),
+                                              SizedBox(width: 8),
+                                              Text('Antes de confirmar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                          content: Container(
+                                            padding: const EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFF8E1),
+                                              borderRadius: BorderRadius.circular(10),
+                                              border: Border.all(color: const Color(0xFFF59E0B)),
+                                            ),
+                                            child: const Text(
+                                              'Al confirmar tu reserva, aseguras tu cupo en la experiencia.\n\n'
+                                              'Para garantizar la organización del viaje, los pagos no aplican para reembolso en caso de cancelación o no asistencia. En situaciones de fuerza mayor, podremos reprogramar tu experiencia.\n\n'
+                                              '¿Deseas continuar?',
+                                              style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.6),
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(ctx).pop(false),
+                                              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                              onPressed: () => Navigator.of(ctx).pop(true),
+                                              child: const Text('Sí, confirmar'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (aceptado != true) return;
 
                                       setModalState(() => isSaving = true);
                                       try {

@@ -715,7 +715,11 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 _buildResumenPrecio(),
                 const SizedBox(height: 24),
 
-                /// SECCIÓN 7: Botones
+                /// SECCIÓN 7: Aviso política de reserva
+                _buildAvisoPolitica(),
+                const SizedBox(height: 16),
+
+                /// SECCIÓN 8: Botones
                 _buildBotones(),
               ],
             ),
@@ -1777,6 +1781,135 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     );
   }
 
+  Widget _buildAvisoPolitica() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.info_outline, color: Color(0xFFB45309), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Información importante',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF92400E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Al confirmar tu reserva, aseguras tu cupo en la experiencia.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.5),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Los pagos no aplican para reembolso en caso de cancelación o no asistencia. En situaciones de fuerza mayor, podremos reprogramar tu experiencia.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.5),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: const [
+              Icon(Icons.phone, color: Color(0xFF92400E), size: 14),
+              SizedBox(width: 6),
+              Text(
+                '+57 304 3898018',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF92400E),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _mostrarDialogoConfirmacion() async {
+    final aceptado = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.info_outline, color: Color(0xFFB45309)),
+            SizedBox(width: 8),
+            Text(
+              'Antes de confirmar',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+              ),
+              child: const Text(
+                'Al confirmar tu reserva, aseguras tu cupo en la experiencia.\n\n'
+                'Para garantizar la organización del viaje, los pagos no aplican para reembolso en caso de cancelación o no asistencia. En situaciones de fuerza mayor, podremos reprogramar tu experiencia.\n\n'
+                '¿Deseas continuar?',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF4B5563),
+                  height: 1.6,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: const [
+                Icon(Icons.phone, color: Color(0xFF92400E), size: 14),
+                SizedBox(width: 6),
+                Text(
+                  'Dudas: +57 304 3898018',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sí, confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (aceptado == true) {
+      _crearReserva();
+    }
+  }
+
   Widget _buildBotones() {
     return Row(
       children: [
@@ -1797,7 +1930,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                         (_fechaPersonalizada == null ||
                             _horaPersonalizada == null))
                 ? null
-                : _crearReserva,
+                : _mostrarDialogoConfirmacion,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: _cargando
                 ? const SizedBox(
