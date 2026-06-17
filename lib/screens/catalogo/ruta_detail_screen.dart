@@ -526,7 +526,10 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                               child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
                                             ),
                                             ElevatedButton(
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green,
+                                                foregroundColor: Colors.white,
+                                              ),
                                               onPressed: () => Navigator.of(ctx).pop(true),
                                               child: const Text('Sí, confirmar'),
                                             ),
@@ -783,6 +786,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                     label: const Text('Reservar Ahora'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

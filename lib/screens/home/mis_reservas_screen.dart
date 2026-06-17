@@ -314,7 +314,10 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text(
               'Sí, eliminar reserva',
               style: TextStyle(color: Colors.white),
@@ -440,6 +443,7 @@ class _MisReservasScreenState extends State<MisReservasScreen> {
                   label: Text(_mostrarFiltros ? 'Ocultar' : 'Mostrar'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0066CC),
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ),

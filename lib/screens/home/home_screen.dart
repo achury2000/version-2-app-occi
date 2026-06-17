@@ -674,6 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0066CC),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -733,6 +734,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
                                 ),
                                 child: const Text('Sí, cerrar sesión'),
                               ),
@@ -745,6 +747,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: const Text('Cerrar Sesión'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

@@ -89,6 +89,8 @@ class _OccitourAppState extends State<OccitourApp> {
           // ── Botones elevados con Poppins ──
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
               textStyle: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

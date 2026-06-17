@@ -1622,6 +1622,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                   label: const Text('Reservar Ahora'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0066CC),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

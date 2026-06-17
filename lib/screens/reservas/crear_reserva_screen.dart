@@ -321,14 +321,22 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       background = Colors.grey.shade100;
       textColor = Colors.grey.shade400;
       border = Border.all(color: Colors.grey.shade300);
+    } else {
+      // Disponible!
+      background = isOutside ? Colors.transparent : Colors.green.shade50;
+      textColor = isOutside ? Colors.grey.shade400 : Colors.green.shade800;
+      border = isOutside ? null : Border.all(color: Colors.green.shade100);
+      fontWeight = isOutside ? FontWeight.normal : FontWeight.w500;
     }
 
-    if (isOutside) {
+    if (isOutside && !isSelected && !isReserved && !isPast && !isRangeBlocked) {
+      // Already handled in else branch
+    } else if (isOutside) {
       textColor = textColor.withOpacity(0.4);
     }
 
     if (isToday && !isSelected && !isReserved) {
-      border ??= Border.all(color: theme.colorScheme.primary);
+      border = Border.all(color: theme.colorScheme.primary, width: 2);
     }
 
     return Container(
@@ -670,12 +678,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             });
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// SECCIÓN 0: Tipo de reserva
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// SECCIÓN 0: Tipo de reserva
                 _buildSeccionTipoReserva(),
                 const SizedBox(height: 24),
 
@@ -723,11 +732,12 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                 _buildBotones(),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
 
   Widget _buildSeccionProgramacion(ProgramacionProvider provider) {
     if (!_usarProgramacion) {
@@ -978,7 +988,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _buildLegendItem(Colors.green.shade400, 'Disponible'),
+              _buildLegendItem(Colors.green.shade50, 'Disponible', bordered: true),
               _buildLegendItem(Colors.grey.shade200, 'Pasado', strike: true),
               _buildLegendItem(
                 Colors.grey.shade300,
@@ -1511,8 +1521,37 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               // FIX 2: Deshabilitar tab "Ruta programada" si se entró con ruta
               // directa sin programación (solo aplica en _onlyRutaMode sin prog fija)
               ChoiceChip(
-                label: const Text('Ruta programada'),
+                label: Text(
+                  'Ruta programada',
+                  style: TextStyle(
+                    color: (_onlyRutaMode &&
+                            widget.idProgramacion == null &&
+                            widget.programacion == null)
+                        ? Colors.black38
+                        : ((_usarProgramacion && !_esPersonalizada)
+                            ? Colors.white
+                            : Colors.black87),
+                    fontWeight: (_usarProgramacion && !_esPersonalizada)
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
                 selected: _usarProgramacion && !_esPersonalizada,
+                selectedColor: Colors.green.shade600,
+                backgroundColor: Colors.white,
+                disabledColor: Colors.grey.shade100,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color: (_onlyRutaMode &&
+                            widget.idProgramacion == null &&
+                            widget.programacion == null)
+                        ? Colors.grey.shade300
+                        : ((_usarProgramacion && !_esPersonalizada)
+                            ? Colors.green.shade600
+                            : Colors.grey.shade300),
+                  ),
+                ),
                 // Deshabilitar si la pantalla fue abierta con una ruta sin prog fija
                 onSelected: (_onlyRutaMode &&
                         widget.idProgramacion == null &&
@@ -1529,8 +1568,28 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                       },
               ),
               ChoiceChip(
-                label: const Text('Reserva personalizada'),
+                label: Text(
+                  'Reserva personalizada',
+                  style: TextStyle(
+                    color: (!_usarProgramacion && _esPersonalizada)
+                        ? Colors.white
+                        : Colors.black87,
+                    fontWeight: (!_usarProgramacion && _esPersonalizada)
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
                 selected: !_usarProgramacion && _esPersonalizada,
+                selectedColor: Colors.green.shade600,
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                    color: (!_usarProgramacion && _esPersonalizada)
+                        ? Colors.green.shade600
+                        : Colors.grey.shade300,
+                  ),
+                ),
                 onSelected: _cargando
                     ? null
                     : (selected) {
@@ -1547,8 +1606,28 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               ),
               if (!_onlyRutaMode)
                 ChoiceChip(
-                  label: const Text('Ruta/Finca directa'),
+                  label: Text(
+                    'Ruta/Finca directa',
+                    style: TextStyle(
+                      color: (!_usarProgramacion && !_esPersonalizada)
+                          ? Colors.white
+                          : Colors.black87,
+                      fontWeight: (!_usarProgramacion && !_esPersonalizada)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                   selected: !_usarProgramacion && !_esPersonalizada,
+                  selectedColor: Colors.green.shade600,
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: (!_usarProgramacion && !_esPersonalizada)
+                          ? Colors.green.shade600
+                          : Colors.grey.shade300,
+                    ),
+                  ),
                   onSelected: _cargando
                       ? null
                       : (selected) {
@@ -1590,15 +1669,55 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     Row(
                       children: [
                         ChoiceChip(
-                          label: const Text('Ruta'),
+                          label: Text(
+                            'Ruta',
+                            style: TextStyle(
+                              color: !_seleccionarFincaDirecta
+                                  ? Colors.white
+                                  : Colors.black87,
+                              fontWeight: !_seleccionarFincaDirecta
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
                           selected: !_seleccionarFincaDirecta,
+                          selectedColor: Colors.green.shade600,
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: !_seleccionarFincaDirecta
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
                           onSelected: (s) =>
                               setState(() => _seleccionarFincaDirecta = !s),
                         ),
                         const SizedBox(width: 8),
                         ChoiceChip(
-                          label: const Text('Finca'),
+                          label: Text(
+                            'Finca',
+                            style: TextStyle(
+                              color: _seleccionarFincaDirecta
+                                  ? Colors.white
+                                  : Colors.black87,
+                              fontWeight: _seleccionarFincaDirecta
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
                           selected: _seleccionarFincaDirecta,
+                          selectedColor: Colors.green.shade600,
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: _seleccionarFincaDirecta
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
                           onSelected: (s) =>
                               setState(() => _seleccionarFincaDirecta = s),
                         ),
@@ -1919,7 +2038,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Sí, confirmar'),
           ),
@@ -1953,7 +2075,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                             _horaPersonalizada == null))
                 ? null
                 : _mostrarDialogoConfirmacion,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
             child: _cargando
                 ? const SizedBox(
                     height: 20,
