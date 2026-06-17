@@ -177,8 +177,29 @@ class _RutasScreenState extends State<RutasScreen> {
                       children: _difficulties
                           .map<Widget>(
                             (difficulty) => FilterChip(
-                              label: Text(difficulty),
+                              label: Text(
+                                difficulty,
+                                style: TextStyle(
+                                  color: _selectedDifficulty == difficulty
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: _selectedDifficulty == difficulty
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
                               selected: _selectedDifficulty == difficulty,
+                              selectedColor: Colors.green.shade600,
+                              backgroundColor: Colors.white,
+                              checkmarkColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: _selectedDifficulty == difficulty
+                                      ? Colors.green.shade600
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
                               onSelected: (selected) {
                                 setState(() {
                                   _selectedDifficulty = difficulty;

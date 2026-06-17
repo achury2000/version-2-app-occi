@@ -29,6 +29,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = 0;
 
+  final _fincasSearchController = TextEditingController();
+  double _fincasMinPrice = 0;
+  double _fincasMaxPrice = 5000000;
+  bool _showFincasFilters = false;
+
+  @override
+  void dispose() {
+    _fincasSearchController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -270,6 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       child: Column(
         children: [
+          // Header con barra de búsqueda
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -277,15 +289,149 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.green.shade400, Colors.green.shade600],
               ),
             ),
-            child: const Text(
-              'Fincas',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Fincas',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Buscador de fincas
+                TextField(
+                  controller: _fincasSearchController,
+                  onChanged: (value) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar finca...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    suffixIcon: _fincasSearchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              _fincasSearchController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // Controles de filtros
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showFincasFilters = !_showFincasFilters;
+                    });
+                  },
+                  icon: Icon(
+                    _showFincasFilters ? Icons.close : Icons.filter_list,
+                    size: 18,
+                    color: Colors.green.shade700,
+                  ),
+                  label: Text(
+                    _showFincasFilters ? 'Cerrar Filtros' : 'Filtros de Precio',
+                    style: TextStyle(color: Colors.green.shade700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.green.shade200),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                Consumer<CatalogoProvider>(
+                  builder: (context, catalogoProvider, _) {
+                    return Text(
+                      '${catalogoProvider.fincas.length} fincas',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Panel de Rango de Precio
+          if (_showFincasFilters)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Rango de precio por noche:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  RangeSlider(
+                    values: RangeValues(_fincasMinPrice, _fincasMaxPrice),
+                    min: 0,
+                    max: 5000000,
+                    divisions: 50,
+                    activeColor: Colors.green.shade600,
+                    inactiveColor: Colors.green.shade100,
+                    labels: RangeLabels(
+                      '\$${_fincasMinPrice.toStringAsFixed(0)}',
+                      '\$${_fincasMaxPrice.toStringAsFixed(0)}',
+                    ),
+                    onChanged: (RangeValues values) {
+                      setState(() {
+                        _fincasMinPrice = values.start;
+                        _fincasMaxPrice = values.end;
+                      });
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Min: \$${_fincasMinPrice.toStringAsFixed(0)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Max: \$${_fincasMaxPrice.toStringAsFixed(0)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
           Expanded(
             child: Consumer<CatalogoProvider>(
               builder: (context, catalogoProvider, _) {
@@ -293,8 +439,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (catalogoProvider.fincas.isEmpty) {
-                  return const Center(child: Text('No hay fincas disponibles'));
+                List fincas = catalogoProvider.fincas;
+
+                // 1. Filtrar por búsqueda
+                if (_fincasSearchController.text.isNotEmpty) {
+                  fincas = catalogoProvider.searchFincas(
+                    _fincasSearchController.text,
+                  );
+                }
+
+                // 2. Filtrar por precio
+                fincas = fincas.where((f) {
+                  double precio = 0;
+                  if (f is Map) {
+                    precio = (f['precio_por_noche'] ?? 0).toDouble();
+                  } else {
+                    precio = (f.precioNoche ?? 0).toDouble();
+                  }
+                  return precio >= _fincasMinPrice && precio <= _fincasMaxPrice;
+                }).toList();
+
+                if (fincas.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Text(
+                        'No hay fincas que coincidan con la búsqueda o filtros.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      ),
+                    ),
+                  );
                 }
 
                 final screenWidth = MediaQuery.of(context).size.width;
@@ -323,9 +498,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  itemCount: catalogoProvider.fincas.length,
+                  itemCount: fincas.length,
                   itemBuilder: (context, index) {
-                    return _buildFincaGridItem(catalogoProvider.fincas[index]);
+                    return _buildFincaGridItem(fincas[index]);
                   },
                 );
               },
