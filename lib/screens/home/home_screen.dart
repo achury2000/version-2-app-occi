@@ -1423,200 +1423,180 @@ class _HomeScreenState extends State<HomeScreen> {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Imagen
-          Container(
-            height: 120,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              color: backgroundColor,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FincaDetailScreen(finca: finca),
             ),
-            child: imagenPrincipal.startsWith('http')
-                ? Image.network(
-                    imagenPrincipal,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_not_supported,
-                              size: 40,
-                              color: Colors.white30,
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Imagen no disponible',
-                              style: TextStyle(
-                                fontSize: 10,
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen
+            Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                color: backgroundColor,
+              ),
+              child: imagenPrincipal.startsWith('http')
+                  ? Image.network(
+                      imagenPrincipal,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 40,
                                 color: Colors.white30,
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  )
-                : const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                              SizedBox(height: 4),
+                              Text(
+                                'Imagen no disponible',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white30,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Colors.white30,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Imagen no disponible',
+                            style: TextStyle(fontSize: 10, color: Colors.white30),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+
+            // Contenido
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nombre,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
                       children: [
-                        Icon(
-                          Icons.image_not_supported,
-                          size: 40,
-                          color: Colors.white30,
+                        const Icon(
+                          Icons.location_on,
+                          size: 13,
+                          color: Colors.grey,
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Imagen no disponible',
-                          style: TextStyle(fontSize: 10, color: Colors.white30),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            ubicacion,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-          ),
-
-          // Contenido
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nombre,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 13,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          ubicacion,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.people, size: 13, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$capacidad personas',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.grey,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.people, size: 13, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$capacidad personas',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '\$${precio.toStringAsFixed(0)}/noche',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                      fontSize: 13,
+                      ],
                     ),
-                  ),
-                  const Spacer(),
-                  // Botones
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FincaDetailScreen(finca: finca),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.info_outline, size: 16),
-                          label: const Text(
-                            'Ver',
-                            style: TextStyle(fontSize: 12),
+                    const SizedBox(height: 10),
+                    Text(
+                      '\$${precio.toStringAsFixed(0)}/noche',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Botón único Reservar de ancho completo para evitar que el texto se corte
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FincaDetailScreen(finca: finca),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.calendar_today, size: 14),
+                        label: const Text(
+                          'Reservar',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FincaDetailScreen(finca: finca),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.calendar_today, size: 16),
-                          label: const Text(
-                            'Reservar',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
