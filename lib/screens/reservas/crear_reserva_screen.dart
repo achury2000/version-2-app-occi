@@ -1248,7 +1248,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     final documentoCtrl = TextEditingController();
     final telefonoCtrl = TextEditingController();
     DateTime? fechaNacimiento;
-    String? tipoDocumento;
+    String? tipoDocumento = 'CC';
 
     showModalBottomSheet<void>(
       context: context,
@@ -1290,25 +1290,32 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: nombreCtrl,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(50),
+                      ],
                       decoration: const InputDecoration(labelText: 'Nombre *'),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: apellidoCtrl,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(50),
+                      ],
                       decoration: const InputDecoration(labelText: 'Apellido'),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: tipoDocumento,
                       items: const [
-                        DropdownMenuItem(value: 'CC', child: Text('CC')),
-                        DropdownMenuItem(value: 'TI', child: Text('TI')),
-                        DropdownMenuItem(value: 'CE', child: Text('CE')),
-                        DropdownMenuItem(value: 'PP', child: Text('PP')),
-                        DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                        DropdownMenuItem(value: 'CC', child: Text('CC - Cédula de Ciudadanía')),
+                        DropdownMenuItem(value: 'TI', child: Text('TI - Tarjeta de Identidad')),
+                        DropdownMenuItem(value: 'CE', child: Text('CE - Cédula de Extranjería')),
+                        DropdownMenuItem(value: 'PP', child: Text('PP - Pasaporte')),
+                        DropdownMenuItem(value: 'Otro', child: Text('Otro documento')),
                       ],
                       onChanged: (value) => setModalState(() {
                         tipoDocumento = value;
+                        documentoCtrl.clear(); // Limpiar al cambiar tipo
                       }),
                       decoration: const InputDecoration(
                         labelText: 'Tipo documento',
@@ -1317,8 +1324,19 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: documentoCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      keyboardType: (tipoDocumento == 'PP' || tipoDocumento == 'Otro')
+                          ? TextInputType.text
+                          : TextInputType.number,
+                      inputFormatters: [
+                        if (tipoDocumento == 'CC' || tipoDocumento == 'TI' || tipoDocumento == 'CE')
+                          FilteringTextInputFormatter.digitsOnly,
+                        if (tipoDocumento == 'CC' || tipoDocumento == 'TI')
+                          LengthLimitingTextInputFormatter(10)
+                        else if (tipoDocumento == 'CE')
+                          LengthLimitingTextInputFormatter(12)
+                        else
+                          LengthLimitingTextInputFormatter(15)
+                      ],
                       decoration: const InputDecoration(
                         labelText: 'Numero documento *',
                       ),
@@ -1327,6 +1345,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                     TextField(
                       controller: telefonoCtrl,
                       keyboardType: TextInputType.phone,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                        LengthLimitingTextInputFormatter(15),
+                      ],
                       decoration: const InputDecoration(labelText: 'Telefono'),
                     ),
                     const SizedBox(height: 8),

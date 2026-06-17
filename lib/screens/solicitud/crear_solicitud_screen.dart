@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalogo_provider.dart';
 import '../../providers/cliente_provider.dart';
@@ -134,32 +135,95 @@ class _CrearSolicitudScreenState extends State<CrearSolicitudScreen> {
 
   void _showAgregarAcompananteDialog() {
     final nombreCtrl = TextEditingController();
-    final cedulaCtrl = TextEditingController();
+    final documentoCtrl = TextEditingController();
+    String tipoDocumento = 'CC';
 
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nuevo acompañante'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre completo')),
-            TextField(controller: cedulaCtrl, decoration: const InputDecoration(labelText: 'Número documento')),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final nombre = nombreCtrl.text.trim();
-              final cedula = cedulaCtrl.text.trim();
-              if (nombre.isEmpty || cedula.isEmpty) return;
-              setState(() => _acompanantes.add({'nombreCompleto': nombre, 'cedula': cedula}));
-              Navigator.of(context).pop();
-            },
-            child: const Text('Agregar'),
-          ),
-        ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Formatters dinámicos según tipo de documento
+          final isNumericOnly = tipoDocumento == 'CC' || tipoDocumento == 'TI' || tipoDocumento == 'CE';
+          final maxLen = tipoDocumento == 'CC' || tipoDocumento == 'TI'
+              ? 10
+              : tipoDocumento == 'CE'
+                  ? 12
+                  : 20; // PP u Otro
+
+          return AlertDialog(
+            title: const Text('Nuevo acompañante'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nombreCtrl,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(100),
+                    ],
+                    decoration: const InputDecoration(labelText: 'Nombre completo *'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: tipoDocumento,
+                    decoration: const InputDecoration(labelText: 'Tipo de documento'),
+                    items: const [
+                      DropdownMenuItem(value: 'CC', child: Text('CC - Cédula de Ciudadanía')),
+                      DropdownMenuItem(value: 'TI', child: Text('TI - Tarjeta de Identidad')),
+                      DropdownMenuItem(value: 'CE', child: Text('CE - Cédula de Extranjería')),
+                      DropdownMenuItem(value: 'PP', child: Text('PP - Pasaporte')),
+                      DropdownMenuItem(value: 'Otro', child: Text('Otro documento')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() {
+                        tipoDocumento = value;
+                        documentoCtrl.clear(); // Limpiar al cambiar tipo
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: documentoCtrl,
+                    keyboardType: isNumericOnly
+                        ? TextInputType.number
+                        : TextInputType.text,
+                    inputFormatters: [
+                      if (isNumericOnly) FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(maxLen),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: 'Número de documento *',
+                      helperText: isNumericOnly
+                          ? 'Solo números (máx. $maxLen dígitos)'
+                          : 'Letras y números (máx. $maxLen caracteres)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final nombre = nombreCtrl.text.trim();
+                  final cedula = documentoCtrl.text.trim();
+                  if (nombre.isEmpty || cedula.isEmpty) return;
+                  setState(() => _acompanantes.add({
+                    'nombreCompleto': nombre,
+                    'cedula': cedula,
+                    'tipoDocumento': tipoDocumento,
+                  }));
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('Agregar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

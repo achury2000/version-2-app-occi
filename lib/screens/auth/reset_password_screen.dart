@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -162,6 +163,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(80),
+                  ],
                   style: const TextStyle(
                     color: Colors.black87,
                     fontWeight: FontWeight.w500,
@@ -190,6 +194,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _tokenController,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(250),
+                  ],
                   style: const TextStyle(
                     color: Colors.black87,
                     fontWeight: FontWeight.w500,
@@ -219,6 +226,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(50),
+                  ],
                   style: const TextStyle(
                     color: Colors.black87,
                     fontWeight: FontWeight.w500,
@@ -259,6 +269,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(50),
+                  ],
                   style: const TextStyle(
                     color: Colors.black87,
                     fontWeight: FontWeight.w500,

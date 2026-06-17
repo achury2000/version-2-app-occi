@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -167,6 +168,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   keyboardType: TextInputType.emailAddress,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(80),
+                  ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return null; // No molestar si aún no ha escrito
@@ -221,6 +225,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     obscureText: _obscurePassword,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(50),
+                    ],
                     validator: _validateStrongPassword,
                   ),
                 ),
@@ -304,6 +311,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   obscureText: _obscureConfirmPassword,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(50),
+                  ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return null; // No molestar si aún no ha escrito
