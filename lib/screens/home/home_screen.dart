@@ -297,11 +297,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const Center(child: Text('No hay fincas disponibles'));
                 }
 
+                final screenWidth = MediaQuery.of(context).size.width;
+                int crossAxisCount = 2;
+                double mainAxisExtent = 295; // Le damos un poco más de margen para evitar desbordamiento vertical de texto
+
+                if (screenWidth >= 1200) {
+                  crossAxisCount = 5;
+                  mainAxisExtent = 285;
+                } else if (screenWidth >= 900) {
+                  crossAxisCount = 4;
+                  mainAxisExtent = 285;
+                } else if (screenWidth >= 600) {
+                  crossAxisCount = 3;
+                  mainAxisExtent = 290;
+                } else if (screenWidth < 360) {
+                  crossAxisCount = 1;
+                  mainAxisExtent = 295;
+                }
+
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisExtent: 285,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisExtent: mainAxisExtent,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),

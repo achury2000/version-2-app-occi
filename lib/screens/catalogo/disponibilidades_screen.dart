@@ -286,11 +286,29 @@ class _DisponibilidadesScreenState extends State<DisponibilidadesScreen>
           );
         }
 
+        final screenWidth = MediaQuery.of(context).size.width;
+        int crossAxisCount = 2;
+        double childAspectRatio = 0.75;
+
+        if (screenWidth >= 1200) {
+          crossAxisCount = 5;
+          childAspectRatio = 0.85;
+        } else if (screenWidth >= 900) {
+          crossAxisCount = 4;
+          childAspectRatio = 0.8;
+        } else if (screenWidth >= 600) {
+          crossAxisCount = 3;
+          childAspectRatio = 0.78;
+        } else if (screenWidth < 360) {
+          crossAxisCount = 1;
+          childAspectRatio = 1.3;
+        }
+
         return GridView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
