@@ -13,6 +13,24 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Suprimir warnings de source/target 8 obsoletos en Java 17+
+// Afecta a dependencias transitivas que aún usan JavaVersion 8
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_11
+                    targetCompatibility JavaVersion.VERSION_11
+                }
+            }
+        }
+        project.tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs += ['-Xlint:-options']
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
