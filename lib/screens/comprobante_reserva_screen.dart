@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/reserva.dart';
+import '../../services/reserva_service.dart';
 
 class ComprobanteReservaScreen extends StatefulWidget {
   final Reserva reserva;
@@ -16,6 +17,50 @@ class ComprobanteReservaScreen extends StatefulWidget {
 }
 
 class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
+  String? _imageUrl;
+  bool _cargandoImagen = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarImagen();
+  }
+
+  Future<void> _cargarImagen() async {
+    final url = widget.reserva.comprobantePago;
+    if (url != null && url.startsWith('http')) {
+      setState(() {
+        _imageUrl = url;
+        _cargandoImagen = false;
+      });
+      return;
+    }
+    
+    if (widget.reserva.idPagoReciente != null) {
+      try {
+        final signed = await ReservaService().obtenerUrlComprobanteFirmada(widget.reserva.idPagoReciente!);
+        if (mounted) {
+          setState(() {
+            _imageUrl = signed;
+            _cargandoImagen = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _cargandoImagen = false;
+          });
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _cargandoImagen = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
@@ -203,6 +248,57 @@ class _ComprobanteReservaScreenState extends State<ComprobanteReservaScreen> {
                 const SizedBox(height: 12),
                 _buildDetalle('Observaciones', widget.reserva.observaciones!),
               ],
+              const Divider(height: 24),
+
+              // Imagen comprobante
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'COMPROBANTE ADJUNTO',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_cargandoImagen)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ))
+              else if (_imageUrl != null && _imageUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    _imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.grey[200],
+                      child: const Column(
+                        children: [
+                          Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                          SizedBox(height: 8),
+                          Text('No se pudo cargar la imagen del comprobante', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: const Text('No se encontró archivo adjunto o no se puede visualizar', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                ),
               const Divider(height: 24),
 
               // Total

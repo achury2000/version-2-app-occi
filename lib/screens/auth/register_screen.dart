@@ -124,14 +124,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Crear Cuenta'),
+        title: const Text(
+          'Crear Cuenta',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -139,252 +149,269 @@ class _RegisterScreenState extends State<RegisterScreen> {
             colors: [Colors.green.shade600, Colors.green.shade900],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              children: [
-                // Email
-                TextFormField(
-                  controller: _emailController,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-                  decoration: InputDecoration(
-                    hintText: 'Correo electrónico',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 16,
-                    ),
-                    prefixIcon: Icon(Icons.email, color: Colors.grey.shade700),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(80),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return null; // No molestar si aún no ha escrito
-                    }
-                    if (!value.contains('@')) {
-                      return '💡 Recuerda: el correo debe contener @';
-                    }
-                    if (!value.contains('.')) {
-                      return '💡 El correo debe tener un dominio válido (ej: @gmail.com)';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Contraseña
-                Focus(
-                  onFocusChange: (hasFocus) {
-                    setState(() => _showPasswordHints = hasFocus || _password.isNotEmpty);
-                  },
-                  child: TextFormField(
-                    controller: _passwordController,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Contraseña',
-                      hintStyle: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 16,
-                      ),
-                      prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.grey.shade700,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    obscureText: _obscurePassword,
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(50),
-                    ],
-                    validator: _validateStrongPassword,
-                  ),
-                ),
-
-                // Indicadores visuales de contraseña (en tiempo real)
-                if (_showPasswordHints || _password.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Requisitos de contraseña:',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        _PasswordHintRow(
-                          label: 'Al menos 8 caracteres',
-                          isMet: _hasMinLength,
-                        ),
-                        _PasswordHintRow(
-                          label: 'Una letra mayúscula (A-Z)',
-                          isMet: _hasUppercase,
-                        ),
-                        _PasswordHintRow(
-                          label: 'Un número (0-9)',
-                          isMet: _hasNumber,
-                        ),
-                        _PasswordHintRow(
-                          label: 'Un carácter especial (!@#\$...)',
-                          isMet: _hasSpecialChar,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-
-
-                // Confirmar Contraseña
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Confirmar contraseña',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 16,
-                    ),
-                    prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.grey.shade700,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  obscureText: _obscureConfirmPassword,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(50),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return null; // No molestar si aún no ha escrito
-                    }
-                    if (value != _passwordController.text) {
-                      return '⚠️ Las contraseñas no coinciden';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Botón Registrarse
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleRegister,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.white.withOpacity(0.6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.green),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    child: Center(
+                      child: Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Email
+                            TextFormField(
+                              controller: _emailController,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Correo electrónico',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                                prefixIcon: Icon(Icons.email, color: Colors.grey.shade700),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              inputFormatters: [
+                                LengthLimitingTextInputFormatter(80),
+                              ],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return null; // No molestar si aún no ha escrito
+                                }
+                                if (!value.contains('@')) {
+                                  return '💡 Recuerda: el correo debe contener @';
+                                }
+                                if (!value.contains('.')) {
+                                  return '💡 El correo debe tener un dominio válido (ej: @gmail.com)';
+                                }
+                                return null;
+                              },
                             ),
-                          )
-                        : const Text(
-                            'Crear Cuenta',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                            const SizedBox(height: 16),
 
-                // Login
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '¿Ya tienes cuenta?',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context.go('/login');
-                      },
-                      child: const Text(
-                        'Inicia sesión',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                            // Contraseña
+                            Focus(
+                              onFocusChange: (hasFocus) {
+                                setState(() => _showPasswordHints = hasFocus || _password.isNotEmpty);
+                              },
+                              child: TextFormField(
+                                controller: _passwordController,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Contraseña',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 16,
+                                  ),
+                                  prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                obscureText: _obscurePassword,
+                                inputFormatters: [
+                                  LengthLimitingTextInputFormatter(50),
+                                ],
+                                validator: _validateStrongPassword,
+                              ),
+                            ),
+
+                            // Indicadores visuales de contraseña (en tiempo real)
+                            if (_showPasswordHints || _password.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Requisitos de contraseña:',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    _PasswordHintRow(
+                                      label: 'Al menos 8 caracteres',
+                                      isMet: _hasMinLength,
+                                    ),
+                                    _PasswordHintRow(
+                                      label: 'Una letra mayúscula (A-Z)',
+                                      isMet: _hasUppercase,
+                                    ),
+                                    _PasswordHintRow(
+                                      label: 'Un número (0-9)',
+                                      isMet: _hasNumber,
+                                    ),
+                                    _PasswordHintRow(
+                                      label: 'Un carácter especial (!@#\$...)',
+                                      isMet: _hasSpecialChar,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+
+                            // Confirmar Contraseña
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Confirmar contraseña',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                                prefixIcon: Icon(Icons.lock, color: Colors.grey.shade700),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              obscureText: _obscureConfirmPassword,
+                              inputFormatters: [
+                                LengthLimitingTextInputFormatter(50),
+                              ],
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return null; // No molestar si aún no ha escrito
+                                }
+                                if (value != _passwordController.text) {
+                                  return '⚠️ Las contraseñas no coinciden';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Botón Registrarse
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleRegister,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  disabledBackgroundColor: Colors.white.withOpacity(0.6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(Colors.green),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Crear Cuenta',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Login
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  '¿Ya tienes cuenta?',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    context.go('/login');
+                                  },
+                                  child: const Text(
+                                    'Inicia sesión',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

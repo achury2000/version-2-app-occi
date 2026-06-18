@@ -1036,22 +1036,23 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             },
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _mostrarModalCompletarPago(reserva);
-              },
-              icon: const Icon(Icons.payments_outlined),
-              label: Text(
-                esPendiente ? 'Completar pago' : 'Ver estado de pago',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorPago,
-                foregroundColor: Colors.white,
+          if (!reserva.tieneComprobante)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _mostrarModalCompletarPago(reserva);
+                },
+                icon: const Icon(Icons.payments_outlined),
+                label: Text(
+                  esPendiente ? 'Completar pago' : 'Ver estado de pago',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorPago,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1274,6 +1275,21 @@ class _ReservaDetalleScreenState extends State<ReservaDetalleScreen> {
             label: const Text('Ver Comprobante'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              _mostrarModalCompletarPago(reserva);
+            },
+            icon: const Icon(Icons.change_circle_outlined, color: Colors.orange),
+            label: const Text(
+              'Eliminar / Volver a subir',
+              style: TextStyle(color: Colors.orange),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.orange),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),

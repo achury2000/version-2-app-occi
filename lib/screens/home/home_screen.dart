@@ -103,31 +103,65 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(24),
+              width: double.infinity,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green.shade400, Colors.green.shade600],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, _) {
-                      return Text(
-                        '¡Hola, ${authProvider.usuario?.nombre ?? 'Usuario'}!',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.green.shade600, Colors.green.shade800],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Descubre y vive nuevas aventuras',
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -16,
+                    bottom: -16,
+                    child: Icon(
+                      Icons.explore_outlined,
+                      size: 110,
+                      color: Colors.white.withOpacity(0.12),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Consumer<AuthProvider>(
+                          builder: (context, authProvider, _) {
+                            return Text(
+                              '¡Hola, ${authProvider.usuario?.nombre ?? 'Usuario'}!',
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Descubre y vive nuevas aventuras',
+                          style: TextStyle(
+                            fontSize: 14, 
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
