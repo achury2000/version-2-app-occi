@@ -12,9 +12,17 @@ class FincasScreen extends StatefulWidget {
 
 class _FincasScreenState extends State<FincasScreen> {
   final _searchController = TextEditingController();
-  double _selectedMinPrice = 0;
-  double _selectedMaxPrice = 500;
+  String _selectedCapacidad = 'Todos';
   bool _showFilters = false;
+
+  // Opciones de filtro por capacidad (similar a dificultad en rutas)
+  final List<String> _capacidades = [
+    'Todos',
+    'Hasta 10',
+    'Hasta 30',
+    'Hasta 50',
+    'Más de 50',
+  ];
 
   @override
   void initState() {
@@ -33,6 +41,44 @@ class _FincasScreenState extends State<FincasScreen> {
     super.dispose();
   }
 
+  /// Comprueba si una finca cumple el filtro de capacidad seleccionado
+  bool _matchesCapacidad(dynamic finca, String selected) {
+    if (selected == 'Todos') return true;
+    int capacidad = 0;
+    if (finca is Map) {
+      capacidad = (finca['capacidad_personas'] ?? 0).toInt();
+    } else {
+      capacidad = (finca.capacidad ?? 0).toInt();
+    }
+    switch (selected) {
+      case 'Hasta 10':
+        return capacidad <= 10;
+      case 'Hasta 30':
+        return capacidad <= 30;
+      case 'Hasta 50':
+        return capacidad <= 50;
+      case 'Más de 50':
+        return capacidad > 50;
+      default:
+        return true;
+    }
+  }
+
+  /// Formatea precio con puntos como separador de miles (estilo colombiano)
+  /// Ej: 250000 → $250.000
+  String _formatPrice(double value) {
+    final intVal = value.toInt();
+    final str = intVal.toString();
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+      count++;
+    }
+    return '\$${buffer.toString().split('').reversed.join()}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -46,12 +92,15 @@ class _FincasScreenState extends State<FincasScreen> {
         ),
         child: Column(
           children: [
-            // Header
+            // ── Header ──────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green.shade400, Colors.green.shade600],
+                  colors: [
+                    const Color.fromARGB(255, 89, 175, 93),
+                    Colors.green.shade600,
+                  ],
                 ),
               ),
               child: Column(
@@ -66,7 +115,7 @@ class _FincasScreenState extends State<FincasScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Busqueda
+                  // Búsqueda
                   TextField(
                     controller: _searchController,
                     onChanged: (value) => setState(() {}),
@@ -94,7 +143,7 @@ class _FincasScreenState extends State<FincasScreen> {
               ),
             ),
 
-            // Botón Filtros
+            // ── Barra filtros ────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -110,14 +159,14 @@ class _FincasScreenState extends State<FincasScreen> {
                       children: [
                         Icon(Icons.filter_list),
                         SizedBox(width: 8),
-                        Text('Filtros'),
+                        Text('Capacidad'),
                       ],
                     ),
                   ),
                   Consumer<CatalogoProvider>(
                     builder: (context, catalogoProvider, _) {
                       return Text(
-                        '${catalogoProvider.fincas.length} resultados',
+                        '${catalogoProvider.fincas.length} fincas',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
@@ -129,7 +178,7 @@ class _FincasScreenState extends State<FincasScreen> {
               ),
             ),
 
-            // Panel Filtros
+            // ── Panel filtros (chips igual que rutas) ────────────────
             if (_showFilters)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -138,33 +187,52 @@ class _FincasScreenState extends State<FincasScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Rango de Precio',
+                      'Capacidad de personas',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    RangeSlider(
-                      values: RangeValues(_selectedMinPrice, _selectedMaxPrice),
-                      min: 0,
-                      max: 1000,
-                      onChanged: (RangeValues values) {
-                        setState(() {
-                          _selectedMinPrice = values.start;
-                          _selectedMaxPrice = values.end;
-                        });
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('\$${_selectedMinPrice.toStringAsFixed(0)}'),
-                        Text('\$${_selectedMaxPrice.toStringAsFixed(0)}'),
-                      ],
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: _capacidades
+                          .map<Widget>(
+                            (cap) => FilterChip(
+                              label: Text(
+                                cap,
+                                style: TextStyle(
+                                  color: _selectedCapacidad == cap
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: _selectedCapacidad == cap
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              selected: _selectedCapacidad == cap,
+                              selectedColor: Colors.green.shade600,
+                              backgroundColor: Colors.white,
+                              checkmarkColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: _selectedCapacidad == cap
+                                      ? Colors.green.shade600
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedCapacidad = cap;
+                                });
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
               ),
 
-            // Lista de Fincas
+            // ── Lista de Fincas ──────────────────────────────────────
             Expanded(
               child: Consumer<CatalogoProvider>(
                 builder: (context, catalogoProvider, _) {
@@ -197,24 +265,22 @@ class _FincasScreenState extends State<FincasScreen> {
 
                   List fincas = catalogoProvider.fincas;
 
-                  // Buscar
+                  // Filtrar por búsqueda
                   if (_searchController.text.isNotEmpty) {
                     fincas = catalogoProvider.searchFincas(
                       _searchController.text,
                     );
                   }
 
-                  // Filtrar por precio
-                  fincas = fincas.where((f) {
-                    double precio = 0;
-                    if (f is Map) {
-                      precio = (f['precio_por_noche'] ?? 0).toDouble();
-                    } else {
-                      precio = f.precioNoche;
-                    }
-                    return precio >= _selectedMinPrice &&
-                        precio <= _selectedMaxPrice;
-                  }).toList();
+                  // Filtrar por capacidad
+                  if (_selectedCapacidad != 'Todos') {
+                    fincas = fincas
+                        .where(
+                          (finca) =>
+                              _matchesCapacidad(finca, _selectedCapacidad),
+                        )
+                        .toList();
+                  }
 
                   if (fincas.isEmpty) {
                     return const Center(
@@ -242,165 +308,203 @@ class _FincasScreenState extends State<FincasScreen> {
     );
   }
 
+  // ── Card de finca: MISMO DISEÑO que ruta ──────────────────────────
   Widget _buildFincaCard(dynamic finca) {
-    // Extraer datos según el tipo
     String nombre = '';
     String ubicacion = '';
     int capacidad = 0;
     double precio = 0;
-    String imagenPrincipal = '';
 
     if (finca is Map) {
       nombre = finca['nombre'] ?? '';
       ubicacion = finca['ubicacion'] ?? '';
       capacidad = (finca['capacidad_personas'] ?? 0).toInt();
       precio = (finca['precio_por_noche'] ?? 0).toDouble();
-      imagenPrincipal = (finca['imagen_principal'] ?? '').toString();
     } else {
       nombre = finca.nombre ?? '';
       ubicacion = finca.ubicacion ?? '';
-      capacidad = finca.capacidad ?? 0;
-      precio = finca.precioNoche ?? 0;
-      imagenPrincipal = (finca.imagen ?? '').toString();
+      capacidad = (finca.capacidad ?? 0).toInt();
+      precio = (finca.precioNoche ?? 0).toDouble();
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FincaDetailScreen(finca: finca),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Icono
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child:
-                      (imagenPrincipal.isNotEmpty &&
-                          imagenPrincipal.startsWith('http'))
-                      ? Image.network(
-                          imagenPrincipal,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.home,
-                              size: 40,
-                              color: Colors.green,
-                            );
-                          },
-                        )
-                      : const Icon(Icons.home, size: 40, color: Colors.green),
-                ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FincaDetailScreen(finca: finca),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 4,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FincaDetailScreen(finca: finca),
               ),
-              const SizedBox(width: 16),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // ── Imagen ────────────────────────────────────────
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _getFincaImageWidget(finca),
+                ),
+                const SizedBox(width: 16),
 
-              // Información
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nombre
-                    Text(
-                      nombre,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Ubicación
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: Colors.grey,
+                // ── Información central ───────────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nombre
+                      Text(
+                        nombre,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            ubicacion,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Ubicación
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              ubicacion,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Capacidad (equivalente a duración en rutas)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.people,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$capacidad personas',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Capacidad
-                    Row(
-                      children: [
-                        const Icon(Icons.people, size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$capacidad personas',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Precio
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '\$${precio.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '/noche',
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                // ── Badge precio/noche (= badge dificultad+precio rutas) ──
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'por noche',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatPrice(precio),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _getFincaImageWidget(dynamic finca) {
+    String? imagenUrl;
+
+    if (finca is Map) {
+      imagenUrl =
+          (finca['imagen_principal'] ?? finca['imagen_url'] ?? '').toString();
+    } else {
+      imagenUrl = (finca.imagen ?? '').toString();
+    }
+
+    final cleanedUrl = imagenUrl.trim();
+
+    if (cleanedUrl.isNotEmpty && cleanedUrl.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          cleanedUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.green.shade100,
+              child: const Center(
+                child: Icon(Icons.home, size: 40, color: Colors.grey),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return Container(
+      color: Colors.green.shade100,
+      child: const Center(
+        child: Icon(Icons.home, size: 40, color: Colors.green),
       ),
     );
   }

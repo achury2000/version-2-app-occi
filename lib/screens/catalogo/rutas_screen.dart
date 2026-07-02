@@ -261,6 +261,21 @@ class _RutasScreenState extends State<RutasScreen> {
     );
   }
 
+  /// Formatea precio con puntos como separador de miles (estilo colombiano)
+  /// Ej: 85000 → $85.000
+  String _formatPrice(double value) {
+    final intVal = value.toInt();
+    final str = intVal.toString();
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+      count++;
+    }
+    return '\$${buffer.toString().split('').reversed.join()}';
+  }
+
   Widget _buildRutaCard(dynamic ruta) {
     // Extraer datos según el tipo
     String nombre = '';
@@ -418,7 +433,7 @@ class _RutasScreenState extends State<RutasScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '\$${precio.toStringAsFixed(0)}',
+                        _formatPrice(precio),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

@@ -27,6 +27,21 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
 
   late List<String> _images;
 
+  /// Formatea precio con puntos como separador de miles (estilo colombiano)
+  /// Ej: 250000 → $250.000
+  String _formatPrice(num value) {
+    final intVal = value.toInt();
+    final str = intVal.toString();
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+      count++;
+    }
+    return '\$${buffer.toString().split('').reversed.join()}';
+  }
+
   int _fincaId() {
     if (widget.finca is Map) {
       final id = widget.finca['id'] ?? widget.finca['id_finca'];
@@ -150,7 +165,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Precio: \$${precio.toStringAsFixed(2)}',
+                    'Precio: ${_formatPrice((precio is num ? precio : num.tryParse(precio.toString()) ?? 0))}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -460,7 +475,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                             Text('Cupos máximos: $capacidad personas'),
                             const SizedBox(height: 6),
                             Text(
-                              'Precio por noche: \$${precio.toStringAsFixed(0)}',
+                              'Precio por noche: ${_formatPrice(precio)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.teal,
@@ -881,7 +896,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                                     },
                                     title: Text(servicio.nombre),
                                     subtitle: Text(
-                                      '\$${servicio.precio.toStringAsFixed(0)}',
+                                      '${_formatPrice(servicio.precio)}',
                                       style: const TextStyle(
                                         color: Colors.teal,
                                         fontWeight: FontWeight.bold,
@@ -1025,13 +1040,13 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Precio por noche: \$${precio.toStringAsFixed(0)}',
+                              'Precio por noche: ${_formatPrice(precio)}',
                             ),
                             Text('Noches: $noches'),
                             Text('Número de personas: $cantidadPersonas'),
                             const Divider(),
                             Text(
-                              'Total estimado: \$${total.toStringAsFixed(0)}',
+                              'Total estimado: ${_formatPrice(total)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.teal,
@@ -1419,7 +1434,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '\$${widget.finca['precio_por_noche']?.toString() ?? '0'}/noche',
+                    '${_formatPrice((widget.finca['precio_por_noche'] ?? 0) is num ? (widget.finca['precio_por_noche'] ?? 0) : num.tryParse(widget.finca['precio_por_noche']?.toString() ?? '0') ?? 0)}/noche',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -1563,7 +1578,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              '\$${widget.finca['deposito_daños'].toString()}',
+                              _formatPrice((widget.finca['deposito_daños'] ?? 0) is num ? (widget.finca['deposito_daños'] ?? 0) : num.tryParse(widget.finca['deposito_daños']?.toString() ?? '0') ?? 0),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.deepOrange,
@@ -1581,7 +1596,7 @@ class _FincaDetailScreenState extends State<FincaDetailScreen> {
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                           Text(
-                            '\$${widget.finca['tarifa_aseo'].toString()}',
+                            _formatPrice((widget.finca['tarifa_aseo'] ?? 0) is num ? (widget.finca['tarifa_aseo'] ?? 0) : num.tryParse(widget.finca['tarifa_aseo']?.toString() ?? '0') ?? 0),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.deepOrange,

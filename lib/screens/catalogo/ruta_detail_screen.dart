@@ -20,6 +20,21 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
   final ReservaService _reservaService = ReservaService();
   final RutaService _rutaService = RutaService();
 
+  /// Formatea precio con puntos como separador de miles (estilo colombiano)
+  /// Ej: 85000 → $85.000
+  String _formatPrice(num value) {
+    final intVal = value.toInt();
+    final str = intVal.toString();
+    final buffer = StringBuffer();
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+      count++;
+    }
+    return '\$${buffer.toString().split('').reversed.join()}';
+  }
+
   int _rutaId() {
     if (widget.ruta is Map) {
       final id = widget.ruta['id'] ?? widget.ruta['id_ruta'];
@@ -206,7 +221,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                             Text('Cupos máximos: $capacidad personas'),
                             const SizedBox(height: 6),
                             Text(
-                              'Precio por persona: \$${precioPersona.toStringAsFixed(0)}',
+                              'Precio por persona: ${_formatPrice(precioPersona)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.green,
@@ -387,12 +402,12 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Precio por persona: \$${precioPersona.toStringAsFixed(0)}',
+                              'Precio por persona: ${_formatPrice(precioPersona)}',
                             ),
                             Text('Número de personas: $cantidadPersonas'),
                             const Divider(),
                             Text(
-                              'Total estimado: \$${total.toStringAsFixed(0)}',
+                              'Total estimado: ${_formatPrice(total)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.green,
@@ -704,7 +719,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                   const SizedBox(height: 24),
 
                   Text(
-                    '\$${widget.ruta['precio']?.toString() ?? '0'} por persona',
+                    '${_formatPrice((widget.ruta['precio'] ?? 0) is num ? (widget.ruta['precio'] ?? 0) : num.tryParse(widget.ruta['precio']?.toString() ?? '0') ?? 0)} por persona',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

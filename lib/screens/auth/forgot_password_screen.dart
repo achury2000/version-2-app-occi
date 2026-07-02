@@ -56,12 +56,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          child: _emailSent ? _buildSuccessView() : _buildFormView(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  AppBar().preferredSize.height -
+                  MediaQuery.of(context).padding.top,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: _emailSent ? _buildSuccessView() : _buildFormView(),
+            ),
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildFormView() {
     return Column(
